@@ -1,0 +1,50 @@
+/**
+ * @file base_TIM2.h
+ * @brief 基时定时器模块接口（时间基准，动态降频自适应）
+ * @version 2.0.0
+ * @date 2024-01-01
+ * @note 使用TIM2外设定时器，确保调频时1ms中断始终准确
+ * @note delay模块基于此定时器，确保频率变化时1秒永远是1秒
+ */
+
+#ifndef BASE_TIM2_H
+#define BASE_TIM2_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/* 任务tick计数器（TIM2中断中递增，代表真实时间，毫秒） */
+extern volatile uint32_t g_task_tick;
+
+/**
+ * @brief 初始化基时定时器（配置1ms中断，作为时间基准）
+ * @note 使用TIM2外设定时器，配置为1ms中断一次
+ * @note g_task_tick在TIM2_IRQHandler中递增，代表真实时间（毫秒）
+ * @note 频率切换时调用BaseTimer_Reconfig()重新配置，保持1ms中断间隔不变
+ */
+void BaseTimer_Init(void);
+
+/**
+ * @brief 重新配置基时定时器（频率切换时调用，保持1ms中断间隔不变）
+ * @param[in] new_freq 新的系统频率（Hz）
+ * @note 频率切换时，重新计算TIM2的PSC和ARR，保持1ms中断间隔不变
+ * @note 这样g_task_tick始终代表真实时间（毫秒），无论频率如何变化
+ * @note 1秒永远是1秒，无论频率如何变化
+ */
+void BaseTimer_Reconfig(uint32_t new_freq);
+
+/**
+ * @brief 获取当前tick（代表真实时间，毫秒）
+ * @return 当前g_task_tick值（代表真实时间，毫秒）
+ * @note g_task_tick在TIM2_IRQHandler中递增，频率切换时自动适配
+ */
+uint32_t BaseTimer_GetTick(void);
+
+/**
+ * @brief 检查基时定时器是否已初始化
+ * @return true=已初始化，false=未初始化
+ */
+bool BaseTimer_IsInitialized(void);
+
+#endif /* BASE_TIM2_H */
+
