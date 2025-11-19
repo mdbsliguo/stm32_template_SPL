@@ -138,27 +138,6 @@ static uint16_t PWM_GetTIMChannel(PWM_Channel_t channel)
     }
 }
 
-/**
- * @brief 获取PWM通道对应的OC模式
- * @param[in] channel PWM通道
- * @return uint16_t OC模式，失败返回0
- */
-static uint16_t PWM_GetOCMode(PWM_Channel_t channel)
-{
-    switch (channel)
-    {
-        case PWM_CHANNEL_1:
-            return TIM_OCMode_PWM1;
-        case PWM_CHANNEL_2:
-            return TIM_OCMode_PWM1;
-        case PWM_CHANNEL_3:
-            return TIM_OCMode_PWM1;
-        case PWM_CHANNEL_4:
-            return TIM_OCMode_PWM1;
-        default:
-            return 0;
-    }
-}
 
 /**
  * @brief PWM初始化
@@ -168,7 +147,6 @@ PWM_Status_t PWM_Init(PWM_Instance_t instance)
     GPIO_InitTypeDef GPIO_InitStructure;
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
     TIM_OCInitTypeDef TIM_OCInitStructure;
-    PWM_Status_t status;
     uint32_t tim_clock;
     uint32_t gpio_clock;
     uint16_t i;
@@ -243,7 +221,7 @@ PWM_Status_t PWM_Init(PWM_Instance_t instance)
     
     /* 配置PWM输出通道 */
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Disable;  /* 默认禁用，需要时再使能 */
     TIM_OCInitStructure.TIM_Pulse = 0;  /* 默认占空比0% */
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
     
@@ -418,6 +396,32 @@ PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency)
 }
 
 /**
+ * @brief 获取PWM频率
+ */
+PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency)
+{
+    /* 参数校验 */
+    if (instance >= PWM_INSTANCE_MAX)
+    {
+        return PWM_ERROR_INVALID_PARAM;
+    }
+    
+    if (frequency == NULL)
+    {
+        return PWM_ERROR_INVALID_PARAM;
+    }
+    
+    if (!g_pwm_initialized[instance])
+    {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
+    
+    *frequency = g_pwm_frequency[instance];
+    
+    return PWM_OK;
+}
+
+/**
  * @brief 设置PWM占空比
  */
 PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, float duty_cycle)
@@ -460,8 +464,8 @@ PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, fl
         return PWM_ERROR_INVALID_CHANNEL;
     }
     
-    /* 获取ARR值 */
-    arr = TIM_GetAutoreload(tim_periph);
+    /* 获取ARR值（直接读取寄存器） */
+    arr = tim_periph->ARR;
     
     /* 计算Pulse值 */
     pulse = (uint32_t)((duty_cycle / 100.0f) * (arr + 1));
@@ -678,7 +682,6 @@ TIM_TypeDef* PWM_GetPeriph(PWM_Instance_t instance)
 PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     TIM_TypeDef *tim_periph;
-    uint16_t tim_channel;
     TIM_OCInitTypeDef TIM_OCInitStructure;
     
     if (instance >= PWM_INSTANCE_MAX)
@@ -704,22 +707,20 @@ PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t chan
         return PWM_ERROR_INVALID_PERIPH;
     }
     
-    /* 获取定时器通道 */
-    switch (channel)
-    {
-        case PWM_CHANNEL_1: tim_channel = TIM_Channel_1; break;
-        case PWM_CHANNEL_2: tim_channel = TIM_Channel_2; break;
-        case PWM_CHANNEL_3: tim_channel = TIM_Channel_3; break;
-        case PWM_CHANNEL_4: tim_channel = TIM_Channel_4; break;
-        default: return PWM_ERROR_INVALID_CHANNEL;
-    }
-    
     /* 读取当前OC配置 */
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
     TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;  /* 使能互补输出 */
-    TIM_OCInitStructure.TIM_Pulse = TIM_GetCapturex(tim_periph, tim_channel);
+    /* 读取当前Pulse值（根据通道使用对应的函数） */
+    switch (channel)
+    {
+        case PWM_CHANNEL_1: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture1(tim_periph); break;
+        case PWM_CHANNEL_2: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture2(tim_periph); break;
+        case PWM_CHANNEL_3: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture3(tim_periph); break;
+        case PWM_CHANNEL_4: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture4(tim_periph); break;
+        default: TIM_OCInitStructure.TIM_Pulse = 0; break;
+    }
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
     TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
@@ -747,7 +748,6 @@ PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t chan
 PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     TIM_TypeDef *tim_periph;
-    uint16_t tim_channel;
     TIM_OCInitTypeDef TIM_OCInitStructure;
     
     if (instance >= PWM_INSTANCE_MAX)
@@ -773,22 +773,20 @@ PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t cha
         return PWM_ERROR_INVALID_PERIPH;
     }
     
-    /* 获取定时器通道 */
-    switch (channel)
-    {
-        case PWM_CHANNEL_1: tim_channel = TIM_Channel_1; break;
-        case PWM_CHANNEL_2: tim_channel = TIM_Channel_2; break;
-        case PWM_CHANNEL_3: tim_channel = TIM_Channel_3; break;
-        case PWM_CHANNEL_4: tim_channel = TIM_Channel_4; break;
-        default: return PWM_ERROR_INVALID_CHANNEL;
-    }
-    
     /* 读取当前OC配置 */
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
     TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;  /* 禁用互补输出 */
-    TIM_OCInitStructure.TIM_Pulse = TIM_GetCapturex(tim_periph, tim_channel);
+    /* 读取当前Pulse值（根据通道使用对应的函数） */
+    switch (channel)
+    {
+        case PWM_CHANNEL_1: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture1(tim_periph); break;
+        case PWM_CHANNEL_2: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture2(tim_periph); break;
+        case PWM_CHANNEL_3: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture3(tim_periph); break;
+        case PWM_CHANNEL_4: TIM_OCInitStructure.TIM_Pulse = TIM_GetCapture4(tim_periph); break;
+        default: TIM_OCInitStructure.TIM_Pulse = 0; break;
+    }
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
     TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;

@@ -650,7 +650,7 @@ ADC_Status_t ADC_EnableIT(ADC_Instance_t instance, ADC_IT_t it_type)
     ADC_ITConfig(adc_periph, it_value, ENABLE);
     
     /* 使能NVIC中断 */
-    NVIC_EnableIRQ(ADC1_2_IRQn);
+    NVIC_HW_EnableIRQ(ADC1_2_IRQn);
     
     return ADC_OK;
 }
@@ -824,7 +824,7 @@ ADC_Status_t ADC_StartDMA(ADC_Instance_t instance, const uint8_t *channels, uint
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return ADC_ERROR_INVALID_PARAM;

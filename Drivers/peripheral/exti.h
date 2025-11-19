@@ -84,7 +84,7 @@ typedef void (*EXTI_Callback_t)(EXTI_Line_t line, void *user_data);
  * @param[in] mode 模式（中断/事件）
  * @return EXTI_Status_t 状态码
  */
-EXTI_Status_t EXTI_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mode);
+EXTI_Status_t EXTI_HW_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mode);
 
 /**
  * @brief EXTI反初始化
@@ -135,7 +135,7 @@ uint8_t EXTI_GetPendingStatus(EXTI_Line_t line);
  * @param[in] line EXTI线号
  * @return EXTI_Status_t 状态码
  */
-EXTI_Status_t EXTI_GenerateSWInterrupt(EXTI_Line_t line);
+EXTI_Status_t EXTI_HW_GenerateSWInterrupt(EXTI_Line_t line);
 
 /**
  * @brief 检查EXTI是否已初始化

@@ -24,7 +24,7 @@ NVIC_Status_t NVIC_ConfigPriorityGroup(NVIC_PriorityGroup_t group)
     
     if (group > NVIC_PRIORITY_GROUP_4)
     {
-        ERROR_HANDLER_Report(ERROR_BASE_NVIC, __FILE__, __LINE__, "Invalid priority group");
+        ErrorHandler_Handle(NVIC_ERROR_INVALID_PARAM, "NVIC");
         return NVIC_ERROR_INVALID_PARAM;
     }
     
@@ -118,7 +118,7 @@ NVIC_Status_t NVIC_ConfigIRQ(IRQn_Type irq, uint8_t preemption_priority, uint8_t
 /**
  * @brief 使能中断
  */
-NVIC_Status_t NVIC_EnableIRQ(IRQn_Type irq)
+NVIC_Status_t NVIC_HW_EnableIRQ(IRQn_Type irq)
 {
     if (irq < 0)
     {
@@ -133,7 +133,7 @@ NVIC_Status_t NVIC_EnableIRQ(IRQn_Type irq)
 /**
  * @brief 禁用中断
  */
-NVIC_Status_t NVIC_DisableIRQ(IRQn_Type irq)
+NVIC_Status_t NVIC_HW_DisableIRQ(IRQn_Type irq)
 {
     if (irq < 0)
     {
@@ -148,7 +148,7 @@ NVIC_Status_t NVIC_DisableIRQ(IRQn_Type irq)
 /**
  * @brief 设置中断挂起标志
  */
-NVIC_Status_t NVIC_SetPendingIRQ(IRQn_Type irq)
+NVIC_Status_t NVIC_HW_SetPendingIRQ(IRQn_Type irq)
 {
     if (irq < 0)
     {
@@ -162,7 +162,7 @@ NVIC_Status_t NVIC_SetPendingIRQ(IRQn_Type irq)
 /**
  * @brief 清除中断挂起标志
  */
-NVIC_Status_t NVIC_ClearPendingIRQ(IRQn_Type irq)
+NVIC_Status_t NVIC_HW_ClearPendingIRQ(IRQn_Type irq)
 {
     if (irq < 0)
     {
@@ -176,7 +176,7 @@ NVIC_Status_t NVIC_ClearPendingIRQ(IRQn_Type irq)
 /**
  * @brief 获取中断挂起状态
  */
-uint8_t NVIC_GetPendingIRQ(IRQn_Type irq)
+uint8_t NVIC_HW_GetPendingIRQ(IRQn_Type irq)
 {
     if (irq < 0)
     {
@@ -215,7 +215,7 @@ NVIC_PriorityGroup_t NVIC_GetPriorityGroup(void)
 /**
  * @brief 设置中断优先级（简化接口）
  */
-NVIC_Status_t NVIC_SetPriority(IRQn_Type irq, uint8_t priority)
+NVIC_Status_t NVIC_HW_SetPriority(IRQn_Type irq, uint8_t priority)
 {
     uint8_t preemption_priority, sub_priority;
     
@@ -264,7 +264,7 @@ NVIC_Status_t NVIC_SetPriority(IRQn_Type irq, uint8_t priority)
 /**
  * @brief 获取中断优先级
  */
-uint8_t NVIC_GetPriority(IRQn_Type irq)
+uint8_t NVIC_HW_GetPriority(IRQn_Type irq)
 {
     uint32_t priority;
     uint8_t preemption_priority, sub_priority;

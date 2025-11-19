@@ -544,7 +544,7 @@ UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
     irqn = UART_GetIRQn(instance);
     if (irqn != 0)
     {
-        NVIC_EnableIRQ(irqn);
+        NVIC_HW_EnableIRQ(irqn);
     }
     
     return UART_OK;
@@ -966,7 +966,7 @@ UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, ui
     if (!DMA_IsInitialized(dma_channel))
     {
         /* 初始化DMA通道 */
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return UART_ERROR_INVALID_PARAM;
@@ -1030,7 +1030,7 @@ UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t 
     if (!DMA_IsInitialized(dma_channel))
     {
         /* 初始化DMA通道 */
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return UART_ERROR_INVALID_PARAM;

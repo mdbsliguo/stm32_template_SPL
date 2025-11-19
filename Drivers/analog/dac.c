@@ -413,7 +413,7 @@ DAC_Status_t DAC_StartDMA(DAC_Channel_t channel, const uint16_t *buffer, uint16_
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return DAC_ERROR_INVALID_PARAM;

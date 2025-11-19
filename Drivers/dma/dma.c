@@ -89,7 +89,7 @@ static uint32_t DMA_GetPeriphClock(DMA_Channel_t channel)
 /**
  * @brief DMA初始化
  */
-DMA_Status_t DMA_Init(DMA_Channel_t channel)
+DMA_Status_t DMA_HW_Init(DMA_Channel_t channel)
 {
     DMA_InitTypeDef DMA_InitStructure;
     uint32_t dma_clock;
@@ -141,7 +141,7 @@ DMA_Status_t DMA_Init(DMA_Channel_t channel)
     DMA_InitStructure.DMA_Priority = g_dma_configs[channel].priority;
     DMA_InitStructure.DMA_M2M = (g_dma_configs[channel].direction == DMA_DIR_MEMORY_TO_MEMORY) ? DMA_M2M_Enable : DMA_M2M_Disable;
     
-    DMA_Init(dma_channel, &DMA_InitStructure);
+    DMA_Init(dma_channel, &DMA_InitStructure);  /* 调用标准库函数 */
     
     /* 标记为已初始化 */
     g_dma_initialized[channel] = true;
@@ -283,7 +283,7 @@ DMA_Status_t DMA_ConfigTransfer(DMA_Channel_t channel, uint32_t peripheral_addr,
     DMA_InitStructure.DMA_Priority = g_dma_configs[channel].priority;
     DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
     
-    DMA_Init(dma_channel, &DMA_InitStructure);
+    DMA_Init(dma_channel, &DMA_InitStructure);  /* 调用标准库函数 */
     
     return DMA_OK;
 }
@@ -355,7 +355,7 @@ DMA_Status_t DMA_ConfigMemoryToMemory(DMA_Channel_t channel, uint32_t src_addr,
     DMA_InitStructure.DMA_Priority = g_dma_configs[channel].priority;
     DMA_InitStructure.DMA_M2M = DMA_M2M_Enable;
     
-    DMA_Init(dma_channel, &DMA_InitStructure);
+    DMA_Init(dma_channel, &DMA_InitStructure);  /* 调用标准库函数 */
     
     return DMA_OK;
 }
@@ -464,7 +464,7 @@ DMA_Status_t DMA_WaitComplete(DMA_Channel_t channel, uint32_t timeout)
     if (channel <= DMA_CHANNEL_1_7)
     {
         dma = DMA1;
-        flag = DMA_FLAG_TC1 << (channel * 4);
+        flag = DMA1_FLAG_TC1 << (channel * 4);
     }
 #if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
     else if (channel <= DMA_CHANNEL_2_5)
@@ -481,7 +481,7 @@ DMA_Status_t DMA_WaitComplete(DMA_Channel_t channel, uint32_t timeout)
     start_tick = Delay_GetTick();
     
     /* 等待传输完成 */
-    while (DMA_GetFlagStatus(dma, flag) == RESET)
+    while (DMA_GetFlagStatus(flag) == RESET)
     {
         /* 检查超时 */
         uint32_t elapsed = Delay_GetElapsed(Delay_GetTick(), start_tick);
@@ -534,7 +534,7 @@ uint8_t DMA_IsComplete(DMA_Channel_t channel)
     if (channel <= DMA_CHANNEL_1_7)
     {
         dma = DMA1;
-        flag = DMA_FLAG_TC1 << (channel * 4);
+        flag = DMA1_FLAG_TC1 << (channel * 4);
     }
 #if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
     else if (channel <= DMA_CHANNEL_2_5)
@@ -548,7 +548,7 @@ uint8_t DMA_IsComplete(DMA_Channel_t channel)
         return 0;
     }
     
-    if (DMA_GetFlagStatus(dma, flag) != RESET)
+    if (DMA_GetFlagStatus(flag) != RESET)
     {
         /* 清除标志位 */
         if (channel <= DMA_CHANNEL_1_7)
@@ -708,7 +708,7 @@ DMA_Status_t DMA_SetMode(DMA_Channel_t channel, uint8_t mode)
     }
     
     /* 重新配置DMA通道 */
-    DMA_Init(dma_channel, &DMA_InitStructure);
+    DMA_Init(dma_channel, &DMA_InitStructure);  /* 调用标准库函数 */
     
     /* 更新配置表中的模式 */
     g_dma_configs[channel].mode = DMA_InitStructure.DMA_Mode;
@@ -725,9 +725,9 @@ static uint32_t DMA_GetITValue(DMA_IT_t it_type)
 {
     switch (it_type)
     {
-        case DMA_IT_TC: return DMA_IT_TC;
-        case DMA_IT_HT: return DMA_IT_HT;
-        case DMA_IT_TE: return DMA_IT_TE;
+        case DMA_IT_TYPE_TC: return DMA_IT_TYPE_TC;
+        case DMA_IT_TYPE_HT: return DMA_IT_TYPE_HT;
+        case DMA_IT_TYPE_TE: return DMA_IT_TYPE_TE;
         default: return 0;
     }
 }
@@ -800,7 +800,7 @@ DMA_Status_t DMA_EnableIT(DMA_Channel_t channel, DMA_IT_t it_type)
     irqn = DMA_GetIRQn(channel);
     if (irqn != 0)
     {
-        NVIC_EnableIRQ(irqn);
+        NVIC_HW_EnableIRQ(irqn);
     }
     
     return DMA_OK;
@@ -898,18 +898,18 @@ void DMA_IRQHandler(DMA_Channel_t channel)
     if (channel <= DMA_CHANNEL_1_7)
     {
         dma = DMA1;
-        flag_tc = DMA_FLAG_TC1 << (channel * 4);
-        flag_ht = DMA_FLAG_HT1 << (channel * 4);
-        flag_te = DMA_FLAG_TE1 << (channel * 4);
+        flag_tc = DMA1_FLAG_TC1 << (channel * 4);
+        flag_ht = DMA1_FLAG_HT1 << (channel * 4);
+        flag_te = DMA1_FLAG_TE1 << (channel * 4);
     }
 #if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
     else if (channel <= DMA_CHANNEL_2_5)
     {
         dma = DMA2;
         uint8_t ch_idx = channel - DMA_CHANNEL_2_1;
-        flag_tc = DMA_FLAG_TC1 << (ch_idx * 4);
-        flag_ht = DMA_FLAG_HT1 << (ch_idx * 4);
-        flag_te = DMA_FLAG_TE1 << (ch_idx * 4);
+        flag_tc = DMA2_FLAG_TC1 << (ch_idx * 4);
+        flag_ht = DMA2_FLAG_HT1 << (ch_idx * 4);
+        flag_te = DMA2_FLAG_TE1 << (ch_idx * 4);
     }
 #endif
     else
@@ -918,14 +918,20 @@ void DMA_IRQHandler(DMA_Channel_t channel)
     }
     
     /* 处理传输完成中断（TC） */
-    if (DMA_GetITStatus(dma_channel, DMA_IT_TC) != RESET)
+    uint32_t it_tc = (channel <= DMA_CHANNEL_1_7) ? (DMA1_IT_TC1 << (channel * 4)) : 
+#if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
+                     (DMA2_IT_TC1 << ((channel - DMA_CHANNEL_2_1) * 4));
+#else
+                     0;
+#endif
+    if (DMA_GetITStatus(it_tc) != RESET)
     {
-        DMA_ClearITPendingBit(dma, flag_tc);
+        DMA_ClearITPendingBit(it_tc);
         
         /* 调用回调函数 */
-        if (g_dma_it_callbacks[channel][DMA_IT_TC] != NULL)
+        if (g_dma_it_callbacks[channel][DMA_IT_TYPE_TC] != NULL)
         {
-            g_dma_it_callbacks[channel][DMA_IT_TC](channel, DMA_IT_TC, g_dma_it_user_data[channel][DMA_IT_TC]);
+            g_dma_it_callbacks[channel][DMA_IT_TYPE_TC](channel, DMA_IT_TYPE_TC, g_dma_it_user_data[channel][DMA_IT_TYPE_TC]);
         }
         
         /* 同时调用传输完成回调（兼容旧接口） */
@@ -936,26 +942,38 @@ void DMA_IRQHandler(DMA_Channel_t channel)
     }
     
     /* 处理半传输中断（HT） */
-    if (DMA_GetITStatus(dma_channel, DMA_IT_HT) != RESET)
+    uint32_t it_ht = (channel <= DMA_CHANNEL_1_7) ? (DMA1_IT_HT1 << (channel * 4)) : 
+#if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
+                     (DMA2_IT_HT1 << ((channel - DMA_CHANNEL_2_1) * 4));
+#else
+                     0;
+#endif
+    if (DMA_GetITStatus(it_ht) != RESET)
     {
-        DMA_ClearITPendingBit(dma, flag_ht);
+        DMA_ClearITPendingBit(it_ht);
         
         /* 调用回调函数 */
-        if (g_dma_it_callbacks[channel][DMA_IT_HT] != NULL)
+        if (g_dma_it_callbacks[channel][DMA_IT_TYPE_HT] != NULL)
         {
-            g_dma_it_callbacks[channel][DMA_IT_HT](channel, DMA_IT_HT, g_dma_it_user_data[channel][DMA_IT_HT]);
+            g_dma_it_callbacks[channel][DMA_IT_TYPE_HT](channel, DMA_IT_TYPE_HT, g_dma_it_user_data[channel][DMA_IT_TYPE_HT]);
         }
     }
     
     /* 处理传输错误中断（TE） */
-    if (DMA_GetITStatus(dma_channel, DMA_IT_TE) != RESET)
+    uint32_t it_te = (channel <= DMA_CHANNEL_1_7) ? (DMA1_IT_TE1 << (channel * 4)) : 
+#if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
+                     (DMA2_IT_TE1 << ((channel - DMA_CHANNEL_2_1) * 4));
+#else
+                     0;
+#endif
+    if (DMA_GetITStatus(it_te) != RESET)
     {
-        DMA_ClearITPendingBit(dma, flag_te);
+        DMA_ClearITPendingBit(it_te);
         
         /* 调用回调函数 */
-        if (g_dma_it_callbacks[channel][DMA_IT_TE] != NULL)
+        if (g_dma_it_callbacks[channel][DMA_IT_TYPE_TE] != NULL)
         {
-            g_dma_it_callbacks[channel][DMA_IT_TE](channel, DMA_IT_TE, g_dma_it_user_data[channel][DMA_IT_TE]);
+            g_dma_it_callbacks[channel][DMA_IT_TYPE_TE](channel, DMA_IT_TYPE_TE, g_dma_it_user_data[channel][DMA_IT_TYPE_TE]);
         }
     }
 }

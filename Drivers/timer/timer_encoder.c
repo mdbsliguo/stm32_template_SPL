@@ -513,7 +513,7 @@ ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_t
     irqn = ENCODER_GetIRQn(instance);
     if (irqn != 0)
     {
-        NVIC_EnableIRQ(irqn);
+        NVIC_HW_EnableIRQ(irqn);
     }
     
     return ENCODER_OK;

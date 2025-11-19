@@ -58,35 +58,35 @@ NVIC_Status_t NVIC_ConfigIRQ(IRQn_Type irq, uint8_t preemption_priority, uint8_t
  * @param[in] irq 中断号
  * @return NVIC_Status_t 状态码
  */
-NVIC_Status_t NVIC_EnableIRQ(IRQn_Type irq);
+NVIC_Status_t NVIC_HW_EnableIRQ(IRQn_Type irq);
 
 /**
  * @brief 禁用中断
  * @param[in] irq 中断号
  * @return NVIC_Status_t 状态码
  */
-NVIC_Status_t NVIC_DisableIRQ(IRQn_Type irq);
+NVIC_Status_t NVIC_HW_DisableIRQ(IRQn_Type irq);
 
 /**
  * @brief 设置中断挂起标志
  * @param[in] irq 中断号
  * @return NVIC_Status_t 状态码
  */
-NVIC_Status_t NVIC_SetPendingIRQ(IRQn_Type irq);
+NVIC_Status_t NVIC_HW_SetPendingIRQ(IRQn_Type irq);
 
 /**
  * @brief 清除中断挂起标志
  * @param[in] irq 中断号
  * @return NVIC_Status_t 状态码
  */
-NVIC_Status_t NVIC_ClearPendingIRQ(IRQn_Type irq);
+NVIC_Status_t NVIC_HW_ClearPendingIRQ(IRQn_Type irq);
 
 /**
  * @brief 获取中断挂起状态
  * @param[in] irq 中断号
  * @return uint8_t 1=挂起，0=未挂起
  */
-uint8_t NVIC_GetPendingIRQ(IRQn_Type irq);
+uint8_t NVIC_HW_GetPendingIRQ(IRQn_Type irq);
 
 /**
  * @brief 获取中断活动状态
@@ -108,14 +108,14 @@ NVIC_PriorityGroup_t NVIC_GetPriorityGroup(void);
  * @return NVIC_Status_t 状态码
  * @note 此函数使用当前优先级分组，将priority分配到抢占优先级和子优先级
  */
-NVIC_Status_t NVIC_SetPriority(IRQn_Type irq, uint8_t priority);
+NVIC_Status_t NVIC_HW_SetPriority(IRQn_Type irq, uint8_t priority);
 
 /**
  * @brief 获取中断优先级
  * @param[in] irq 中断号
  * @return uint8_t 优先级值（0-15）
  */
-uint8_t NVIC_GetPriority(IRQn_Type irq);
+uint8_t NVIC_HW_GetPriority(IRQn_Type irq);
 
 #ifdef __cplusplus
 }

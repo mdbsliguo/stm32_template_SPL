@@ -43,6 +43,11 @@ static bool g_i2c_initialized[I2C_INSTANCE_MAX] = {false, false};
 static I2C_TransferMode_t g_i2c_transfer_mode[I2C_INSTANCE_MAX] = {I2C_MODE_POLLING, I2C_MODE_POLLING};
 static I2C_Callback_t g_i2c_callback[I2C_INSTANCE_MAX] = {NULL, NULL};
 
+/* 从模式相关变量 */
+static I2C_SlaveCallback_t g_i2c_slave_callback[I2C_INSTANCE_MAX] = {NULL};
+static void *g_i2c_slave_user_data[I2C_INSTANCE_MAX] = {NULL};
+static bool g_i2c_slave_mode[I2C_INSTANCE_MAX] = {false};
+
 /* 中断模式发送/接收缓冲区 */
 static const uint8_t *g_i2c_tx_buffer[I2C_INSTANCE_MAX] = {NULL};
 static uint8_t *g_i2c_rx_buffer[I2C_INSTANCE_MAX] = {NULL};
@@ -1274,9 +1279,7 @@ I2C_Status_t I2C_GetConfig(I2C_Instance_t instance, I2C_ConfigInfo_t *config_inf
 }
 
 /* 传输模式和回调函数（预留接口，用于中断/DMA模式） */
-/* 当前版本仅支持轮询模式，这些变量为预留接口，暂时未使用 */
-static I2C_TransferMode_t g_i2c_transfer_mode[I2C_INSTANCE_MAX] = {I2C_MODE_POLLING, I2C_MODE_POLLING};
-static I2C_Callback_t g_i2c_callback[I2C_INSTANCE_MAX] = {NULL, NULL};
+/* 注意：这些变量已在文件开头定义（第43-44行），这里不再重复定义 */
 
 /* 抑制未使用变量警告（预留接口） */
 #if defined(__GNUC__) || defined(__clang__)
@@ -1292,6 +1295,10 @@ __attribute__((unused))
  */
 I2C_Status_t I2C_SetTransferMode(I2C_Instance_t instance, I2C_TransferMode_t mode)
 {
+    I2C_TypeDef *i2c_periph;
+    IRQn_Type ev_irqn, er_irqn;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -1307,14 +1314,58 @@ I2C_Status_t I2C_SetTransferMode(I2C_Instance_t instance, I2C_TransferMode_t mod
         return I2C_ERROR_INVALID_PARAM;
     }
     
-    /* 当前版本仅支持轮询模式 */
-    if (mode != I2C_MODE_POLLING)
+    i2c_periph = g_i2c_configs[instance].i2c_periph;
+    
+    /* 获取中断向量（函数定义在后面，需要前向声明或移动定义） */
+    /* 临时内联实现，避免前向声明问题 */
+    if (instance == I2C_INSTANCE_1)
     {
-        return I2C_ERROR_INVALID_PARAM;  /* 中断和DMA模式为预留接口 */
+        ev_irqn = I2C1_EV_IRQn;
+        er_irqn = I2C1_ER_IRQn;
+    }
+    else if (instance == I2C_INSTANCE_2)
+    {
+        ev_irqn = I2C2_EV_IRQn;
+        er_irqn = I2C2_ER_IRQn;
+    }
+    else
+    {
+        return I2C_ERROR_INVALID_PARAM;
     }
     
+    /* 如果之前是中断模式，先禁用中断 */
+    if (g_i2c_transfer_mode[instance] == I2C_MODE_INTERRUPT)
+    {
+        I2C_ITConfig(i2c_periph, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+        NVIC_InitStructure.NVIC_IRQChannel = ev_irqn;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+        NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+        NVIC_Init(&NVIC_InitStructure);
+        
+        NVIC_InitStructure.NVIC_IRQChannel = er_irqn;
+        NVIC_Init(&NVIC_InitStructure);
+    }
+    
+    /* 设置传输模式 */
     g_i2c_transfer_mode[instance] = mode;
-    (void)g_i2c_transfer_mode;  /* 抑制未使用变量警告（预留接口） */
+    
+    /* 如果是中断模式，使能中断 */
+    if (mode == I2C_MODE_INTERRUPT)
+    {
+        /* 使能I2C中断 */
+        I2C_ITConfig(i2c_periph, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE);
+        
+        /* 配置NVIC中断优先级 */
+        NVIC_InitStructure.NVIC_IRQChannel = ev_irqn;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+        NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+        NVIC_Init(&NVIC_InitStructure);
+        
+        NVIC_InitStructure.NVIC_IRQChannel = er_irqn;
+        NVIC_Init(&NVIC_InitStructure);
+    }
     
     return I2C_OK;
 }
@@ -1371,7 +1422,7 @@ I2C_Status_t I2C_MasterTransmitDMA(I2C_Instance_t instance, uint8_t slave_addr,
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return I2C_ERROR_INVALID_PARAM;
@@ -1390,8 +1441,8 @@ I2C_Status_t I2C_MasterTransmitDMA(I2C_Instance_t instance, uint8_t slave_addr,
         return I2C_ERROR_INVALID_PARAM;
     }
     
-    /* 使能I2C DMA发送请求 */
-    I2C_DMACmd(i2c_periph, I2C_DMAReq_Tx, ENABLE);
+    /* 使能I2C DMA请求 */
+    I2C_DMACmd(i2c_periph, ENABLE);
     
     /* 生成START条件并发送地址 */
     I2C_GenerateSTART(i2c_periph, ENABLE);
@@ -1402,7 +1453,7 @@ I2C_Status_t I2C_MasterTransmitDMA(I2C_Instance_t instance, uint8_t slave_addr,
     {
         if (Delay_GetElapsed(Delay_GetTick(), timeout) > I2C_DEFAULT_TIMEOUT_MS)
         {
-            I2C_DMACmd(i2c_periph, I2C_DMAReq_Tx, DISABLE);
+            I2C_DMACmd(i2c_periph, DISABLE);
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -1416,7 +1467,7 @@ I2C_Status_t I2C_MasterTransmitDMA(I2C_Instance_t instance, uint8_t slave_addr,
     {
         if (Delay_GetElapsed(Delay_GetTick(), timeout) > I2C_DEFAULT_TIMEOUT_MS)
         {
-            I2C_DMACmd(i2c_periph, I2C_DMAReq_Tx, DISABLE);
+            I2C_DMACmd(i2c_periph, DISABLE);
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -1425,7 +1476,7 @@ I2C_Status_t I2C_MasterTransmitDMA(I2C_Instance_t instance, uint8_t slave_addr,
     dma_status = DMA_Start(dma_channel);
     if (dma_status != DMA_OK)
     {
-        I2C_DMACmd(i2c_periph, I2C_DMAReq_Tx, DISABLE);
+        I2C_DMACmd(i2c_periph, DISABLE);
         return I2C_ERROR_INVALID_PARAM;
     }
     
@@ -1463,7 +1514,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return I2C_ERROR_INVALID_PARAM;
@@ -1483,7 +1534,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     }
     
     /* 使能I2C DMA接收请求 */
-    I2C_DMACmd(i2c_periph, I2C_DMAReq_Rx, ENABLE);
+    I2C_DMACmd(i2c_periph, ENABLE);
     
     /* 生成START条件并发送地址 */
     I2C_GenerateSTART(i2c_periph, ENABLE);
@@ -1494,7 +1545,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     {
         if (Delay_GetElapsed(Delay_GetTick(), timeout) > I2C_DEFAULT_TIMEOUT_MS)
         {
-            I2C_DMACmd(i2c_periph, I2C_DMAReq_Rx, DISABLE);
+            I2C_DMACmd(i2c_periph, DISABLE);
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -1512,7 +1563,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     {
         if (Delay_GetElapsed(Delay_GetTick(), timeout) > I2C_DEFAULT_TIMEOUT_MS)
         {
-            I2C_DMACmd(i2c_periph, I2C_DMAReq_Rx, DISABLE);
+            I2C_DMACmd(i2c_periph, DISABLE);
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -1531,7 +1582,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     dma_status = DMA_Start(dma_channel);
     if (dma_status != DMA_OK)
     {
-        I2C_DMACmd(i2c_periph, I2C_DMAReq_Rx, DISABLE);
+        I2C_DMACmd(i2c_periph, DISABLE);
         return I2C_ERROR_INVALID_PARAM;
     }
     
@@ -1902,272 +1953,11 @@ void I2C2_ER_IRQHandler(void)
 }
 
 /* ========== 10位地址功能实现 ========== */
-
-/**
- * @brief I2C主模式发送数据（10位地址）
- */
-I2C_Status_t I2C_MasterTransmit10bit(I2C_Instance_t instance, uint16_t slave_addr, 
-                                      const uint8_t *data, uint16_t length, uint32_t timeout)
-{
-    I2C_TypeDef *i2c_periph;
-    I2C_Status_t status;
-    uint16_t i;
-    uint32_t actual_timeout;
-    uint8_t addr_high, addr_low;
-    
-    /* 参数校验 */
-    if (instance >= I2C_INSTANCE_MAX)
-    {
-        return I2C_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_i2c_initialized[instance])
-    {
-        return I2C_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return I2C_ERROR_INVALID_PARAM;
-    }
-    
-    if (slave_addr > 0x3FF)
-    {
-        return I2C_ERROR_INVALID_PARAM;  /* 10位地址范围：0x000-0x3FF */
-    }
-    
-    i2c_periph = g_i2c_configs[instance].i2c_periph;
-    actual_timeout = (timeout == 0) ? I2C_DEFAULT_TIMEOUT_MS : timeout;
-    
-    /* 提取10位地址的高8位和低2位 */
-    /* 10位地址格式：11110XX + XXXXXXXXXX（高2位+低8位） */
-    addr_high = 0xF0 | ((slave_addr >> 7) & 0x06);  /* 11110XX */
-    addr_low = slave_addr & 0x00FF;  /* 低8位 */
-    
-    /* 等待总线空闲 */
-    status = I2C_WaitBusIdle(i2c_periph, actual_timeout);
-    if (status != I2C_OK)
-    {
-        return status;
-    }
-    
-    /* 生成START信号 */
-    I2C_GenerateSTART(i2c_periph, ENABLE);
-    
-    /* 等待START信号发送完成 */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_MODE_SELECT, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送10位地址的高字节（写模式） */
-    I2C_SendData(i2c_periph, addr_high);
-    
-    /* 等待ADD10事件（10位地址模式已选择） */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_MODE_ADDRESS10, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送10位地址的低字节 */
-    I2C_SendData(i2c_periph, addr_low);
-    
-    /* 等待地址发送完成并收到ACK（EV6） */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送数据 */
-    for (i = 0; i < length; i++)
-    {
-        if (i > 0)
-        {
-            /* 等待数据寄存器为空（TXE标志） */
-            status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_BYTE_TRANSMITTING, actual_timeout);
-            if (status != I2C_OK)
-            {
-                I2C_GenerateSTOP(i2c_periph, ENABLE);
-                return status;
-            }
-        }
-        
-        /* 发送数据 */
-        I2C_SendData(i2c_periph, data[i]);
-    }
-    
-    /* 等待最后一个字节发送完成（BTF标志） */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_BYTE_TRANSMITTED, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 生成STOP信号 */
-    I2C_GenerateSTOP(i2c_periph, ENABLE);
-    
-    return I2C_OK;
-}
-
-/**
- * @brief I2C主模式接收数据（10位地址）
- */
-I2C_Status_t I2C_MasterReceive10bit(I2C_Instance_t instance, uint16_t slave_addr, 
-                                     uint8_t *data, uint16_t length, uint32_t timeout)
-{
-    I2C_TypeDef *i2c_periph;
-    I2C_Status_t status;
-    uint16_t i;
-    uint32_t actual_timeout;
-    uint8_t addr_high, addr_low;
-    
-    /* 参数校验 */
-    if (instance >= I2C_INSTANCE_MAX)
-    {
-        return I2C_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_i2c_initialized[instance])
-    {
-        return I2C_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return I2C_ERROR_INVALID_PARAM;
-    }
-    
-    if (slave_addr > 0x3FF)
-    {
-        return I2C_ERROR_INVALID_PARAM;  /* 10位地址范围：0x000-0x3FF */
-    }
-    
-    i2c_periph = g_i2c_configs[instance].i2c_periph;
-    actual_timeout = (timeout == 0) ? I2C_DEFAULT_TIMEOUT_MS : timeout;
-    
-    /* 提取10位地址的高8位和低2位 */
-    addr_high = 0xF0 | ((slave_addr >> 7) & 0x06);  /* 11110XX */
-    addr_low = slave_addr & 0x00FF;  /* 低8位 */
-    
-    /* 等待总线空闲 */
-    status = I2C_WaitBusIdle(i2c_periph, actual_timeout);
-    if (status != I2C_OK)
-    {
-        return status;
-    }
-    
-    /* 生成START信号 */
-    I2C_GenerateSTART(i2c_periph, ENABLE);
-    
-    /* 等待START信号发送完成 */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_MODE_SELECT, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送10位地址的高字节（写模式，用于地址匹配） */
-    I2C_SendData(i2c_periph, addr_high);
-    
-    /* 等待ADD10事件 */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_MODE_ADDRESS10, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送10位地址的低字节 */
-    I2C_SendData(i2c_periph, addr_low);
-    
-    /* 等待地址发送完成（EV6） */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 生成重复START信号（切换到接收模式） */
-    I2C_GenerateSTART(i2c_periph, ENABLE);
-    
-    /* 等待重复START信号发送完成 */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_MODE_SELECT, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 发送10位地址的高字节（读模式） */
-    I2C_Send7bitAddress(i2c_periph, addr_high | 0x01, I2C_Direction_Receiver);
-    
-    /* 等待地址发送完成并收到ACK（EV6） */
-    status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, actual_timeout);
-    if (status != I2C_OK)
-    {
-        I2C_GenerateSTOP(i2c_periph, ENABLE);
-        return status;
-    }
-    
-    /* 接收数据 */
-    for (i = 0; i < length; i++)
-    {
-        if (i < length - 1)
-        {
-            /* 等待数据接收完成（RXNE标志） */
-            status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_BYTE_RECEIVED, actual_timeout);
-            if (status != I2C_OK)
-            {
-                I2C_GenerateSTOP(i2c_periph, ENABLE);
-                return status;
-            }
-            
-            /* 使能ACK（继续接收） */
-            I2C_AcknowledgeConfig(i2c_periph, ENABLE);
-        }
-        else
-        {
-            /* 最后一个字节：禁用ACK */
-            I2C_AcknowledgeConfig(i2c_periph, DISABLE);
-            
-            /* 等待数据接收完成 */
-            status = I2C_WaitFlag(i2c_periph, I2C_EVENT_MASTER_BYTE_RECEIVED, actual_timeout);
-            if (status != I2C_OK)
-            {
-                I2C_GenerateSTOP(i2c_periph, ENABLE);
-                I2C_AcknowledgeConfig(i2c_periph, ENABLE);  /* 恢复ACK */
-                return status;
-            }
-        }
-        
-        /* 读取数据 */
-        data[i] = I2C_ReceiveData(i2c_periph);
-    }
-    
-    /* 生成STOP信号 */
-    I2C_GenerateSTOP(i2c_periph, ENABLE);
-    
-    /* 恢复ACK */
-    I2C_AcknowledgeConfig(i2c_periph, ENABLE);
-    
-    return I2C_OK;
-}
+/* 注意：10位地址功能已在前面实现（第1010行和第1124行），这里不再重复定义 */
 
 /* ========== 从模式功能实现 ========== */
 
-/* 从模式回调函数 */
-static I2C_SlaveCallback_t g_i2c_slave_callback[I2C_INSTANCE_MAX] = {NULL};
-static void *g_i2c_slave_user_data[I2C_INSTANCE_MAX] = {NULL};
-static bool g_i2c_slave_mode[I2C_INSTANCE_MAX] = {false};
+/* 从模式回调函数（已在文件开头定义，第47-49行） */
 
 /**
  * @brief I2C从模式初始化
@@ -2427,7 +2217,7 @@ I2C_Status_t I2C_ConfigPECPosition(I2C_Instance_t instance, I2C_PECPosition_t po
 /**
  * @brief 获取I2C PEC值
  */
-uint8_t I2C_GetPEC(I2C_Instance_t instance)
+uint8_t I2C_HW_GetPEC(I2C_Instance_t instance)
 {
     I2C_TypeDef *i2c_periph;
     
@@ -2443,7 +2233,7 @@ uint8_t I2C_GetPEC(I2C_Instance_t instance)
     
     i2c_periph = g_i2c_configs[instance].i2c_periph;
     
-    /* 读取PEC值 */
+    /* 读取PEC值（调用标准库函数） */
     return I2C_GetPEC(i2c_periph);
 }
 

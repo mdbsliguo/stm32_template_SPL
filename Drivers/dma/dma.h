@@ -63,10 +63,11 @@ typedef enum {
 /**
  * @brief DMA中断类型枚举
  */
-typedef enum {
-    DMA_IT_TC = 0,   /**< 传输完成中断 */
-    DMA_IT_HT = 1,   /**< 半传输中断 */
-    DMA_IT_TE = 2,   /**< 传输错误中断 */
+typedef enum
+{
+    DMA_IT_TYPE_TC = 0,
+    DMA_IT_TYPE_HT = 1,
+    DMA_IT_TYPE_TE = 2
 } DMA_IT_t;
 
 /**
@@ -93,7 +94,7 @@ typedef void (*DMA_IT_Callback_t)(DMA_Channel_t channel, DMA_IT_t it_type, void 
  * @return DMA_Status_t 错误码
  * @note 根据board.h中的配置初始化DMA通道
  */
-DMA_Status_t DMA_Init(DMA_Channel_t channel);
+DMA_Status_t DMA_HW_Init(DMA_Channel_t channel);
 
 /**
  * @brief DMA反初始化

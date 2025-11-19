@@ -596,20 +596,20 @@ CAN_Status_t CAN_EnableIT(CAN_Instance_t instance, CAN_IT_t it_type)
     
     if (it_type == CAN_IT_TX)
     {
-        NVIC_EnableIRQ(tx_irqn);
+        NVIC_HW_EnableIRQ(tx_irqn);
     }
     else if (it_type == CAN_IT_RX0 || it_type == CAN_IT_FF0 || it_type == CAN_IT_FOV0)
     {
-        NVIC_EnableIRQ(rx0_irqn);
+        NVIC_HW_EnableIRQ(rx0_irqn);
     }
     else if (it_type == CAN_IT_RX1 || it_type == CAN_IT_FF1 || it_type == CAN_IT_FOV1)
     {
-        NVIC_EnableIRQ(rx1_irqn);
+        NVIC_HW_EnableIRQ(rx1_irqn);
     }
     else if (it_type == CAN_IT_ERROR || it_type == CAN_IT_EWG || it_type == CAN_IT_EPV || 
              it_type == CAN_IT_BOF || it_type == CAN_IT_LEC)
     {
-        NVIC_EnableIRQ(sce_irqn);
+        NVIC_HW_EnableIRQ(sce_irqn);
     }
     
     return CAN_OK;

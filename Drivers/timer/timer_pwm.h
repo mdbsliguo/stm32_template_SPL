@@ -88,6 +88,14 @@ PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency);
 PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, float duty_cycle);
 
 /**
+ * @brief 获取PWM频率
+ * @param[in] instance PWM实例索引
+ * @param[out] frequency 频率指针（Hz）
+ * @return PWM_Status_t 错误码
+ */
+PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency);
+
+/**
  * @brief 使能PWM通道
  * @param[in] instance PWM实例索引
  * @param[in] channel PWM通道

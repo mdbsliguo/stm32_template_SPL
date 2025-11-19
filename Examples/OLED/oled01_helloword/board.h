@@ -1,7 +1,7 @@
 /**
  * @file board.h
- * @brief 硬件配置头文件（案例3独立工程专用）
- * @details 此文件包含案例3所需的硬件配置
+ * @brief 硬件配置头文件（DS323101示例独立工程专用）
+ * @details 此文件包含DS323101示例所需的硬件配置
  * 
  * 注意：这是独立工程的board.h，包含案例所需的硬件配置
  */
@@ -23,10 +23,9 @@ typedef struct
     uint8_t enabled;      /**< 使能标志：1=启用，0=禁用 */
 } LED_Config_t;
 
-/* LED统一配置表 - 案例3配置（案例3不使用LED，但需要定义以避免编译错误） */
+/* LED统一配置表 - DS323101配置（只需要LED1作为状态指示） */
 #define LED_CONFIGS {                                                    \
-    {GPIOA, GPIO_Pin_1, Bit_RESET, 0}, /* LED1：PA1，低电平点亮，禁用 */ \
-    {GPIOA, GPIO_Pin_2, Bit_RESET, 0}, /* LED2：PA2，低电平点亮，禁用 */ \
+    {GPIOA, GPIO_Pin_1, Bit_RESET, 1}, /* LED1：PA1，低电平点亮，启用（系统状态指示） */ \
 }
 
 /* ==================== OLED配置 ==================== */
@@ -46,7 +45,7 @@ typedef struct
     uint16_t sda_pin;       /**< SDA引脚号 */
 } OLED_I2C_Config_t;
 
-/* OLED I2C配置 - 案例3配置 */
+/* OLED I2C配置 - DS323101配置 */
 #define OLED_I2C_CONFIG {      \
     GPIOB,                     \
     GPIO_Pin_8, /* SCL: PB8 */ \
@@ -81,15 +80,16 @@ typedef struct
     uint8_t enabled;                /**< 使能标志：1=启用，0=禁用 */
 } SoftI2C_Config_t;
 
-/* 软件I2C统一配置表 - 案例3配置 */
-/* 注意：数组索引对应SoftI2C_Instance枚举值，SoftI2C_INSTANCE_1=0 */
+/* 软件I2C统一配置表 - DS323101配置 */
+/* 注意：数组索引对应SoftI2C_Instance枚举值，SoftI2C_INSTANCE_1=0, SOFT_I2C_INSTANCE_2=1 */
 #define SOFT_I2C_CONFIGS {                                                                    \
     {GPIOB, GPIO_Pin_8, GPIOB, GPIO_Pin_9, 5, 1}, /* SoftI2C1：PB8(SCL), PB9(SDA)，5us延时，启用（OLED使用） */ \
+    {GPIOB, GPIO_Pin_10, GPIOB, GPIO_Pin_11, 5, 1}, /* SoftI2C2：PB10(SCL), PB11(SDA)，5us延时，启用（DS3231使用） */ \
 }
 
 /* ==================== 时钟管理配置 ==================== */
 
-/* 时钟管理配置 - 默认配置（案例3不使用，但需要定义以避免编译错误） */
+/* 时钟管理配置 - 默认配置（DS323101不使用，但需要定义以避免编译错误） */
 #define CLKM_LOAD_CHECK_INTERVAL 50    /* 负载检测周期：50ms */
 #define CLKM_LOAD_THRESHOLD_HIGH 50    /* 高负载阈值：50% */
 #define CLKM_LOAD_THRESHOLD_LOW 30     /* 低负载阈值：30% */
@@ -97,7 +97,7 @@ typedef struct
 #define CLKM_AUTO_POLICY_JUMP 3        /* 升档跳跃：3档 */
 #define CLKM_SWITCH_INTERVAL_UP 1000   /* 升频间隔：1秒 */
 #define CLKM_SWITCH_INTERVAL_DOWN 5000 /* 降频间隔：5秒 */
-#define CLKM_ADAPTIVE_ENABLE 1         /* 启用自动调频 */
-#define CLKM_IDLE_HOOK_ENABLE 1        /* 启用空闲钩子 */
+#define CLKM_ADAPTIVE_ENABLE 0         /* 禁用自动调频（DS323101不使用） */
+#define CLKM_IDLE_HOOK_ENABLE 0        /* 禁用空闲钩子（DS323101不使用） */
 
 #endif /* BOARD_H */

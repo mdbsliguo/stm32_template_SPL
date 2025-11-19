@@ -1346,7 +1346,7 @@ SPI_Status_t SPI_EnableIT(SPI_Instance_t instance, SPI_IT_t it_type)
     irqn = SPI_GetIRQn(instance);
     if (irqn != 0)
     {
-        NVIC_EnableIRQ(irqn);
+        NVIC_HW_EnableIRQ(irqn);
     }
     
     return SPI_OK;
@@ -1772,7 +1772,7 @@ SPI_Status_t SPI_MasterTransmitDMA(SPI_Instance_t instance, const uint8_t *data,
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return SPI_ERROR_INVALID_PARAM;
@@ -1840,7 +1840,7 @@ SPI_Status_t SPI_MasterReceiveDMA(SPI_Instance_t instance, uint8_t *data, uint16
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(dma_channel))
     {
-        dma_status = DMA_Init(dma_channel);
+        dma_status = DMA_HW_Init(dma_channel);
         if (dma_status != DMA_OK)
         {
             return SPI_ERROR_INVALID_PARAM;
@@ -1911,7 +1911,7 @@ SPI_Status_t SPI_MasterTransmitReceiveDMA(SPI_Instance_t instance, const uint8_t
     /* 检查DMA通道是否已初始化 */
     if (!DMA_IsInitialized(tx_dma_channel))
     {
-        dma_status = DMA_Init(tx_dma_channel);
+        dma_status = DMA_HW_Init(tx_dma_channel);
         if (dma_status != DMA_OK)
         {
             return SPI_ERROR_INVALID_PARAM;
@@ -1920,7 +1920,7 @@ SPI_Status_t SPI_MasterTransmitReceiveDMA(SPI_Instance_t instance, const uint8_t
     
     if (!DMA_IsInitialized(rx_dma_channel))
     {
-        dma_status = DMA_Init(rx_dma_channel);
+        dma_status = DMA_HW_Init(rx_dma_channel);
         if (dma_status != DMA_OK)
         {
             return SPI_ERROR_INVALID_PARAM;

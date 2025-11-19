@@ -758,7 +758,7 @@ IC_Status_t IC_EnableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it
     irqn = IC_GetIRQn(instance);
     if (irqn != 0)
     {
-        NVIC_EnableIRQ(irqn);
+        NVIC_HW_EnableIRQ(irqn);
     }
     
     return IC_OK;

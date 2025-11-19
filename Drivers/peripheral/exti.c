@@ -17,6 +17,12 @@
 
 #if CONFIG_MODULE_EXTI_ENABLED
 
+/* 保存标准库函数指针，避免函数名冲突 */
+#define STM32_EXTI_Init EXTI_Init
+#define STM32_EXTI_GenerateSWInterrupt EXTI_GenerateSWInterrupt
+#undef EXTI_Init
+#undef EXTI_GenerateSWInterrupt
+
 /* EXTI线到GPIO引脚的映射（用于GPIO配置） */
 static const uint16_t exti_line_to_pin[] = {
     GPIO_Pin_0, GPIO_Pin_1, GPIO_Pin_2, GPIO_Pin_3,
@@ -123,7 +129,7 @@ static EXTI_Status_t EXTI_ConfigGPIO(EXTI_Line_t line, GPIO_TypeDef *port)
 /**
  * @brief EXTI初始化
  */
-EXTI_Status_t EXTI_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mode)
+EXTI_Status_t EXTI_HW_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mode)
 {
     EXTI_InitTypeDef EXTI_InitStructure;
     uint32_t line_value;
@@ -131,13 +137,13 @@ EXTI_Status_t EXTI_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mo
     /* 参数校验 */
     if (line >= EXTI_LINE_MAX)
     {
-        ERROR_HANDLER_Report(ERROR_BASE_EXTI, __FILE__, __LINE__, "Invalid EXTI line");
+        ErrorHandler_Handle(EXTI_ERROR_INVALID_LINE, "EXTI");
         return EXTI_ERROR_INVALID_LINE;
     }
     
     if (g_exti_initialized[line])
     {
-        ERROR_HANDLER_Report(ERROR_BASE_EXTI, __FILE__, __LINE__, "EXTI already initialized");
+        ErrorHandler_Handle(EXTI_ERROR_ALREADY_INITIALIZED, "EXTI");
         return EXTI_ERROR_ALREADY_INITIALIZED;
     }
     
@@ -146,6 +152,21 @@ EXTI_Status_t EXTI_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mo
     if (line_value == 0)
     {
         return EXTI_ERROR_INVALID_LINE;
+    }
+    
+    /* 配置GPIO为EXTI模式（从board.h读取配置） */
+    if (line < EXTI_LINE_16)
+    {
+        /* 从board.h读取EXTI配置 */
+        static EXTI_Config_t g_exti_configs[EXTI_LINE_MAX] = EXTI_CONFIGS;
+        if (g_exti_configs[line].enabled && g_exti_configs[line].port != NULL)
+        {
+            EXTI_Status_t gpio_status = EXTI_ConfigGPIO(line, g_exti_configs[line].port);
+            if (gpio_status != EXTI_OK)
+            {
+                return gpio_status;
+            }
+        }
     }
     
     /* 配置EXTI */
@@ -168,7 +189,7 @@ EXTI_Status_t EXTI_Init(EXTI_Line_t line, EXTI_Trigger_t trigger, EXTI_Mode_t mo
     }
     
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
+    STM32_EXTI_Init(&EXTI_InitStructure);
     
     /* 标记为已初始化 */
     g_exti_initialized[line] = true;
@@ -207,7 +228,7 @@ EXTI_Status_t EXTI_Deinit(EXTI_Line_t line)
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-    EXTI_Init(&EXTI_InitStructure);
+    STM32_EXTI_Init(&EXTI_InitStructure);
     
     /* 清除回调函数 */
     g_exti_callbacks[line] = NULL;
@@ -269,7 +290,7 @@ EXTI_Status_t EXTI_Enable(EXTI_Line_t line)
     /* 使能EXTI线 */
     EXTI_InitStructure.EXTI_Line = line_value;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
+    STM32_EXTI_Init(&EXTI_InitStructure);
     
     /* 配置NVIC中断优先级（使用默认优先级） */
     if (line <= EXTI_LINE_4)
@@ -286,8 +307,8 @@ EXTI_Status_t EXTI_Enable(EXTI_Line_t line)
             default: return EXTI_ERROR_INVALID_LINE;
         }
         NVIC_InitStructure.NVIC_IRQChannel = irq;
-        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
-        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;  /* 提高EXTI中断优先级，确保能及时响应 */
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
     }
@@ -342,7 +363,7 @@ EXTI_Status_t EXTI_Disable(EXTI_Line_t line)
     /* 禁用EXTI线 */
     EXTI_InitStructure.EXTI_Line = line_value;
     EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-    EXTI_Init(&EXTI_InitStructure);
+    STM32_EXTI_Init(&EXTI_InitStructure);
     
     return EXTI_OK;
 }
@@ -394,7 +415,7 @@ uint8_t EXTI_GetPendingStatus(EXTI_Line_t line)
 /**
  * @brief 生成软件中断
  */
-EXTI_Status_t EXTI_GenerateSWInterrupt(EXTI_Line_t line)
+EXTI_Status_t EXTI_HW_GenerateSWInterrupt(EXTI_Line_t line)
 {
     uint32_t line_value;
     
@@ -414,7 +435,7 @@ EXTI_Status_t EXTI_GenerateSWInterrupt(EXTI_Line_t line)
         return EXTI_ERROR_INVALID_LINE;
     }
     
-    EXTI_GenerateSWInterrupt(line_value);
+    STM32_EXTI_GenerateSWInterrupt(line_value);
     
     return EXTI_OK;
 }

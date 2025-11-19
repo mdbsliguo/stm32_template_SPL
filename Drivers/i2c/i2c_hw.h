@@ -414,7 +414,7 @@ I2C_Status_t I2C_ConfigPECPosition(I2C_Instance_t instance, I2C_PECPosition_t po
  * @param[in] instance I2C实例索引
  * @return uint8_t PEC值
  */
-uint8_t I2C_GetPEC(I2C_Instance_t instance);
+uint8_t I2C_HW_GetPEC(I2C_Instance_t instance);
 
 /**
  * @brief 配置I2C SMBus Alert引脚

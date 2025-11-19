@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>Example12</OutputName>
+          <OutputName>Example14</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -460,16 +460,6 @@
               <FileType>5</FileType>
               <FilePath>..\..\..\common\error_code.h</FilePath>
             </File>
-            <File>
-              <FileName>error_handler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\common\error_handler.c</FilePath>
-            </File>
-            <File>
-              <FileName>error_handler.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\common\error_handler.h</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -819,16 +809,6 @@
               <FileName>debug.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Debug\debug.h</FilePath>
-            </File>
-            <File>
-              <FileName>log.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Debug\log.c</FilePath>
-            </File>
-            <File>
-              <FileName>log.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Debug\log.h</FilePath>
             </File>
           </Files>
         </Group>
