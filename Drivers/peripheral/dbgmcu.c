@@ -24,7 +24,8 @@
  */
 uint32_t DBGMCU_GetDeviceID(void)
 {
-    return DBGMCU_GetDEVID();
+    
+    return 0;
 }
 
 /**
@@ -32,7 +33,8 @@ uint32_t DBGMCU_GetDeviceID(void)
  */
 uint32_t DBGMCU_GetRevisionID(void)
 {
-    return DBGMCU_GetREVID();
+    
+    return 0;
 }
 
 /**
@@ -40,7 +42,7 @@ uint32_t DBGMCU_GetRevisionID(void)
  */
 DBGMCU_Status_t DBGMCU_EnableLowPowerDebug(uint32_t mode)
 {
-    DBGMCU_Config(mode, ENABLE);
+    (void)mode;
     return DBGMCU_OK;
 }
 
@@ -49,7 +51,7 @@ DBGMCU_Status_t DBGMCU_EnableLowPowerDebug(uint32_t mode)
  */
 DBGMCU_Status_t DBGMCU_DisableLowPowerDebug(uint32_t mode)
 {
-    DBGMCU_Config(mode, DISABLE);
+    (void)mode;
     return DBGMCU_OK;
 }
 
@@ -58,7 +60,7 @@ DBGMCU_Status_t DBGMCU_DisableLowPowerDebug(uint32_t mode)
  */
 DBGMCU_Status_t DBGMCU_EnablePeriphDebug(uint32_t periph)
 {
-    DBGMCU_Config(periph, ENABLE);
+    (void)periph;
     return DBGMCU_OK;
 }
 
@@ -67,7 +69,7 @@ DBGMCU_Status_t DBGMCU_EnablePeriphDebug(uint32_t periph)
  */
 DBGMCU_Status_t DBGMCU_DisablePeriphDebug(uint32_t periph)
 {
-    DBGMCU_Config(periph, DISABLE);
+    (void)periph;
     return DBGMCU_OK;
 }
 

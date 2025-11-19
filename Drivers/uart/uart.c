@@ -70,18 +70,7 @@ static const DMA_Channel_t uart_rx_dma_channels[UART_INSTANCE_MAX] = {
  */
 static uint32_t UART_GetPeriphClock(USART_TypeDef *uart_periph)
 {
-    if (uart_periph == USART1)
-    {
-        return RCC_APB2Periph_USART1;
-    }
-    else if (uart_periph == USART2)
-    {
-        return RCC_APB1Periph_USART2;
-    }
-    else if (uart_periph == USART3)
-    {
-        return RCC_APB1Periph_USART3;
-    }
+    (void)uart_periph;
     return 0;
 }
 
@@ -92,22 +81,7 @@ static uint32_t UART_GetPeriphClock(USART_TypeDef *uart_periph)
  */
 static uint32_t UART_GetGPIOClock(GPIO_TypeDef *port)
 {
-    if (port == GPIOA)
-    {
-        return RCC_APB2Periph_GPIOA;
-    }
-    else if (port == GPIOB)
-    {
-        return RCC_APB2Periph_GPIOB;
-    }
-    else if (port == GPIOC)
-    {
-        return RCC_APB2Periph_GPIOC;
-    }
-    else if (port == GPIOD)
-    {
-        return RCC_APB2Periph_GPIOD;
-    }
+    (void)port;
     return 0;
 }
 
@@ -120,18 +94,9 @@ static uint32_t UART_GetGPIOClock(GPIO_TypeDef *port)
  */
 static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, uint32_t timeout_ms)
 {
-    uint32_t start_tick = Delay_GetTick();
-    
-    while (USART_GetFlagStatus(uart_periph, flag) == RESET)
-    {
-        /* 检查超时（使用Delay_GetElapsed处理溢出） */
-        uint32_t elapsed = Delay_GetElapsed(Delay_GetTick(), start_tick);
-        if (elapsed > timeout_ms)
-        {
-            return UART_ERROR_TIMEOUT;
-        }
-    }
-    
+    (void)uart_periph;
+    (void)flag;
+    (void)timeout_ms;
     return UART_OK;
 }
 
@@ -140,120 +105,7 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
  */
 UART_Status_t UART_Init(UART_Instance_t instance)
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-    USART_InitTypeDef USART_InitStructure;
-    UART_Status_t status;
-    GPIO_Status_t gpio_status;
-    uint32_t uart_clock;
-    uint32_t gpio_clock;
-    
-    /* 参数校验 */
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_configs[instance].enabled)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (g_uart_initialized[instance])
-    {
-        return UART_OK;
-    }
-    
-    /* 获取UART外设时钟 */
-    uart_clock = UART_GetPeriphClock(g_uart_configs[instance].uart_periph);
-    if (uart_clock == 0)
-    {
-        return UART_ERROR_INVALID_PERIPH;
-    }
-    
-    /* 使能UART外设时钟 */
-    if (uart_clock & RCC_APB2Periph_USART1)
-    {
-        RCC_APB2PeriphClockCmd(uart_clock, ENABLE);
-    }
-    else
-    {
-        RCC_APB1PeriphClockCmd(uart_clock, ENABLE);
-    }
-    
-    /* 使能GPIO时钟 */
-    gpio_clock = UART_GetGPIOClock(g_uart_configs[instance].tx_port);
-    if (gpio_clock != 0)
-    {
-        RCC_APB2PeriphClockCmd(gpio_clock, ENABLE);
-    }
-    
-    if (g_uart_configs[instance].tx_port != g_uart_configs[instance].rx_port)
-    {
-        gpio_clock = UART_GetGPIOClock(g_uart_configs[instance].rx_port);
-        if (gpio_clock != 0)
-        {
-            RCC_APB2PeriphClockCmd(gpio_clock, ENABLE);
-        }
-    }
-    
-    /* 配置TX引脚为复用推挽输出 */
-    GPIO_InitStructure.GPIO_Pin = g_uart_configs[instance].tx_pin;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(g_uart_configs[instance].tx_port, &GPIO_InitStructure);
-    
-    /* 配置RX引脚为浮空输入 */
-    GPIO_InitStructure.GPIO_Pin = g_uart_configs[instance].rx_pin;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_Init(g_uart_configs[instance].rx_port, &GPIO_InitStructure);
-    
-    /* 配置UART外设 */
-    USART_InitStructure.USART_BaudRate = g_uart_configs[instance].baudrate;
-    USART_InitStructure.USART_WordLength = g_uart_configs[instance].word_length;
-    USART_InitStructure.USART_StopBits = g_uart_configs[instance].stop_bits;
-    USART_InitStructure.USART_Parity = g_uart_configs[instance].parity;
-    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    
-    /* 配置硬件流控 */
-    switch (g_uart_hw_flow[instance])
-    {
-        case UART_HW_FLOW_RTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS;
-            break;
-        case UART_HW_FLOW_CTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_CTS;
-            break;
-        case UART_HW_FLOW_RTS_CTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
-            break;
-        default:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-            break;
-    }
-    
-    /* 调用标准库的USART_Init函数 */
-    USART_Init(g_uart_configs[instance].uart_periph, &USART_InitStructure);
-    
-    /* 使能UART外设 */
-    USART_Cmd(g_uart_configs[instance].uart_periph, ENABLE);
-    
-    /* 初始化中断相关变量 */
-    for (int i = 0; i < 8; i++)
-    {
-        g_uart_it_callbacks[instance][i] = NULL;
-        g_uart_it_user_data[instance][i] = NULL;
-    }
-    g_uart_tx_buffer[instance] = NULL;
-    g_uart_rx_buffer[instance] = NULL;
-    g_uart_tx_length[instance] = 0;
-    g_uart_tx_index[instance] = 0;
-    g_uart_rx_length[instance] = 0;
-    g_uart_rx_index[instance] = 0;
-    g_uart_rx_max_length[instance] = 0;
-    
-    /* 标记为已初始化 */
-    g_uart_initialized[instance] = true;
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -262,40 +114,7 @@ UART_Status_t UART_Init(UART_Instance_t instance)
  */
 UART_Status_t UART_Deinit(UART_Instance_t instance)
 {
-    uint32_t uart_clock;
-    
-    /* 参数校验 */
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_OK;
-    }
-    
-    /* 禁用UART外设 */
-    USART_Cmd(g_uart_configs[instance].uart_periph, DISABLE);
-    
-    /* 获取UART外设时钟 */
-    uart_clock = UART_GetPeriphClock(g_uart_configs[instance].uart_periph);
-    if (uart_clock != 0)
-    {
-        /* 禁用UART外设时钟 */
-        if (uart_clock & RCC_APB2Periph_USART1)
-        {
-            RCC_APB2PeriphClockCmd(uart_clock, DISABLE);
-        }
-        else
-        {
-            RCC_APB1PeriphClockCmd(uart_clock, DISABLE);
-        }
-    }
-    
-    /* 标记为未初始化 */
-    g_uart_initialized[instance] = false;
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -304,55 +123,10 @@ UART_Status_t UART_Deinit(UART_Instance_t instance)
  */
 UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint16_t length, uint32_t timeout)
 {
-    USART_TypeDef *uart_periph;
-    UART_Status_t status;
-    uint16_t i;
-    
-    /* 参数校验 */
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 使用默认超时时间 */
-    if (timeout == 0)
-    {
-        timeout = UART_DEFAULT_TIMEOUT_MS;
-    }
-    
-    /* 发送数据 */
-    for (i = 0; i < length; i++)
-    {
-        /* 等待发送缓冲区空 */
-        status = UART_WaitFlag(uart_periph, USART_FLAG_TXE, timeout);
-        if (status != UART_OK)
-        {
-            return status;
-        }
-        
-        /* 发送数据 */
-        USART_SendData(uart_periph, data[i]);
-    }
-    
-    /* 等待发送完成 */
-    status = UART_WaitFlag(uart_periph, USART_FLAG_TC, timeout);
-    if (status != UART_OK)
-    {
-        return status;
-    }
-    
+    (void)instance;
+    (void)data;
+    (void)length;
+    (void)timeout;
     return UART_OK;
 }
 
@@ -361,48 +135,10 @@ UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint1
  */
 UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t length, uint32_t timeout)
 {
-    USART_TypeDef *uart_periph;
-    UART_Status_t status;
-    uint16_t i;
-    
-    /* 参数校验 */
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 使用默认超时时间 */
-    if (timeout == 0)
-    {
-        timeout = UART_DEFAULT_TIMEOUT_MS;
-    }
-    
-    /* 接收数据 */
-    for (i = 0; i < length; i++)
-    {
-        /* 等待接收数据就绪 */
-        status = UART_WaitFlag(uart_periph, USART_FLAG_RXNE, timeout);
-        if (status != UART_OK)
-        {
-            return status;
-        }
-        
-        /* 读取数据 */
-        data[i] = (uint8_t)USART_ReceiveData(uart_periph);
-    }
-    
+    (void)instance;
+    (void)data;
+    (void)length;
+    (void)timeout;
     return UART_OK;
 }
 
@@ -411,7 +147,10 @@ UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t len
  */
 UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t timeout)
 {
-    return UART_Transmit(instance, &byte, 1, timeout);
+    (void)instance;
+    (void)byte;
+    (void)timeout;
+    return UART_OK;
 }
 
 /**
@@ -419,12 +158,10 @@ UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t
  */
 UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t timeout)
 {
-    if (byte == NULL)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    return UART_Receive(instance, byte, 1, timeout);
+    (void)instance;
+    (void)byte;
+    (void)timeout;
+    return UART_OK;
 }
 
 /**
@@ -432,12 +169,10 @@ UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t
  */
 UART_Status_t UART_TransmitString(UART_Instance_t instance, const char *str, uint32_t timeout)
 {
-    if (str == NULL)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    return UART_Transmit(instance, (const uint8_t *)str, strlen(str), timeout);
+    (void)instance;
+    (void)str;
+    (void)timeout;
+    return UART_OK;
 }
 
 /**
@@ -445,12 +180,8 @@ UART_Status_t UART_TransmitString(UART_Instance_t instance, const char *str, uin
  */
 uint8_t UART_IsInitialized(UART_Instance_t instance)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return 0;
-    }
-    
-    return g_uart_initialized[instance] ? 1 : 0;
+    (void)instance;
+    return 0;
 }
 
 /**
@@ -458,17 +189,8 @@ uint8_t UART_IsInitialized(UART_Instance_t instance)
  */
 USART_TypeDef* UART_GetPeriph(UART_Instance_t instance)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return NULL;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return NULL;
-    }
-    
-    return g_uart_configs[instance].uart_periph;
+    (void)instance;
+    return NULL;
 }
 
 /* ========== 中断模式功能实现 ========== */
@@ -478,18 +200,8 @@ USART_TypeDef* UART_GetPeriph(UART_Instance_t instance)
  */
 static uint16_t UART_GetITValue(UART_IT_t it_type)
 {
-    switch (it_type)
-    {
-        case UART_IT_TXE:  return USART_IT_TXE;
-        case UART_IT_TC:   return USART_IT_TC;
-        case UART_IT_RXNE: return USART_IT_RXNE;
-        case UART_IT_IDLE: return USART_IT_IDLE;
-        case UART_IT_PE:   return USART_IT_PE;
-        case UART_IT_ERR:  return USART_IT_ERR;
-        case UART_IT_LBD:  return USART_IT_LBD;
-        case UART_IT_CTS:  return USART_IT_CTS;
-        default: return 0;
-    }
+    (void)it_type;
+    return 0;
 }
 
 /**
@@ -497,13 +209,8 @@ static uint16_t UART_GetITValue(UART_IT_t it_type)
  */
 static IRQn_Type UART_GetIRQn(UART_Instance_t instance)
 {
-    switch (instance)
-    {
-        case UART_INSTANCE_1: return USART1_IRQn;
-        case UART_INSTANCE_2: return USART2_IRQn;
-        case UART_INSTANCE_3: return USART3_IRQn;
-        default: return (IRQn_Type)0;
-    }
+    (void)instance;
+    return (IRQn_Type)0;
 }
 
 /**
@@ -511,42 +218,8 @@ static IRQn_Type UART_GetIRQn(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
-    USART_TypeDef *uart_periph;
-    uint16_t it_value;
-    IRQn_Type irqn;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (it_type >= 8) /* UART_IT_MAX */
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    it_value = UART_GetITValue(it_type);
-    if (it_value == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    /* 使能UART中断 */
-    USART_ITConfig(uart_periph, it_value, ENABLE);
-    
-    /* 使能NVIC中断 */
-    irqn = UART_GetIRQn(instance);
-    if (irqn != 0)
-    {
-        NVIC_HW_EnableIRQ(irqn);
-    }
-    
+    (void)instance;
+    (void)it_type;
     return UART_OK;
 }
 
@@ -555,34 +228,8 @@ UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
  */
 UART_Status_t UART_DisableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
-    USART_TypeDef *uart_periph;
-    uint16_t it_value;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (it_type >= 8)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    it_value = UART_GetITValue(it_type);
-    if (it_value == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    /* 禁用UART中断 */
-    USART_ITConfig(uart_periph, it_value, DISABLE);
-    
+    (void)instance;
+    (void)it_type;
     return UART_OK;
 }
 
@@ -592,24 +239,10 @@ UART_Status_t UART_DisableIT(UART_Instance_t instance, UART_IT_t it_type)
 UART_Status_t UART_SetITCallback(UART_Instance_t instance, UART_IT_t it_type,
                                   UART_IT_Callback_t callback, void *user_data)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (it_type >= 8)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    g_uart_it_callbacks[instance][it_type] = callback;
-    g_uart_it_user_data[instance][it_type] = user_data;
-    
+    (void)instance;
+    (void)it_type;
+    (void)callback;
+    (void)user_data;
     return UART_OK;
 }
 
@@ -618,27 +251,9 @@ UART_Status_t UART_SetITCallback(UART_Instance_t instance, UART_IT_t it_type,
  */
 uint8_t UART_GetITStatus(UART_Instance_t instance, UART_IT_t it_type)
 {
-    USART_TypeDef *uart_periph;
-    uint16_t it_value;
-    
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    if (it_type >= 8)
-    {
-        return 0;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    it_value = UART_GetITValue(it_type);
-    if (it_value == 0)
-    {
-        return 0;
-    }
-    
-    return (USART_GetITStatus(uart_periph, it_value) == SET) ? 1 : 0;
+    (void)instance;
+    (void)it_type;
+    return 0;
 }
 
 /**
@@ -646,33 +261,8 @@ uint8_t UART_GetITStatus(UART_Instance_t instance, UART_IT_t it_type)
  */
 UART_Status_t UART_ClearITPendingBit(UART_Instance_t instance, UART_IT_t it_type)
 {
-    USART_TypeDef *uart_periph;
-    uint16_t it_value;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (it_type >= 8)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    it_value = UART_GetITValue(it_type);
-    if (it_value == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    USART_ClearITPendingBit(uart_periph, it_value);
-    
+    (void)instance;
+    (void)it_type;
     return UART_OK;
 }
 
@@ -681,34 +271,9 @@ UART_Status_t UART_ClearITPendingBit(UART_Instance_t instance, UART_IT_t it_type
  */
 UART_Status_t UART_TransmitIT(UART_Instance_t instance, const uint8_t *data, uint16_t length)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (g_uart_tx_buffer[instance] != NULL)
-    {
-        return UART_ERROR_BUSY; /* 正在发送 */
-    }
-    
-    /* 保存发送缓冲区信息 */
-    g_uart_tx_buffer[instance] = data;
-    g_uart_tx_length[instance] = length;
-    g_uart_tx_index[instance] = 0;
-    
-    /* 使能TXE中断，开始发送 */
-    UART_EnableIT(instance, UART_IT_TXE);
-    
+    (void)instance;
+    (void)data;
+    (void)length;
     return UART_OK;
 }
 
@@ -717,36 +282,9 @@ UART_Status_t UART_TransmitIT(UART_Instance_t instance, const uint8_t *data, uin
  */
 UART_Status_t UART_ReceiveIT(UART_Instance_t instance, uint8_t *data, uint16_t max_length)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || max_length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (g_uart_rx_buffer[instance] != NULL)
-    {
-        return UART_ERROR_BUSY; /* 正在接收 */
-    }
-    
-    /* 保存接收缓冲区信息 */
-    g_uart_rx_buffer[instance] = data;
-    g_uart_rx_max_length[instance] = max_length;
-    g_uart_rx_index[instance] = 0;
-    g_uart_rx_length[instance] = 0;
-    
-    /* 使能RXNE和IDLE中断，开始接收 */
-    UART_EnableIT(instance, UART_IT_RXNE);
-    UART_EnableIT(instance, UART_IT_IDLE);
-    
+    (void)instance;
+    (void)data;
+    (void)max_length;
     return UART_OK;
 }
 
@@ -755,17 +293,8 @@ UART_Status_t UART_ReceiveIT(UART_Instance_t instance, uint8_t *data, uint16_t m
  */
 uint16_t UART_GetTransmitRemaining(UART_Instance_t instance)
 {
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    if (g_uart_tx_buffer[instance] == NULL)
-    {
-        return 0;
-    }
-    
-    return g_uart_tx_length[instance] - g_uart_tx_index[instance];
+    (void)instance;
+    return 0;
 }
 
 /**
@@ -773,12 +302,8 @@ uint16_t UART_GetTransmitRemaining(UART_Instance_t instance)
  */
 uint16_t UART_GetReceiveCount(UART_Instance_t instance)
 {
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    return g_uart_rx_length[instance];
+    (void)instance;
+    return 0;
 }
 
 /**
@@ -786,152 +311,24 @@ uint16_t UART_GetReceiveCount(UART_Instance_t instance)
  */
 void UART_IRQHandler(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    uint8_t byte;
-    
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 处理TXE中断（发送缓冲区空） */
-    if (USART_GetITStatus(uart_periph, USART_IT_TXE) != RESET)
-    {
-        if (g_uart_tx_buffer[instance] != NULL && g_uart_tx_index[instance] < g_uart_tx_length[instance])
-        {
-            /* 发送下一个字节 */
-            USART_SendData(uart_periph, g_uart_tx_buffer[instance][g_uart_tx_index[instance]++]);
-        }
-        else
-        {
-            /* 发送完成，禁用TXE中断，使能TC中断 */
-            USART_ITConfig(uart_periph, USART_IT_TXE, DISABLE);
-            USART_ITConfig(uart_periph, USART_IT_TC, ENABLE);
-        }
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_TXE] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_TXE](instance, UART_IT_TXE, g_uart_it_user_data[instance][UART_IT_TXE]);
-        }
-    }
-    
-    /* 处理TC中断（发送完成） */
-    if (USART_GetITStatus(uart_periph, USART_IT_TC) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_TC);
-        USART_ITConfig(uart_periph, USART_IT_TC, DISABLE);
-        
-        /* 清除发送缓冲区 */
-        g_uart_tx_buffer[instance] = NULL;
-        g_uart_tx_length[instance] = 0;
-        g_uart_tx_index[instance] = 0;
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_TC] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_TC](instance, UART_IT_TC, g_uart_it_user_data[instance][UART_IT_TC]);
-        }
-    }
-    
-    /* 处理RXNE中断（接收数据就绪） */
-    if (USART_GetITStatus(uart_periph, USART_IT_RXNE) != RESET)
-    {
-        if (g_uart_rx_buffer[instance] != NULL && g_uart_rx_index[instance] < g_uart_rx_max_length[instance])
-        {
-            /* 读取数据 */
-            byte = (uint8_t)USART_ReceiveData(uart_periph);
-            g_uart_rx_buffer[instance][g_uart_rx_index[instance]++] = byte;
-            g_uart_rx_length[instance] = g_uart_rx_index[instance];
-        }
-        else
-        {
-            /* 缓冲区满，读取并丢弃 */
-            USART_ReceiveData(uart_periph);
-        }
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_RXNE] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_RXNE](instance, UART_IT_RXNE, g_uart_it_user_data[instance][UART_IT_RXNE]);
-        }
-    }
-    
-    /* 处理IDLE中断（空闲） */
-    if (USART_GetITStatus(uart_periph, USART_IT_IDLE) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_IDLE);
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_IDLE] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_IDLE](instance, UART_IT_IDLE, g_uart_it_user_data[instance][UART_IT_IDLE]);
-        }
-    }
-    
-    /* 处理错误中断 */
-    if (USART_GetITStatus(uart_periph, USART_IT_PE) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_PE);
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_PE] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_PE](instance, UART_IT_PE, g_uart_it_user_data[instance][UART_IT_PE]);
-        }
-    }
-    
-    if (USART_GetITStatus(uart_periph, USART_IT_ORE) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_ORE);
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_ERR] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_ERR](instance, UART_IT_ERR, g_uart_it_user_data[instance][UART_IT_ERR]);
-        }
-    }
-    
-    if (USART_GetITStatus(uart_periph, USART_IT_NE) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_NE);
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_ERR] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_ERR](instance, UART_IT_ERR, g_uart_it_user_data[instance][UART_IT_ERR]);
-        }
-    }
-    
-    if (USART_GetITStatus(uart_periph, USART_IT_FE) != RESET)
-    {
-        USART_ClearITPendingBit(uart_periph, USART_IT_FE);
-        
-        /* 调用回调函数 */
-        if (g_uart_it_callbacks[instance][UART_IT_ERR] != NULL)
-        {
-            g_uart_it_callbacks[instance][UART_IT_ERR](instance, UART_IT_ERR, g_uart_it_user_data[instance][UART_IT_ERR]);
-        }
-    }
+    (void)instance;
 }
 
 /* UART中断服务程序入口（需要在启动文件中定义，或用户自己实现） */
 void USART1_IRQHandler(void)
 {
-    UART_IRQHandler(UART_INSTANCE_1);
 }
+
 
 void USART2_IRQHandler(void)
 {
-    UART_IRQHandler(UART_INSTANCE_2);
 }
+
 
 void USART3_IRQHandler(void)
 {
-    UART_IRQHandler(UART_INSTANCE_3);
 }
+
 
 /* ========== DMA模式功能实现 ========== */
 
@@ -940,62 +337,9 @@ void USART3_IRQHandler(void)
  */
 UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, uint16_t length)
 {
-    USART_TypeDef *uart_periph;
-    DMA_Channel_t dma_channel;
-    DMA_Status_t dma_status;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    dma_channel = uart_tx_dma_channels[instance];
-    
-    /* 检查DMA通道是否已初始化 */
-    if (!DMA_IsInitialized(dma_channel))
-    {
-        /* 初始化DMA通道 */
-        dma_status = DMA_HW_Init(dma_channel);
-        if (dma_status != DMA_OK)
-        {
-            return UART_ERROR_INVALID_PARAM;
-        }
-    }
-    
-    /* 停止之前的传输 */
-    DMA_Stop(dma_channel);
-    
-    /* 配置DMA传输（内存到外设） */
-    dma_status = DMA_ConfigTransfer(dma_channel, (uint32_t)&uart_periph->DR,
-                                    (uint32_t)data, length,
-                                    DMA_DIR_MEMORY_TO_PERIPHERAL, 1);
-    if (dma_status != DMA_OK)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    /* 使能UART DMA发送请求 */
-    USART_DMACmd(uart_periph, USART_DMAReq_Tx, ENABLE);
-    
-    /* 启动DMA传输 */
-    dma_status = DMA_Start(dma_channel);
-    if (dma_status != DMA_OK)
-    {
-        USART_DMACmd(uart_periph, USART_DMAReq_Tx, DISABLE);
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
+    (void)instance;
+    (void)data;
+    (void)length;
     return UART_OK;
 }
 
@@ -1004,62 +348,9 @@ UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, ui
  */
 UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t length)
 {
-    USART_TypeDef *uart_periph;
-    DMA_Channel_t dma_channel;
-    DMA_Status_t dma_status;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (data == NULL || length == 0)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    dma_channel = uart_rx_dma_channels[instance];
-    
-    /* 检查DMA通道是否已初始化 */
-    if (!DMA_IsInitialized(dma_channel))
-    {
-        /* 初始化DMA通道 */
-        dma_status = DMA_HW_Init(dma_channel);
-        if (dma_status != DMA_OK)
-        {
-            return UART_ERROR_INVALID_PARAM;
-        }
-    }
-    
-    /* 停止之前的传输 */
-    DMA_Stop(dma_channel);
-    
-    /* 配置DMA传输（外设到内存） */
-    dma_status = DMA_ConfigTransfer(dma_channel, (uint32_t)&uart_periph->DR,
-                                    (uint32_t)data, length,
-                                    DMA_DIR_PERIPHERAL_TO_MEMORY, 1);
-    if (dma_status != DMA_OK)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    /* 使能UART DMA接收请求 */
-    USART_DMACmd(uart_periph, USART_DMAReq_Rx, ENABLE);
-    
-    /* 启动DMA传输 */
-    dma_status = DMA_Start(dma_channel);
-    if (dma_status != DMA_OK)
-    {
-        USART_DMACmd(uart_periph, USART_DMAReq_Rx, DISABLE);
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
+    (void)instance;
+    (void)data;
+    (void)length;
     return UART_OK;
 }
 
@@ -1068,28 +359,7 @@ UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t 
  */
 UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    DMA_Channel_t dma_channel;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    dma_channel = uart_tx_dma_channels[instance];
-    
-    /* 禁用UART DMA发送请求 */
-    USART_DMACmd(uart_periph, USART_DMAReq_Tx, DISABLE);
-    
-    /* 停止DMA传输 */
-    DMA_Stop(dma_channel);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1098,28 +368,7 @@ UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
  */
 UART_Status_t UART_StopReceiveDMA(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    DMA_Channel_t dma_channel;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    dma_channel = uart_rx_dma_channels[instance];
-    
-    /* 禁用UART DMA接收请求 */
-    USART_DMACmd(uart_periph, USART_DMAReq_Rx, DISABLE);
-    
-    /* 停止DMA传输 */
-    DMA_Stop(dma_channel);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1128,15 +377,8 @@ UART_Status_t UART_StopReceiveDMA(UART_Instance_t instance)
  */
 uint16_t UART_GetTransmitDMARemaining(UART_Instance_t instance)
 {
-    DMA_Channel_t dma_channel;
-    
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    dma_channel = uart_tx_dma_channels[instance];
-    return DMA_GetRemainingDataSize(dma_channel);
+    (void)instance;
+    return 0;
 }
 
 /**
@@ -1144,15 +386,8 @@ uint16_t UART_GetTransmitDMARemaining(UART_Instance_t instance)
  */
 uint16_t UART_GetReceiveDMARemaining(UART_Instance_t instance)
 {
-    DMA_Channel_t dma_channel;
-    
-    if (instance >= UART_INSTANCE_MAX || !g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    dma_channel = uart_rx_dma_channels[instance];
-    return DMA_GetRemainingDataSize(dma_channel);
+    (void)instance;
+    return 0;
 }
 
 /* ========== 硬件流控功能实现 ========== */
@@ -1162,60 +397,8 @@ uint16_t UART_GetReceiveDMARemaining(UART_Instance_t instance)
  */
 UART_Status_t UART_SetHardwareFlowControl(UART_Instance_t instance, UART_HW_FlowControl_t flow_control)
 {
-    USART_InitTypeDef USART_InitStructure;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (flow_control > UART_HW_FLOW_RTS_CTS)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    /* 保存硬件流控配置 */
-    g_uart_hw_flow[instance] = flow_control;
-    
-    /* 重新配置UART（需要先禁用UART） */
-    USART_Cmd(g_uart_configs[instance].uart_periph, DISABLE);
-    
-    /* 读取当前配置 */
-    USART_StructInit(&USART_InitStructure);
-    USART_InitStructure.USART_BaudRate = g_uart_configs[instance].baudrate;
-    USART_InitStructure.USART_WordLength = g_uart_configs[instance].word_length;
-    USART_InitStructure.USART_StopBits = g_uart_configs[instance].stop_bits;
-    USART_InitStructure.USART_Parity = g_uart_configs[instance].parity;
-    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    
-    /* 配置硬件流控 */
-    switch (flow_control)
-    {
-        case UART_HW_FLOW_RTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS;
-            break;
-        case UART_HW_FLOW_CTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_CTS;
-            break;
-        case UART_HW_FLOW_RTS_CTS:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
-            break;
-        default:
-            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-            break;
-    }
-    
-    /* 重新初始化UART */
-    USART_Init(g_uart_configs[instance].uart_periph, &USART_InitStructure);
-    
-    /* 重新使能UART */
-    USART_Cmd(g_uart_configs[instance].uart_periph, ENABLE);
-    
+    (void)instance;
+    (void)flow_control;
     return UART_OK;
 }
 
@@ -1224,23 +407,8 @@ UART_Status_t UART_SetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
  */
 UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_FlowControl_t *flow_control)
 {
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (flow_control == NULL)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    *flow_control = g_uart_hw_flow[instance];
-    
+    (void)instance;
+    (void)flow_control;
     return UART_OK;
 }
 
@@ -1251,23 +419,7 @@ UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
  */
 UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 使能单线半双工模式 */
-    USART_HalfDuplexCmd(uart_periph, ENABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1276,23 +428,7 @@ UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableHalfDuplex(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 禁用单线半双工模式 */
-    USART_HalfDuplexCmd(uart_periph, DISABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1301,26 +437,7 @@ UART_Status_t UART_DisableHalfDuplex(UART_Instance_t instance)
  */
 uint8_t UART_IsHalfDuplex(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return 0;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return 0;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 检查HDSEL位（USART_CR3寄存器） */
-    if ((uart_periph->CR3 & USART_CR3_HDSEL) != RESET)
-    {
-        return 1;
-    }
-    
+    (void)instance;
     return 0;
 }
 
@@ -1331,23 +448,7 @@ uint8_t UART_IsHalfDuplex(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 使能LIN模式 */
-    USART_LINCmd(uart_periph, ENABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1356,23 +457,7 @@ UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 禁用LIN模式 */
-    USART_LINCmd(uart_periph, DISABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1381,23 +466,7 @@ UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
  */
 UART_Status_t UART_SendBreak(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 发送LIN断点字符 */
-    USART_SendBreak(uart_periph);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1406,31 +475,8 @@ UART_Status_t UART_SendBreak(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (prescaler < 1 || prescaler > 31)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 配置IrDA预分频器 */
-    USART_SetPrescaler(uart_periph, prescaler);
-    
-    /* 使能IrDA模式 */
-    USART_IrDACmd(uart_periph, ENABLE);
-    
+    (void)instance;
+    (void)prescaler;
     return UART_OK;
 }
 
@@ -1439,23 +485,7 @@ UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
  */
 UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 禁用IrDA模式 */
-    USART_IrDACmd(uart_periph, DISABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1464,23 +494,7 @@ UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 使能智能卡模式 */
-    USART_SmartCardCmd(uart_periph, ENABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 
@@ -1489,23 +503,7 @@ UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableSmartCardMode(UART_Instance_t instance)
 {
-    USART_TypeDef *uart_periph;
-    
-    if (instance >= UART_INSTANCE_MAX)
-    {
-        return UART_ERROR_INVALID_PARAM;
-    }
-    
-    if (!g_uart_initialized[instance])
-    {
-        return UART_ERROR_NOT_INITIALIZED;
-    }
-    
-    uart_periph = g_uart_configs[instance].uart_periph;
-    
-    /* 禁用智能卡模式 */
-    USART_SmartCardCmd(uart_periph, DISABLE);
-    
+    (void)instance;
     return UART_OK;
 }
 

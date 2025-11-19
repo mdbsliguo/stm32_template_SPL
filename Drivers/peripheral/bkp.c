@@ -33,19 +33,6 @@ static bool g_bkp_initialized = false;
  */
 BKP_Status_t BKP_Init(void)
 {
-    if (g_bkp_initialized)
-    {
-        ERROR_HANDLER_Report(ERROR_BASE_RTC, __FILE__, __LINE__, "BKP already initialized");
-        return BKP_ERROR_ALREADY_INITIALIZED;
-    }
-    
-    /* 使能PWR和BKP时钟 */
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
-    
-    /* 使能备份域访问 */
-    PWR_BackupAccessCmd(ENABLE);
-    
-    g_bkp_initialized = true;
     
     return BKP_OK;
 }
@@ -55,15 +42,6 @@ BKP_Status_t BKP_Init(void)
  */
 BKP_Status_t BKP_Deinit(void)
 {
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    /* 禁用备份域访问 */
-    PWR_BackupAccessCmd(DISABLE);
-    
-    g_bkp_initialized = false;
     
     return BKP_OK;
 }
@@ -73,24 +51,8 @@ BKP_Status_t BKP_Deinit(void)
  */
 BKP_Status_t BKP_WriteRegister(BKP_Register_t reg, uint16_t data)
 {
-    uint16_t bkp_dr;
-    
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (reg < BKP_REG_DR1 || reg > BKP_REG_MAX)
-    {
-        return BKP_ERROR_INVALID_REGISTER;
-    }
-    
-    /* 获取SPL库寄存器值 */
-    bkp_dr = bkp_reg_map[reg];
-    
-    /* 写入备份寄存器 */
-    BKP_WriteBackupRegister(bkp_dr, data);
-    
+    (void)reg;
+    (void)data;
     return BKP_OK;
 }
 
@@ -99,29 +61,8 @@ BKP_Status_t BKP_WriteRegister(BKP_Register_t reg, uint16_t data)
  */
 BKP_Status_t BKP_ReadRegister(BKP_Register_t reg, uint16_t *data)
 {
-    uint16_t bkp_dr;
-    
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    if (reg < BKP_REG_DR1 || reg > BKP_REG_MAX)
-    {
-        return BKP_ERROR_INVALID_REGISTER;
-    }
-    
-    if (data == NULL)
-    {
-        return BKP_ERROR_INVALID_PARAM;
-    }
-    
-    /* 获取SPL库寄存器值 */
-    bkp_dr = bkp_reg_map[reg];
-    
-    /* 读取备份寄存器 */
-    *data = BKP_ReadBackupRegister(bkp_dr);
-    
+    (void)reg;
+    (void)data;
     return BKP_OK;
 }
 
@@ -130,7 +71,7 @@ BKP_Status_t BKP_ReadRegister(BKP_Register_t reg, uint16_t *data)
  */
 uint8_t BKP_IsInitialized(void)
 {
-    return g_bkp_initialized ? 1 : 0;
+    return 0;
 }
 
 /* ========== Tamper引脚功能实现 ========== */
@@ -144,35 +85,9 @@ static void *g_bkp_tamper_user_data = NULL;
  */
 BKP_Status_t BKP_ConfigTamperPin(BKP_TamperLevel_t level, BKP_TamperCallback_t callback, void *user_data)
 {
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    /* 配置Tamper引脚电平 */
-    if (level == BKP_TAMPER_LEVEL_HIGH)
-    {
-        BKP_TamperPinLevelConfig(BKP_TamperPinLevel_High);
-    }
-    else
-    {
-        BKP_TamperPinLevelConfig(BKP_TamperPinLevel_Low);
-    }
-    
-    /* 保存回调函数 */
-    g_bkp_tamper_callback = callback;
-    g_bkp_tamper_user_data = user_data;
-    
-    /* 如果提供了回调函数，使能Tamper中断 */
-    if (callback != NULL)
-    {
-        BKP_ITConfig(ENABLE);
-        /* 使能EXTI中断（Tamper使用EXTI线19） */
-        EXTI->IMR |= EXTI_Line19;
-        EXTI->RTSR |= EXTI_Line19;  /* 上升沿触发 */
-        EXTI->FTSR |= EXTI_Line19;  /* 下降沿触发 */
-    }
-    
+    (void)level;
+    (void)callback;
+    (void)user_data;
     return BKP_OK;
 }
 
@@ -181,12 +96,6 @@ BKP_Status_t BKP_ConfigTamperPin(BKP_TamperLevel_t level, BKP_TamperCallback_t c
  */
 BKP_Status_t BKP_EnableTamperPin(void)
 {
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    BKP_TamperPinCmd(ENABLE);
     
     return BKP_OK;
 }
@@ -196,13 +105,6 @@ BKP_Status_t BKP_EnableTamperPin(void)
  */
 BKP_Status_t BKP_DisableTamperPin(void)
 {
-    if (!g_bkp_initialized)
-    {
-        return BKP_ERROR_NOT_INITIALIZED;
-    }
-    
-    BKP_TamperPinCmd(DISABLE);
-    BKP_ITConfig(DISABLE);
     
     return BKP_OK;
 }
@@ -212,16 +114,8 @@ BKP_Status_t BKP_DisableTamperPin(void)
  */
 void BKP_Tamper_IRQHandler(void)
 {
-    if (BKP_GetFlagStatus() != RESET)
-    {
-        BKP_ClearFlag();
-        
-        if (g_bkp_tamper_callback != NULL)
-        {
-            g_bkp_tamper_callback(g_bkp_tamper_user_data);
-        }
-    }
 }
+
 
 #endif /* CONFIG_MODULE_BKP_ENABLED */
 

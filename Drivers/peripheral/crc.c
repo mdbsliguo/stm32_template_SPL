@@ -24,7 +24,7 @@
  */
 CRC_Status_t CRC_Reset(void)
 {
-    CRC_ResetDR();
+    
     return CRC_OK;
 }
 
@@ -33,7 +33,8 @@ CRC_Status_t CRC_Reset(void)
  */
 uint32_t CRC_Calculate(uint32_t data)
 {
-    return CRC_CalcCRC(data);
+    (void)data;
+    return 0;
 }
 
 /**
@@ -41,12 +42,9 @@ uint32_t CRC_Calculate(uint32_t data)
  */
 uint32_t CRC_CalculateBlock(uint32_t *buffer, uint32_t length)
 {
-    if (buffer == NULL)
-    {
-        return 0;
-    }
-    
-    return CRC_CalcBlockCRC(buffer, length);
+    (void)buffer;
+    (void)length;
+    return 0;
 }
 
 /**
@@ -54,7 +52,8 @@ uint32_t CRC_CalculateBlock(uint32_t *buffer, uint32_t length)
  */
 uint32_t CRC_GetValue(void)
 {
-    return CRC_GetCRC();
+    
+    return 0;
 }
 
 /**
@@ -62,7 +61,7 @@ uint32_t CRC_GetValue(void)
  */
 CRC_Status_t CRC_WriteIDRegister(uint8_t id_value)
 {
-    CRC_SetIDRegister(id_value);
+    (void)id_value;
     return CRC_OK;
 }
 
