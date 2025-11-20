@@ -1,6 +1,19 @@
 # MAX31856案例 - 热电偶温度传感器读取示例
 
-✅ **已调试完成**
+✅ **已调试完成，正常工作**
+
+## 📚 重要文档
+
+**⚠️ 调试笔记**：请务必阅读 [`../MAX31856_02_Simple/DEBUG_NOTES.md`](../MAX31856_02_Simple/DEBUG_NOTES.md)，其中详细记录了所有调试过程中发现的问题、原因分析和解决方案。这是理解为什么代码能正常工作的关键文档。
+
+**关键配置要点**：
+- ✅ SR寄存器地址：0x0F（故障状态记录寄存器）
+- ✅ 热电偶温度寄存器地址：0x0C-0x0E（LTCBH/LTCBM/LTCBL）
+- ✅ 冷端温度寄存器地址：0x0A-0x0B（CJTH/CJTL）
+- ✅ 冷端温度数据格式：12位有符号数，分辨率0.0625°C
+- ✅ 热电偶温度数据格式：19位有符号数，分辨率0.0078125°C
+- ✅ 转换模式：必须设置CMODE位（bit7）= 1启用连续转换
+- ✅ SPI时钟频率：2.25MHz（预分频32，不超过5MHz限制）
 
 ## ⚠️ 重要说明（必读）
 
@@ -225,8 +238,8 @@ K型热电偶 T- ────────────→ T- ──┘
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI1：未使用，禁用 */  \
     {SPI2, GPIOB, GPIO_Pin_13, GPIOB, GPIO_Pin_14, GPIOB, GPIO_Pin_15, NULL, 0,                         \
      SPI_Mode_Master, SPI_Direction_2Lines_FullDuplex, SPI_DataSize_8b,                                \
-     SPI_CPOL_High, SPI_CPHA_2Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_16, SPI_FirstBit_MSB, 1},       \
-    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI)，主模式，全双工，8位，模式3(CPOL=High, CPHA=2Edge)，软件NSS，预分频16(4.5MHz，不超过5MHz限制)，MSB，启用 */ \
+     SPI_CPOL_High, SPI_CPHA_2Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_32, SPI_FirstBit_MSB, 1},       \
+    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI)，主模式，全双工，8位，模式3(CPOL=High, CPHA=2Edge)，软件NSS，预分频32(2.25MHz，不超过5MHz限制)，MSB，启用 */ \
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI3：未使用，禁用 */  \
 }
 ```
@@ -376,11 +389,11 @@ if (status == MAX31856_OK && ready)
 
 ### 1. SPI配置
 
-- MAX31856使用SPI模式0（CPOL=0, CPHA=0）
+- MAX31856使用SPI模式3（CPOL=High, CPHA=2Edge）
 - CS引脚使用软件控制（SPI_NSS_Soft）
-- SPI时钟频率建议不超过10MHz
+- **SPI时钟频率限制**：MAX31856最高支持5MHz，本案例使用2.25MHz（预分频32）
 - **长线连接注意**：如果SPI连接线较长（>1米），建议：
-  - 降低SPI时钟频率（使用预分频32或更大）
+  - 降低SPI时钟频率（使用预分频64或更大）
   - 使用屏蔽线缆
   - 尽量缩短连接距离（SPI不适合长距离传输，建议<30cm）
   - 如果必须长距离，考虑使用RS485或CAN总线等长距离通信方案
@@ -405,7 +418,13 @@ if (status == MAX31856_OK && ready)
 ### 5. 转换模式
 
 - **连续转换模式**：自动连续转换，适合实时监控
+  - 必须设置CMODE位（bit7）= 1才能启用
+  - 芯片每100ms自动转换一次
+  - 本案例使用连续转换模式
 - **单次转换模式**：需要手动触发，适合低功耗应用
+  - CMODE位（bit7）= 0（关闭模式）
+  - 设置1SHOT位（bit6）= 1触发转换
+  - 转换完成后1SHOT位自动清除
 
 ### 6. 故障检测
 
@@ -452,7 +471,7 @@ if (status == MAX31856_OK && ready)
 ## 📝 代码结构
 
 ```
-MAX3185601_ReadTemperature/
+MAX31856_01_ReadTemperature/
 ├── main_example.c      # 主程序文件
 ├── board.h             # 硬件配置（SPI2配置）
 ├── config.h            # 模块开关配置

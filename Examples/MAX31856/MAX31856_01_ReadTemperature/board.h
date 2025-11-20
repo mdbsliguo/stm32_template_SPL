@@ -67,8 +67,8 @@ typedef struct
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI1：未使用，禁用 */  \
     {SPI2, GPIOB, GPIO_Pin_13, GPIOB, GPIO_Pin_14, GPIOB, GPIO_Pin_15, NULL, 0,                         \
      SPI_Mode_Master, SPI_Direction_2Lines_FullDuplex, SPI_DataSize_8b,                                \
-     SPI_CPOL_High, SPI_CPHA_2Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_16, SPI_FirstBit_MSB, 1},       \
-    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI)，主模式，全双工，8位，模式3(CPOL=High, CPHA=2Edge)，软件NSS，预分频16(4.5MHz，不超过5MHz限制)，MSB，启用 */ \
+     SPI_CPOL_High, SPI_CPHA_2Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_32, SPI_FirstBit_MSB, 1},       \
+    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI)，主模式，全双工，8位，模式3(CPOL=High, CPHA=2Edge)，软件NSS，预分频32(2.25MHz，不超过5MHz限制)，MSB，启用 */ \
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI3：未使用，禁用 */  \
 }
 

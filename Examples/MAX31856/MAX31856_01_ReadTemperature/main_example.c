@@ -154,7 +154,7 @@ static MAX31856_Status_t MAX31856_InitRoutine(void)
     OLED_ShowString(3, 1, "Type: K");
     Delay_ms(300);
     
-    /* 3. 设置4次平均 */
+    /* 3. 设置4次平均（快速转换） */
     status = MAX31856_SetAvgMode(MAX31856_AVG_SEL_4);
     if (status != MAX31856_OK)
     {
@@ -162,30 +162,10 @@ static MAX31856_Status_t MAX31856_InitRoutine(void)
         Delay_ms(2000);
         return status;
     }
+    OLED_ShowString(3, 1, "Avg: 4");
+    Delay_ms(300);
     
-    /* 4. 先设置单次转换模式，触发第一次转换 */
-    status = MAX31856_SetConvMode(MAX31856_CONV_MODE_ONE_SHOT);
-    if (status != MAX31856_OK)
-    {
-        OLED_ShowString(3, 1, "Set Mode Fail!");
-        Delay_ms(2000);
-        return status;
-    }
-    
-    /* 5. 触发第一次转换 */
-    status = MAX31856_TriggerOneShot();
-    if (status != MAX31856_OK)
-    {
-        OLED_ShowString(3, 1, "Trigger Fail!");
-        Delay_ms(2000);
-        return status;
-    }
-    
-    /* 6. 等待第一次转换完成（4次平均约250ms，等待800ms） */
-    OLED_ShowString(4, 1, "Wait Conv...");
-    Delay_ms(800);
-    
-    /* 7. 切换到连续转换模式 */
+    /* 4. 设置连续转换模式（关键：启用CMODE位） */
     status = MAX31856_SetConvMode(MAX31856_CONV_MODE_CONTINUOUS);
     if (status != MAX31856_OK)
     {
@@ -193,16 +173,47 @@ static MAX31856_Status_t MAX31856_InitRoutine(void)
         Delay_ms(2000);
         return status;
     }
+    OLED_ShowString(4, 1, "Mode: Cont");
+    Delay_ms(300);
     
-    /* 8. 清除故障 */
+    /* 5. 清除故障 */
     MAX31856_ClearFault();
-    Delay_ms(100);
+    Delay_ms(200);
     
-    /* 9. 等待稳定 */
-    OLED_ShowString(4, 1, "Wait 2s...");
-    Delay_ms(2000);
+    /* 6. 等待转换完成（4次平均约250ms，等待3秒确保稳定） */
+    OLED_ShowString(4, 1, "Wait 3s...");
+    Delay_ms(3000);
     
-    OLED_ShowString(4, 1, "Ready!");
+    /* 7. 验证配置：读取CR0和CR1寄存器 */
+    {
+        uint8_t cr0_value = 0;
+        uint8_t cr1_value = 0;
+        
+        status = MAX31856_ReadCR0(&cr0_value);
+        if (status == MAX31856_OK)
+        {
+            /* CR0应该为0x80（CMODE=1，连续转换模式） */
+            char buf[17];
+            snprintf(buf, sizeof(buf), "CR0: 0x%02X", cr0_value);
+            OLED_ShowString(1, 1, buf);
+        }
+        
+        Delay_ms(200);
+        
+        status = MAX31856_ReadCR1(&cr1_value);
+        if (status == MAX31856_OK)
+        {
+            /* CR1应该包含K型热电偶类型（0x03）和4次平均（0x02） */
+            char buf[17];
+            snprintf(buf, sizeof(buf), "CR1: 0x%02X", cr1_value);
+            OLED_ShowString(2, 1, buf);
+        }
+        
+        Delay_ms(1000);
+    }
+    
+    OLED_Clear();
+    OLED_ShowString(1, 1, "Ready!");
     Delay_ms(500);
     
     return MAX31856_OK;
@@ -315,7 +326,7 @@ int main(void)
                 /* 注意：某些故障（如CJ_LOW）可能是芯片未完全初始化导致的，
                  * 清除后需要等待一段时间让芯片稳定
                  */
-                if (fault_flags != 0)
+                if (fault_flags != 0 && fault_flags != 0xFF)
                 {
                     MAX31856_ClearFault();
                     /* 如果检测到CJ_LOW故障，说明冷端温度传感器未就绪，需要等待 */
@@ -332,7 +343,7 @@ int main(void)
             }
             else
             {
-                /* 其他错误 */
+                /* 其他错误，显示错误码 */
                 char err_buf[17];
                 snprintf(err_buf, sizeof(err_buf), "Fault Err: %d", max31856_status);
                 OLED_ShowString(4, 1, err_buf);
