@@ -23,6 +23,7 @@
 #define CONFIG_MODULE_OLED_ENABLED         1   /**< OLED模块开关 */
 #define CONFIG_MODULE_I2C_ENABLED          1   /**< I2C模块开关 */
 #define CONFIG_MODULE_DS3231_ENABLED      1   /**< DS3231模块开关 */
+#define CONFIG_MODULE_MAX31856_ENABLED   1   /**< MAX31856模块开关 */
 #define CONFIG_MODULE_SOFT_I2C_ENABLED   1   /**< 软件I2C模块开关 */
 #define CONFIG_MODULE_SPI_ENABLED         1   /**< SPI模块开关 */
 #define CONFIG_MODULE_SOFT_SPI_ENABLED   1   /**< 软件SPI模块开关 */

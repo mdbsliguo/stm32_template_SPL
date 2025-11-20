@@ -132,9 +132,6 @@ stm32_template_SPL/
 
 - [AI规则与项目约束](PROJECT_KEYWORDS.md) - **AI的唯一规则来源**（包含项目描述和开发约束，新建会话时请复制使用）
 
-### 案例参考类
-
-- [Examples使用指南](Examples/README.md) - 12个演示案例使用说明
 
 ### 其他文档
 
@@ -177,26 +174,11 @@ stm32_template_SPL/
 
 ---
 
-## 🔄 版本历史
-
-- **v0.1.0** (2024-01-01)
-  - 初始化STM32模块化基础结构
-  - 完成基础驱动模块（GPIO、LED、OLED、I2C、SPI、DS3231）
-  - 完成系统服务模块（base_TIM2、delay、clock_manager、system_init、iwdg、system_monitor）
-  - 完成工具模块（error_handler、log）
-  - 完成12个演示案例
-
----
 
 ## 📄 许可证
 
 MIT License - 随意使用，自由修改
 
----
-
-## 👥 贡献
-
-代码由AI生成，欢迎提出建议和反馈。
 
 ---
 

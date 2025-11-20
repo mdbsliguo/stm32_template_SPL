@@ -300,8 +300,9 @@ SPI_Status_t SPI_DisableCRC(SPI_Instance_t instance);
  * @brief 获取SPI CRC值
  * @param[in] instance SPI实例索引
  * @return uint16_t CRC值
+ * @note 重命名为SPI_HW_GetCRC避免与STM32标准库的SPI_GetCRC冲突
  */
-uint16_t SPI_GetCRC(SPI_Instance_t instance);
+uint16_t SPI_HW_GetCRC(SPI_Instance_t instance);
 
 /* ========== 中断模式功能 ========== */
 
