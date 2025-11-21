@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>ExampleXX</OutputName>
+          <OutputName>Example5</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\timer</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -401,6 +401,16 @@
               <FilePath>..\..\..\Drivers\basic\gpio.h</FilePath>
             </File>
             <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\basic\led.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\basic\led.h</FilePath>
+            </File>
+            <File>
               <FileName>buzzer.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\basic\buzzer.c</FilePath>
@@ -441,16 +451,6 @@
               <FilePath>..\..\..\Drivers\i2c\i2c_sw.h</FilePath>
             </File>
             <File>
-              <FileName>timer_pwm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\timer\timer_pwm.c</FilePath>
-            </File>
-            <File>
-              <FileName>timer_pwm.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\timer\timer_pwm.h</FilePath>
-            </File>
-            <File>
               <FileName>TIM2_TimeBase.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>
@@ -483,7 +483,7 @@
             <File>
               <FileName>stm32f10x_conf.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Core\stm32f10x_conf.h</FilePath>
+              <FilePath>.\stm32f10x_conf.h</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_it.c</FileName>
@@ -500,6 +500,11 @@
         <Group>
           <GroupName>system</GroupName>
           <Files>
+            <File>
+              <FileName>config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\config.h</FilePath>
+            </File>
             <File>
               <FileName>delay.c</FileName>
               <FileType>1</FileType>
