@@ -4,6 +4,17 @@
  * @version 2.0.0
  * @date 2024-01-01
  * @note 基于TIM2_TimeBase模块，确保频率变化时1秒永远是1秒
+ * 
+ * @details 实现说明：
+ * - 阻塞式延时：基于SysTick寄存器，提供微秒/毫秒级精确延时
+ * - 非阻塞式延时：基于TIM2_TimeBase的g_task_tick，提供长时间延时
+ * - 频率适配：频率切换时自动重新配置，确保1秒永远是1秒
+ * - 溢出保护：自动处理SysTick和tick溢出，防止计算错误
+ * 
+ * @note 延时精度：
+ * - Delay_us()：微秒级精度，范围0~1864135微秒（@72MHz）
+ * - Delay_ms()：毫秒级精度，范围0~4294967295毫秒（自动分段处理）
+ * - Delay_ms_nonblock()：毫秒级精度，基于TIM2_TimeBase，不受频率切换影响
  */
 
 #include "delay.h"

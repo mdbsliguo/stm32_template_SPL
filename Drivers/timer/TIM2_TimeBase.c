@@ -273,3 +273,4 @@ bool TIM2_TimeBase_IsInitialized(void)
     return g_tim2_timebase_initialized;
 }
 
+

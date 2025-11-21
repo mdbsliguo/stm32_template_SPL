@@ -14,6 +14,129 @@
  * - 超时时间 = (4 * 2^PR) * (RLR + 1) / LSI_freq
  * - 最小超时约1ms，最大约32s
  * - 一旦启用，只能通过系统复位禁用
+ * 
+ * @section 使用方法
+ * 
+ * @subsection 初始化
+ * 初始化看门狗模块（使用默认配置）：
+ * @code
+ * IWDG_Status_t err = IWDG_Init(NULL);  // 使用默认配置（1秒超时）
+ * if (err != IWDG_OK)
+ * {
+ *     // 初始化失败
+ * }
+ * @endcode
+ * 
+ * 使用自定义配置初始化：
+ * @code
+ * iwdg_config_t config = {
+ *     .timeout_ms = 2000,  // 2秒超时
+ *     .prescaler = 0,      // 自动计算
+ *     .reload = 0          // 自动计算
+ * };
+ * IWDG_Init(&config);
+ * @endcode
+ * 
+ * @subsection 启用看门狗
+ * 初始化后需要调用IWDG_Start()启用看门狗：
+ * @code
+ * IWDG_Status_t err = IWDG_Start();
+ * if (err != IWDG_OK)
+ * {
+ *     // 启用失败
+ * }
+ * @endcode
+ * 
+ * @warning 一旦启用看门狗，只能通过系统复位禁用！
+ * 
+ * @subsection 喂狗
+ * 必须在超时时间内定期调用IWDG_Refresh()喂狗：
+ * @code
+ * while (1)
+ * {
+ *     // 业务逻辑
+ *     // ...
+ *     
+ *     // 喂狗（建议在主循环中定期调用）
+ *     IWDG_Refresh();
+ *     
+ *     Delay_ms(100);
+ * }
+ * @endcode
+ * 
+ * @subsection 配置超时时间
+ * 只能在启用前配置超时时间：
+ * @code
+ * // 先初始化
+ * IWDG_Init(NULL);
+ * 
+ * // 配置超时时间为3秒
+ * IWDG_SetTimeout(3000);
+ * 
+ * // 启用看门狗
+ * IWDG_Start();
+ * 
+ * // 启用后无法修改配置
+ * @endcode
+ * 
+ * @subsection 查询状态
+ * 查询看门狗状态：
+ * @code
+ * if (IWDG_IsInitialized())
+ * {
+ *     uint32_t timeout = IWDG_GetTimeout();
+ *     if (IWDG_IsEnabled())
+ * {
+ *         // 看门狗已启用，需要定期喂狗
+ *     }
+ * }
+ * @endcode
+ * 
+ * @subsection 辅助函数
+ * 计算超时时间或参数：
+ * @code
+ * // 计算超时时间
+ * uint32_t timeout = IWDG_CalculateTimeout(4, 1000);  // PR=4, RLR=1000
+ * 
+ * // 根据超时时间计算参数
+ * uint8_t prescaler;
+ * uint16_t reload;
+ * IWDG_CalculateParams(2000, &prescaler, &reload);  // 2秒超时
+ * @endcode
+ * 
+ * @section 注意事项
+ * 
+ * 1. **必须定期喂狗**：启用后必须在超时时间内定期调用IWDG_Refresh()，否则系统会复位
+ * 2. **无法禁用**：一旦启用看门狗，只能通过系统复位禁用，无法通过软件禁用
+ * 3. **配置时机**：只能在启用前配置超时时间，启用后无法修改
+ * 4. **超时范围**：超时时间范围1ms~32768ms，超出范围会返回错误
+ * 5. **LSI频率**：使用LSI（约40kHz）作为时钟源，实际频率可能有偏差
+ * 6. **初始化顺序**：看门狗初始化不依赖其他模块，可以在System_Init()之前初始化
+ * 7. **喂狗频率**：建议在主循环中定期喂狗，频率应远高于超时时间（如超时2秒，每100ms喂一次）
+ * 
+ * @section 配置说明
+ * 
+ * 模块开关在system/config.h中配置：
+ * - CONFIG_MODULE_IWDG_ENABLED：看门狗模块开关（默认启用）
+ * - CONFIG_IWDG_TIMEOUT_MS：默认超时时间（毫秒），范围1ms~32768ms（默认1000ms）
+ * 
+ * @section 超时时间计算
+ * 
+ * 超时时间计算公式：
+ * timeout_ms = (4 * 2^PR) * (RLR + 1) * 1000 / LSI_freq
+ * 
+ * 其中：
+ * - PR：预分频器（0-6），对应4/8/16/32/64/128/256分频
+ * - RLR：重装载值（0-4095）
+ * - LSI_freq：LSI频率（约40kHz）
+ * 
+ * 示例：
+ * - PR=4（64分频），RLR=1000：timeout = (4 * 64) * 1001 * 1000 / 40000 ≈ 6406ms
+ * - PR=6（256分频），RLR=4095：timeout = (4 * 256) * 4096 * 1000 / 40000 ≈ 104857ms（超出32秒限制）
+ * 
+ * @section 相关模块
+ * 
+ * - ErrorHandler：错误处理模块（common/error_handler.c/h）
  */
 
 #ifndef IWDG_H

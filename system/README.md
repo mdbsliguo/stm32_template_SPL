@@ -6,7 +6,7 @@
 
 ## 📋 目录说明
 
-```
+```text
 system/
 ├── system_init.c/h      # 系统初始化框架（统一入口）
 ├── delay.c/h            # 延时函数接口

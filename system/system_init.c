@@ -3,6 +3,19 @@
  * @brief 系统初始化框架实现
  * @version 1.0.0
  * @date 2024-01-01
+ * 
+ * @details 实现统一的系统初始化流程，按顺序初始化各个模块
+ * 
+ * @note 初始化顺序说明：
+ * 1. TIM2_TimeBase：时间基准模块，提供1ms中断，是其他模块的基础
+ * 2. Delay：延时模块，基于TIM2_TimeBase，提供微秒/毫秒级延时
+ * 3. TIM_SW：软件定时器模块，基于TIM2_TimeBase，提供多个软件定时器实例
+ * 4. GPIO：GPIO驱动，使用时自动使能时钟，无需显式初始化
+ * 5. LED：LED驱动，如果启用则初始化
+ * 
+ * @note 模块开关控制：
+ * - 通过system/config.h中的CONFIG_MODULE_XXX_ENABLED控制模块编译
+ * - 未启用的模块不会编译，减少代码体积
  */
 
 #include "system_init.h"
@@ -36,6 +49,12 @@ sys_init_error_t System_Init(void)
     
     /* 步骤2：初始化延时模块（基于TIM2_TimeBase） */
     Delay_Init();
+    
+    /* 步骤2.5：初始化软件定时器模块（基于TIM2_TimeBase） */
+#if defined(CONFIG_MODULE_TIM_SW_ENABLED) && CONFIG_MODULE_TIM_SW_ENABLED
+    #include "TIM_sw.h"
+    TIM_SW_Init();
+#endif
     
     /* 步骤2：BSP层初始化（板级配置）
      * 注意：board.h中的配置在编译时已确定，无需运行时初始化

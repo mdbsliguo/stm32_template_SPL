@@ -8,6 +8,111 @@
  * - 支持手动/自动两种模式
  * - 递进式降频：系数1-9，系数1是72MHz，系数9是8MHz
  * - 频率范围：8MHz ~ 72MHz
+ * 
+ * @section 使用方法
+ * 
+ * @subsection 初始化
+ * 初始化时钟管理模块：
+ * @code
+ * CLKM_ErrorCode_t err = CLKM_Init();
+ * if (err != CLKM_OK)
+ * {
+ *     // 初始化失败
+ * }
+ * @endcode
+ * 
+ * @subsection 手动模式
+ * 手动设置固定频率：
+ * @code
+ * // 设置为72MHz
+ * CLKM_SetMode(CLKM_MODE_MANUAL, CLKM_LVL_72MHZ);
+ * 
+ * // 或使用便捷函数
+ * CLKM_SetFixedLevel(CLKM_LVL_72MHZ);
+ * 
+ * // 递进式调整频率
+ * CLKM_AdjustLevel(-1);  // 降频1档（72MHz -> 64MHz）
+ * CLKM_AdjustLevel(1);   // 升频1档（64MHz -> 72MHz）
+ * @endcode
+ * 
+ * @subsection 自动模式
+ * 根据CPU负载自动调节频率：
+ * @code
+ * // 设置为自动模式，最低频率8MHz
+ * CLKM_SetMode(CLKM_MODE_AUTO, CLKM_LVL_8MHZ);
+ * 
+ * // 在主循环中调用自适应任务
+ * while (1)
+ * {
+ *     CLKM_AdaptiveTask();  // 每50ms检测一次CPU负载并自动调频
+ *     
+ *     // 在空闲时调用空闲钩子
+ *     CLKM_IdleHook();
+ *     
+ *     // 在忙碌时调用忙碌钩子
+ *     // CLKM_BusyHook();
+ *     
+ *     Delay_ms(100);
+ * }
+ * @endcode
+ * 
+ * @subsection 查询状态
+ * 查询当前频率和模式：
+ * @code
+ * CLKM_FreqLevel_t level = CLKM_GetCurrentLevel();
+ * CLKM_Mode_t mode = CLKM_GetCurrentMode();
+ * uint32_t freq = CLKM_GetCurrentFrequency();
+ * uint8_t cpu_load = CLKM_GetCPULoad();
+ * @endcode
+ * 
+ * @section 频率档位
+ * 
+ * | 档位 | 频率 | 时钟源 | PLL倍频 | Flash等待周期 |
+ * |------|------|--------|---------|--------------|
+ * | CLKM_LVL_72MHZ | 72MHz | PLL | x9 | 2 |
+ * | CLKM_LVL_64MHZ | 64MHz | PLL | x8 | 2 |
+ * | CLKM_LVL_56MHZ | 56MHz | PLL | x7 | 2 |
+ * | CLKM_LVL_48MHZ | 48MHz | PLL | x6 | 1 |
+ * | CLKM_LVL_40MHZ | 40MHz | PLL | x5 | 1 |
+ * | CLKM_LVL_32MHZ | 32MHz | PLL | x4 | 1 |
+ * | CLKM_LVL_24MHZ | 24MHz | PLL | x3 | 0 |
+ * | CLKM_LVL_16MHZ | 16MHz | PLL | x2 | 0 |
+ * | CLKM_LVL_8MHZ  | 8MHz  | HSI | - | 0 |
+ * 
+ * @section 自动调频策略
+ * 
+ * 自动模式下的调频策略：
+ * - CPU使用率 < 30%：降频1档，最低8MHz，降频间隔5秒
+ * - CPU使用率 > 50%：升频3档，最高72MHz，升频间隔1秒
+ * 
+ * @section 注意事项
+ * 
+ * 1. **HSE要求**：除8MHz（HSI）外，其他频率需要外部8MHz晶振（HSE）
+ * 2. **切换时间**：频率切换需要时间（PLL锁定时间），频繁切换可能影响性能
+ * 3. **延时适配**：频率切换时，延时模块会自动适配，确保1秒永远是1秒
+ * 4. **中断保护**：频率切换在临界区进行，会短暂禁用中断
+ * 5. **切换间隔**：手动模式有最小切换间隔限制，防止切换过快
+ * 6. **空闲钩子**：自动模式需要在主循环空闲处调用CLKM_IdleHook()统计CPU负载
+ * 7. **自适应任务**：自动模式需要在主循环中定期调用CLKM_AdaptiveTask()
+ * 
+ * @section 配置说明
+ * 
+ * 模块开关在system/config.h中配置：
+ * - CONFIG_MODULE_CLOCK_MANAGER_ENABLED：时钟管理模块开关（默认启用）
+ * 
+ * 功能开关（在clock_manager.c中定义）：
+ * - CLKM_ADAPTIVE_ENABLE：自动调频功能开关（默认启用）
+ * - CLKM_IDLE_HOOK_ENABLE：空闲钩子功能开关（默认启用）
+ * - CLKM_LOAD_CHECK_INTERVAL：CPU负载检测间隔（默认50ms）
+ * - CLKM_SWITCH_INTERVAL_UP：升频最小间隔（默认1秒）
+ * - CLKM_SWITCH_INTERVAL_DOWN：降频最小间隔（默认5秒）
+ * - CLKM_LOAD_THRESHOLD_HIGH：高负载阈值（默认50%）
+ * - CLKM_LOAD_THRESHOLD_LOW：低负载阈值（默认30%）
+ * 
+ * @section 相关模块
+ * 
+ * - Delay：延时模块（system/delay.c/h），频率切换时自动适配
+ * - TIM2_TimeBase：时间基准模块（Drivers/timer/TIM2_TimeBase.c/h），频率切换时自动适配
  */
 
 #ifndef CLOCK_MANAGER_H

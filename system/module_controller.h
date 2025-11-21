@@ -14,6 +14,142 @@
  * - 模块依赖关系检查
  * - 模块初始化顺序管理
  * - 模块状态报告
+ * 
+ * @section 使用方法
+ * 
+ * @subsection 初始化
+ * 初始化模块开关总控：
+ * @code
+ * MODCTRL_Status_t err = MODCTRL_Init();
+ * if (err != MODCTRL_OK)
+ * {
+ *     // 初始化失败
+ * }
+ * @endcode
+ * 
+ * @subsection 查询模块状态
+ * 查询模块是否启用和已初始化：
+ * @code
+ * // 检查模块是否在编译时启用
+ * if (MODCTRL_IsModuleEnabled(MODCTRL_ID_LED))
+ * {
+ *     // LED模块已启用
+ * }
+ * 
+ * // 检查模块是否在运行时已初始化
+ * if (MODCTRL_IsModuleInitialized(MODCTRL_ID_LED))
+ * {
+ *     // LED模块已初始化
+ * }
+ * 
+ * // 获取模块状态
+ * MODCTRL_ModuleState_t state = MODCTRL_GetModuleState(MODCTRL_ID_LED);
+ * switch (state)
+ * {
+ *     case MODCTRL_STATE_DISABLED:
+ *         // 模块被禁用
+ *         break;
+ *     case MODCTRL_STATE_ENABLED:
+ *         // 模块已启用但未初始化
+ *         break;
+ *     case MODCTRL_STATE_INITIALIZED:
+ *         // 模块已初始化
+ *         break;
+ * }
+ * @endcode
+ * 
+ * @subsection 获取模块信息
+ * 获取模块详细信息：
+ * @code
+ * MODCTRL_ModuleInfo_t info;
+ * if (MODCTRL_GetModuleInfo(MODCTRL_ID_LED, &info) == MODCTRL_OK)
+ * {
+ *     // info.id: 模块ID
+ *     // info.name: 模块名称
+ *     // info.config_enabled: 编译时是否启用
+ *     // info.runtime_initialized: 运行时是否已初始化
+ *     // info.state: 模块状态
+ * }
+ * @endcode
+ * 
+ * @subsection 更新模块状态
+ * 模块初始化/反初始化时更新状态：
+ * @code
+ * // 模块初始化后
+ * MODCTRL_UpdateModuleState(MODCTRL_ID_LED, 1);  // 标记为已初始化
+ * 
+ * // 模块反初始化后
+ * MODCTRL_UpdateModuleState(MODCTRL_ID_LED, 0);  // 标记为未初始化
+ * @endcode
+ * 
+ * @subsection 检查依赖关系
+ * 检查模块依赖是否满足：
+ * @code
+ * // 初始化模块前检查依赖
+ * if (MODCTRL_CheckDependencies(MODCTRL_ID_LED) == MODCTRL_OK)
+ * {
+ *     // 依赖满足，可以初始化
+ *     LED_Init();
+ *     MODCTRL_UpdateModuleState(MODCTRL_ID_LED, 1);
+ * }
+ * else
+ * {
+ *     // 依赖未满足，无法初始化
+ * }
+ * @endcode
+ * 
+ * @subsection 获取所有模块状态
+ * 获取所有模块的状态（用于调试和报告）：
+ * @code
+ * MODCTRL_ModuleInfo_t info_array[MODCTRL_ID_MAX];
+ * uint8_t count = MODCTRL_GetAllModuleStates(info_array, MODCTRL_ID_MAX);
+ * 
+ * for (uint8_t i = 0; i < count; i++)
+ * {
+ *     // 处理模块信息
+ *     // info_array[i].name, info_array[i].state, etc.
+ * }
+ * @endcode
+ * 
+ * @subsection 统计信息
+ * 获取模块统计信息：
+ * @code
+ * uint8_t enabled_count = MODCTRL_GetEnabledModuleCount();      // 已启用的模块数量
+ * uint8_t initialized_count = MODCTRL_GetInitializedModuleCount();  // 已初始化的模块数量
+ * @endcode
+ * 
+ * @section 模块依赖关系
+ * 
+ * 模块依赖关系表（按初始化顺序）：
+ * - MODCTRL_ID_BASE_TIMER：无依赖（最基础）
+ * - MODCTRL_ID_DELAY：依赖TIM2_TimeBase
+ * - MODCTRL_ID_GPIO：无依赖
+ * - MODCTRL_ID_LED：依赖GPIO
+ * - MODCTRL_ID_OLED：依赖GPIO
+ * - MODCTRL_ID_CLOCK_MANAGER：依赖GPIO
+ * - MODCTRL_ID_ERROR_HANDLER：无依赖
+ * - MODCTRL_ID_LOG：依赖error_handler、TIM2_TimeBase
+ * - MODCTRL_ID_IWDG：无依赖
+ * - MODCTRL_ID_SYSTEM_INIT：依赖TIM2_TimeBase、Delay、GPIO
+ * - MODCTRL_ID_SYSTEM_MONITOR：依赖TIM2_TimeBase、error_handler
+ * 
+ * @section 注意事项
+ * 
+ * 1. **初始化顺序**：必须先调用MODCTRL_Init()，才能使用其他函数
+ * 2. **状态更新**：模块初始化/反初始化后，需要调用MODCTRL_UpdateModuleState()更新状态
+ * 3. **依赖检查**：初始化模块前建议检查依赖关系，确保依赖模块已初始化
+ * 4. **编译时状态**：编译时模块开关状态从config.h读取，运行时无法修改
+ * 5. **运行时状态**：运行时初始化状态需要手动更新，模块不会自动更新
+ * 
+ * @section 配置说明
+ * 
+ * 模块开关在system/config.h中配置：
+ * - CONFIG_MODULE_MODULE_CTRL_ENABLED：模块开关总控开关（默认启用）
+ * - 其他模块开关：CONFIG_MODULE_XXX_ENABLED
+ * 
+ * @section 相关模块
+ * 
+ * - ErrorHandler：错误处理模块（common/error_handler.c/h）
  */
 
 #ifndef MODULE_CONTROLLER_H

@@ -10,6 +10,149 @@
  * - 检查间隔：通过 system/config.h 中的 CONFIG_SYSTEM_MONITOR_CHECK_INTERVAL 控制
  * - 日志间隔：通过 system/config.h 中的 CONFIG_SYSTEM_MONITOR_LOG_INTERVAL 控制
  * - 告警阈值：通过 system/config.h 中的 CONFIG_SYSTEM_MONITOR_CPU_THRESHOLD 等控制
+ * 
+ * @section 使用方法
+ * 
+ * @subsection 初始化
+ * 初始化系统监控模块：
+ * @code
+ * SystemMonitor_ErrorCode_t err = SystemMonitor_Init();
+ * if (err != SYSMON_OK)
+ * {
+ *     // 初始化失败
+ * }
+ * @endcode
+ * 
+ * @subsection 监控任务
+ * 在主循环中定期调用监控任务：
+ * @code
+ * while (1)
+ * {
+ *     // 系统监控任务（建议每100ms调用一次）
+ *     SystemMonitor_Task();
+ *     
+ *     // 其他业务逻辑
+ *     // ...
+ *     
+ *     Delay_ms(100);
+ * }
+ * @endcode
+ * 
+ * @subsection 获取系统状态
+ * 获取系统状态信息：
+ * @code
+ * SystemMonitor_Status_t status;
+ * if (SystemMonitor_GetStatus(&status) == SYSMON_OK)
+ * {
+ *     // status.cpu_usage: CPU使用率（%）
+ *     // status.free_heap: 空闲堆内存（字节）
+ *     // status.min_free_heap: 最小空闲堆内存（字节）
+ *     // status.stack_usage: 栈使用量（字节）
+ *     // status.error_count: 错误总数
+ *     // status.exception_count: 异常总数
+ *     // status.uptime_sec: 运行时间（秒）
+ *     // status.current_freq: 当前系统频率（Hz）
+ *     // status.temperature: 内部温度（°C）
+ * }
+ * @endcode
+ * 
+ * @subsection 查询单项指标
+ * 查询单项系统指标：
+ * @code
+ * uint8_t cpu_usage = SystemMonitor_GetCPUUsage();        // CPU使用率
+ * uint32_t free_heap = SystemMonitor_GetFreeHeap();       // 空闲堆内存
+ * uint32_t min_free_heap = SystemMonitor_GetMinFreeHeap(); // 最小空闲堆内存
+ * uint32_t stack_usage = SystemMonitor_GetStackUsage();    // 栈使用量
+ * uint32_t uptime = SystemMonitor_GetUptime();            // 运行时间（秒）
+ * uint32_t error_count = SystemMonitor_GetErrorCount();   // 错误总数
+ * uint32_t exception_count = SystemMonitor_GetExceptionCount(); // 异常总数
+ * int16_t temperature = SystemMonitor_GetTemperature();    // 内部温度（°C）
+ * @endcode
+ * 
+ * @subsection 记录异常
+ * 在异常处理函数中记录异常：
+ * @code
+ * void HardFault_Handler(void)
+ * {
+ *     SystemMonitor_RecordException();  // 记录异常发生
+ *     // 异常处理逻辑
+ * }
+ * @endcode
+ * 
+ * @subsection 日志输出
+ * 手动触发状态日志输出：
+ * @code
+ * SystemMonitor_LogStatus();  // 输出系统状态到日志
+ * @endcode
+ * 
+ * @subsection 重置统计
+ * 重置统计信息：
+ * @code
+ * SystemMonitor_ResetStats();  // 重置错误计数、异常计数等
+ * @endcode
+ * 
+ * @subsection 异常寄存器
+ * 读取和清除异常寄存器：
+ * @code
+ * SystemMonitor_ExceptionRegs_t regs;
+ * if (SystemMonitor_ReadExceptionRegs(&regs) == SYSMON_OK)
+ * {
+ *     // regs.cfsr: Configurable Fault Status Register
+ *     // regs.hfsr: Hard Fault Status Register
+ *     // regs.mmfar: Memory Manage Fault Address Register
+ *     // regs.bfar: Bus Fault Address Register
+ *     // regs.dfsr: Debug Fault Status Register
+ * }
+ * 
+ * // 清除异常寄存器（建议先读取再清除）
+ * SystemMonitor_ClearExceptionRegs();
+ * @endcode
+ * 
+ * @section 监控功能
+ * 
+ * 系统监控模块提供以下监控功能：
+ * - **CPU使用率**：通过clock_manager模块获取（如果启用）
+ * - **堆内存**：自动检测FreeRTOS环境，优先使用FreeRTOS API
+ * - **栈内存**：通过魔法数字法检测栈使用量
+ * - **错误统计**：通过error_handler模块获取（如果启用）
+ * - **异常统计**：记录异常发生次数
+ * - **运行时间**：从初始化开始计算的运行时间
+ * - **系统频率**：当前系统时钟频率
+ * - **内部温度**：STM32内部温度传感器（ADC通道16）
+ * 
+ * @section 告警机制
+ * 
+ * 系统监控模块提供自动告警功能：
+ * - **CPU使用率告警**：超过CONFIG_SYSTEM_MONITOR_CPU_THRESHOLD（默认80%）时告警
+ * - **堆内存告警**：低于CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD（默认1024字节）时告警
+ * - **告警抑制**：相同告警至少间隔5秒才再次输出，避免告警刷屏
+ * 
+ * @section 注意事项
+ * 
+ * 1. **初始化顺序**：需要在System_Init()之后初始化
+ * 2. **定期调用**：需要在主循环中定期调用SystemMonitor_Task()，建议每100ms一次
+ * 3. **堆内存统计**：堆内存统计需要编译器支持（Keil MDK），其他编译器可能不支持
+ * 4. **栈内存统计**：栈内存统计通过魔法数字法，需要正确配置CONFIG_STACK_SIZE
+ * 5. **FreeRTOS支持**：如果使用FreeRTOS，会自动使用FreeRTOS的堆内存API
+ * 6. **温度传感器**：温度传感器首次使用时自动初始化，需要ADC1和GPIOA时钟
+ * 7. **告警抑制**：告警有抑制机制，相同告警至少间隔5秒才再次输出
+ * 
+ * @section 配置说明
+ * 
+ * 模块开关在system/config.h中配置：
+ * - CONFIG_MODULE_SYSTEM_MONITOR_ENABLED：系统监控模块开关（默认启用）
+ * - CONFIG_SYSTEM_MONITOR_CHECK_INTERVAL：监控检查间隔（默认1000ms）
+ * - CONFIG_SYSTEM_MONITOR_LOG_INTERVAL：日志输出间隔（默认5000ms）
+ * - CONFIG_SYSTEM_MONITOR_CPU_THRESHOLD：CPU使用率告警阈值（默认80%）
+ * - CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD：堆内存告警阈值（默认1024字节）
+ * - CONFIG_STACK_SIZE：栈总大小（默认0x400=1KB），需与startup.s中的Stack_Size一致
+ * 
+ * @section 相关模块
+ * 
+ * - TIM2_TimeBase：时间基准模块（Drivers/timer/TIM2_TimeBase.c/h）
+ * - ClockManager：时钟管理模块（system/clock_manager.c/h），用于获取CPU使用率
+ * - ErrorHandler：错误处理模块（common/error_handler.c/h），用于获取错误统计
+ * - Log：日志模块（Debug/log.c/h），用于输出监控日志
  */
 
 #ifndef SYSTEM_MONITOR_H

@@ -26,6 +26,11 @@
 #include "error_code.h"
 #include "core_cm3.h"  /* 用于访问SCB寄存器 */
 
+/* 使用 <config.h> 而不是 "config.h"，这样会优先在包含路径中查找 */
+/* 案例工程的包含路径中，案例目录在最前面，所以会优先找到案例的config.h */
+/* 主工程没有案例目录的config.h，会找到system/config.h */
+#include <config.h>
+
 #ifdef ERROR_HANDLER_H
 #include "error_handler.h"
 #endif
@@ -40,6 +45,10 @@
 
 #ifdef DELAY_H
 #include "delay.h"
+#endif
+
+#if defined(CONFIG_MODULE_TIM_SW_ENABLED) && CONFIG_MODULE_TIM_SW_ENABLED
+#include "TIM_sw.h"
 #endif
 
 #ifdef SYSTEM_MONITOR_H
@@ -327,6 +336,11 @@ extern volatile uint32_t g_task_tick;
 extern void CLKM_CalculateCPULoad1Sec(void);
 #endif
 
+#if defined(CONFIG_MODULE_TIM_SW_ENABLED) && CONFIG_MODULE_TIM_SW_ENABLED
+/* 软件定时器模块更新函数 */
+extern void TIM_SW_Update(void);
+#endif
+
 void TIM2_IRQHandler(void)
 {
     if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
@@ -340,6 +354,11 @@ void TIM2_IRQHandler(void)
         {
             CLKM_CalculateCPULoad1Sec();
         }
+        #endif
+        
+        /* 更新软件定时器 */
+        #if defined(CONFIG_MODULE_TIM_SW_ENABLED) && CONFIG_MODULE_TIM_SW_ENABLED
+        TIM_SW_Update();
         #endif
     }
 }

@@ -7,6 +7,13 @@
  * 
  * @note 已完善：
  * - ✅ FreeRTOS支持：自动检测FreeRTOS环境，优先使用FreeRTOS的堆内存API
+ * 
+ * @details 实现说明：
+ * - 堆内存监控：自动检测FreeRTOS环境，优先使用FreeRTOS API，否则使用Keil MDK符号
+ * - 栈内存监控：通过魔法数字法（0x5A5A5A5A）检测栈使用量
+ * - CPU使用率：通过clock_manager模块获取（如果启用）
+ * - 温度传感器：使用STM32内部温度传感器（ADC通道16），首次使用时自动初始化
+ * - 告警机制：提供CPU和堆内存告警，带抑制机制（相同告警至少间隔5秒）
  */
 
 #include "system_monitor.h"

@@ -51,6 +51,7 @@
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */
 #define CONFIG_MODULE_BASE_TIMER_ENABLED   1   /**< TIM2时间基准模块开关 */
+#define CONFIG_MODULE_TIM_SW_ENABLED       1   /**< 软件定时器模块开关 */
 #define CONFIG_MODULE_CLOCK_MANAGER_ENABLED 1   /**< 时钟管理模块开关 */
 #define CONFIG_MODULE_SYSTEM_INIT_ENABLED   1   /**< 系统初始化模块开关 */
 #define CONFIG_MODULE_IWDG_ENABLED         1   /**< 独立看门狗模块开关 */

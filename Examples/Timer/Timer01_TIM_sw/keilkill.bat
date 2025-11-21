@@ -7,7 +7,7 @@ del *.mpf /s
 del *.mpj /s
 del *.obj /s
 del *.omf /s
-::del *.opt /s  ::涓嶈鍒犻櫎JLINK閰嶇疆
+::del *.opt /s  ::不允许删除JLINK的设置
 del *.plg /s
 del *.rpt /s
 del *.tmp /s
@@ -25,5 +25,3 @@ del *.htm /s
 del *.sct /s
 del *.map /s
 exit
-
-
