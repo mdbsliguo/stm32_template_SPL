@@ -13,11 +13,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
-
-/* 系统配置（如果存在） */
-#ifdef CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 /* 模块开关检查 */
 #ifndef CONFIG_MODULE_MODULE_CTRL_ENABLED

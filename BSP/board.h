@@ -327,6 +327,31 @@ typedef struct
     {EXTI_LINE_0, GPIOA, GPIO_Pin_0, EXTI_TRIGGER_RISING, EXTI_MODE_INTERRUPT, 0}, /* EXTI0：PA0，上升沿，中断模式，禁用 */ \
 }
 
+/* ==================== Buzzer配置 ==================== */
+
+/* Buzzer驱动模式枚举 */
+typedef enum {
+    BUZZER_MODE_GPIO = 0,  /**< GPIO模式：简单开关，无频率控制 */
+    BUZZER_MODE_PWM = 1    /**< PWM模式：通过PWM控制频率 */
+} Buzzer_Mode_t;
+
+/* Buzzer配置结构体 */
+typedef struct
+{
+    Buzzer_Mode_t mode;        /**< 驱动模式（GPIO/PWM） */
+    GPIO_TypeDef *port;        /**< GPIO端口（GPIO模式必需） */
+    uint16_t pin;              /**< GPIO引脚（GPIO模式必需） */
+    uint8_t pwm_instance;      /**< PWM实例（PWM模式必需，0=TIM1, 1=TIM3, 2=TIM4） */
+    uint8_t pwm_channel;       /**< PWM通道（PWM模式必需，0=CH1, 1=CH2, 2=CH3, 3=CH4） */
+    uint8_t active_level;      /**< 有效电平（Bit_SET或Bit_RESET） */
+    uint8_t enabled;           /**< 使能标志：1=启用，0=禁用 */
+} Buzzer_Config_t;
+
+/* Buzzer统一配置表 - 默认配置（GPIO模式，PA2，低电平有效） */
+#define BUZZER_CONFIGS {                                                                                    \
+    {BUZZER_MODE_GPIO, GPIOA, GPIO_Pin_2, 1, 0, Bit_RESET, 0}, /* Buzzer1：GPIO模式，PA2，低电平有效，禁用（PWM实例和通道在GPIO模式下忽略） */ \
+}
+
 /* ==================== 时钟管理配置 ==================== */
 
 /* 时钟管理配置 - 案例10配置（自动模式，用于CPU负载监控） */

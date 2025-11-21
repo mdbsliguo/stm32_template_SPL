@@ -59,6 +59,7 @@ typedef int32_t error_code_t;
 #define ERROR_BASE_FSMC -3100             /**< FSMC模块错误码基值 */
 #define ERROR_BASE_CEC -3200              /**< CEC模块错误码基值 */
 #define ERROR_BASE_MAX31856 -3300         /**< MAX31856模块错误码基值 */
+#define ERROR_BASE_BUZZER -3400            /**< Buzzer模块错误码基值 */
 /** @} */
 
 #endif /* ERROR_CODE_H */

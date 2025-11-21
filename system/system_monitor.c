@@ -10,7 +10,7 @@
  */
 
 #include "system_monitor.h"
-#include "config.h"
+#include <config.h>
 #include "base_TIM2.h"
 #include "delay.h"
 #include "stm32f10x.h"  /* 用于SystemCoreClock */

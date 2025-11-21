@@ -4,8 +4,8 @@
  * @details 只启用案例6需要的模块，禁用其他模块以减小代码体积
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef EXAMPLE_CONFIG_H
+#define EXAMPLE_CONFIG_H
 
 /* ==================== 模块开关 ==================== */
 
@@ -48,7 +48,7 @@
 /* #define CONFIG_SYSTEM_MONITOR_CPU_THRESHOLD  80    */
 /* #define CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD  1024  */
 
-#endif /* CONFIG_H */
+#endif /* EXAMPLE_CONFIG_H */
 
 
 

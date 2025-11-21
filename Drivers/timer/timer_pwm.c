@@ -22,20 +22,21 @@
 #include <stddef.h>
 
 /* 从board.h加载配置 */
-static PWM_Config_t g_pwm_configs[PWM_INSTANCE_MAX] = PWM_CONFIGS;
+static PWM_Config_t g_pwm_configs[PWM_INSTANCE_MAX] __attribute__((unused)) = PWM_CONFIGS;
 
 /* 初始化标志 */
-static bool g_pwm_initialized[PWM_INSTANCE_MAX] = {false, false, false};
+static bool g_pwm_initialized[PWM_INSTANCE_MAX] __attribute__((unused)) = {false, false, false};
 
 /* 当前频率（Hz） */
-static uint32_t g_pwm_frequency[PWM_INSTANCE_MAX] = {1000, 1000, 1000};
+static uint32_t g_pwm_frequency[PWM_INSTANCE_MAX] __attribute__((unused)) = {1000, 1000, 1000};
 
 /**
  * @brief 获取GPIO时钟
  * @param[in] port GPIO端口指针
  * @return uint32_t GPIO时钟使能值
+ * @note 占位函数，待实现
  */
-static uint32_t PWM_GetGPIOClock(GPIO_TypeDef *port)
+static __attribute__((unused)) uint32_t PWM_GetGPIOClock(GPIO_TypeDef *port)
 {
     (void)port;
     return 0;
@@ -45,8 +46,9 @@ static uint32_t PWM_GetGPIOClock(GPIO_TypeDef *port)
  * @brief 获取定时器外设时钟
  * @param[in] tim_periph 定时器外设指针
  * @return uint32_t 时钟使能值，失败返回0
+ * @note 占位函数，待实现
  */
-static uint32_t PWM_GetPeriphClock(TIM_TypeDef *tim_periph)
+static __attribute__((unused)) uint32_t PWM_GetPeriphClock(TIM_TypeDef *tim_periph)
 {
     (void)tim_periph;
     return 0;
@@ -56,8 +58,9 @@ static uint32_t PWM_GetPeriphClock(TIM_TypeDef *tim_periph)
  * @brief 获取定时器实际时钟频率
  * @param[in] tim_periph 定时器外设指针
  * @return uint32_t 定时器时钟频率（Hz），失败返回0
+ * @note 占位函数，待实现
  */
-static uint32_t PWM_GetTimerClock(TIM_TypeDef *tim_periph)
+static __attribute__((unused)) uint32_t PWM_GetTimerClock(TIM_TypeDef *tim_periph)
 {
     (void)tim_periph;
     return 0;
@@ -67,8 +70,9 @@ static uint32_t PWM_GetTimerClock(TIM_TypeDef *tim_periph)
  * @brief 获取PWM通道对应的TIM通道
  * @param[in] channel PWM通道
  * @return uint16_t TIM通道，失败返回0
+ * @note 占位函数，待实现
  */
-static uint16_t PWM_GetTIMChannel(PWM_Channel_t channel)
+static __attribute__((unused)) uint16_t PWM_GetTIMChannel(PWM_Channel_t channel)
 {
     (void)channel;
     return 0;

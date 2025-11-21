@@ -20,6 +20,7 @@
 /* 驱动层模块 */
 #define CONFIG_MODULE_GPIO_ENABLED          1   /**< GPIO模块开关 */
 #define CONFIG_MODULE_LED_ENABLED           1   /**< LED模块开关 */
+#define CONFIG_MODULE_BUZZER_ENABLED        1   /**< Buzzer模块开关 */
 #define CONFIG_MODULE_OLED_ENABLED         1   /**< OLED模块开关 */
 #define CONFIG_MODULE_I2C_ENABLED          1   /**< I2C模块开关 */
 #define CONFIG_MODULE_DS3231_ENABLED      1   /**< DS3231模块开关 */

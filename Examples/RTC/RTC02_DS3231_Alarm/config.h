@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef EXAMPLE_CONFIG_H
+#define EXAMPLE_CONFIG_H
 
 /* ==================== 模块开关 ==================== */
 #define CONFIG_MODULE_GPIO_ENABLED          1
@@ -24,5 +24,5 @@
 
 /* ==================== 功能开关 ==================== */
 
-#endif /* CONFIG_H */
+#endif /* EXAMPLE_CONFIG_H */
 

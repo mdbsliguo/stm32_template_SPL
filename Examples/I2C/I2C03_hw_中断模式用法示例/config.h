@@ -4,8 +4,8 @@
  * @details 只启用I2C03需要的模块，禁用其他模块以减小代码体积
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef EXAMPLE_CONFIG_H
+#define EXAMPLE_CONFIG_H
 
 /* ==================== 模块开关 ==================== */
 
@@ -42,5 +42,5 @@
 #define CONFIG_LOG_MODULE_EN                1   /**< 模块名显示开关 */
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关（需要终端支持ANSI转义码） */
 
-#endif /* CONFIG_H */
+#endif /* EXAMPLE_CONFIG_H */
 

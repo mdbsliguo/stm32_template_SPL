@@ -9,7 +9,13 @@
 #include "base_TIM2.h"  /* 基时定时器 */
 #include "delay.h"
 #include "gpio.h"
+/* 使用 <config.h> 而不是 "config.h"，这样会优先在包含路径中查找 */
+/* 案例工程的包含路径中，案例目录在最前面，所以会优先找到案例的config.h */
+/* 主工程没有案例目录的config.h，会找到system/config.h */
+#include <config.h>
+#if defined(CONFIG_MODULE_LED_ENABLED) && CONFIG_MODULE_LED_ENABLED
 #include "led.h"
+#endif
 #include "stm32f10x.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -39,12 +45,14 @@ sys_init_error_t System_Init(void)
     /* 步骤3：驱动层初始化 */
     /* GPIO驱动无需显式初始化（使用时自动使能时钟） */
     
+#if defined(CONFIG_MODULE_LED_ENABLED) && CONFIG_MODULE_LED_ENABLED
     /* LED驱动初始化 */
     LED_Status_t led_err = LED_Init();
     if (led_err != LED_OK)
     {
         return SYS_INIT_ERROR_DRIVER;
     }
+#endif
     
     /* 标记为已初始化 */
     g_system_initialized = true;
@@ -60,7 +68,9 @@ sys_init_error_t System_Deinit(void)
     }
     
     /* 反初始化驱动层 */
+#if defined(CONFIG_MODULE_LED_ENABLED) && CONFIG_MODULE_LED_ENABLED
     LED_Deinit();
+#endif
     
     /* 反初始化SysTick（可选，通常不需要） */
     /* SYSTICK_Deinit(); */
