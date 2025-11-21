@@ -61,8 +61,10 @@ OLED_Status_t OLED_SetCursor(uint8_t y, uint8_t x);
  * @brief OLED显示一个字符
  * @param[in] line 行号（1~4）
  * @param[in] column 列号（1~16）
- * @param[in] ch ASCII字符
+ * @param[in] ch ASCII字符或度符号（°）
  * @return OLED_Status_t 错误码
+ * @note 支持ASCII字符（' '到'~'）和度符号（°）
+ * @note 度符号可通过字符码0xB0或176访问，例如：OLED_ShowChar(1, 1, 0xB0)
  */
 OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch);
 

@@ -519,9 +519,9 @@ OLED_Status_t OLED_Clear(void)
 OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch)
 {
     uint8_t i;
+    uint8_t char_index;  /* 字符在字库中的索引 */
     OLED_Status_t status;
     
-    /* ========== 参数校验 ========== */
     /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
@@ -533,9 +533,18 @@ OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch)
         return OLED_ERROR_INVALID_PARAM;
     }
     
-    if (ch < ' ' || ch > '~')
+    /* 字符索引计算：支持度符号（°） */
+    if ((unsigned char)ch == 0xB0 || (unsigned char)ch == 176)  /* 度符号的多种编码 */
     {
-        return OLED_ERROR_INVALID_PARAM;
+        char_index = 95;  /* 度符号在字库中的索引 */
+    }
+    else if (ch >= ' ' && ch <= '~')
+    {
+        char_index = ch - ' ';  /* 标准ASCII字符（索引0-94） */
+    }
+    else
+    {
+        return OLED_ERROR_INVALID_PARAM;  /* 不支持的字符 */
     }
     
     /* 设置光标到字符上半部分 */
@@ -548,7 +557,7 @@ OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch)
     /* 发送上半部分8字节字模数据 */
     for (i = 0; i < 8; i++)
     {
-        status = OLED_WriteData(OLED_F8x16[ch - ' '][i]);
+        status = OLED_WriteData(OLED_F8x16[char_index][i]);
         if (status != OLED_OK)
         {
             return status;
@@ -565,7 +574,7 @@ OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch)
     /* 发送下半部分8字节字模数据 */
     for (i = 0; i < 8; i++)
     {
-        status = OLED_WriteData(OLED_F8x16[ch - ' '][i + 8]);
+        status = OLED_WriteData(OLED_F8x16[char_index][i + 8]);
         if (status != OLED_OK)
         {
             return status;

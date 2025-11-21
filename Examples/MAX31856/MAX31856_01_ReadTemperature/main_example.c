@@ -43,19 +43,28 @@ static void DisplayThermocoupleTemperature(float temperature)
 {
     char buffer[17];
     uint8_t i;
+    uint8_t temp_str_len;
     
-    /* 温度显示（格式：TC: 123.45C） */
+    /* 温度显示（格式：TC: 123.45C°） */
     if (temperature < 0)
     {
-        snprintf(buffer, sizeof(buffer), "TC:-%.2fC", -temperature);
+        snprintf(buffer, sizeof(buffer), "TC:-%.2f", -temperature);
     }
     else
     {
-        snprintf(buffer, sizeof(buffer), "TC: %.2fC", temperature);
+        snprintf(buffer, sizeof(buffer), "TC: %.2f", temperature);
     }
+    temp_str_len = strlen(buffer);
     OLED_ShowString(2, 1, buffer);
+    
+    /* 显示C */
+    OLED_ShowChar(2, temp_str_len + 1, 'C');
+    
+    /* 显示度符号 */
+    OLED_ShowChar(2, temp_str_len + 2, 0xB0);  /* 度符号 */
+    
     /* 清除行尾残留字符 */
-    for (i = strlen(buffer) + 1; i <= 16; i++)
+    for (i = temp_str_len + 3; i <= 16; i++)
     {
         OLED_ShowChar(2, i, ' ');
     }
@@ -68,19 +77,28 @@ static void DisplayColdJunctionTemperature(float temperature)
 {
     char buffer[17];
     uint8_t i;
+    uint8_t temp_str_len;
     
-    /* 温度显示（格式：CJ: 25.00C） */
+    /* 温度显示（格式：CJ: 25.00C°） */
     if (temperature < 0)
     {
-        snprintf(buffer, sizeof(buffer), "CJ:-%.2fC", -temperature);
+        snprintf(buffer, sizeof(buffer), "CJ:-%.2f", -temperature);
     }
     else
     {
-        snprintf(buffer, sizeof(buffer), "CJ: %.2fC", temperature);
+        snprintf(buffer, sizeof(buffer), "CJ: %.2f", temperature);
     }
+    temp_str_len = strlen(buffer);
     OLED_ShowString(3, 1, buffer);
+    
+    /* 显示C */
+    OLED_ShowChar(3, temp_str_len + 1, 'C');
+    
+    /* 显示度符号 */
+    OLED_ShowChar(3, temp_str_len + 2, 0xB0);  /* 度符号 */
+    
     /* 清除行尾残留字符 */
-    for (i = strlen(buffer) + 1; i <= 16; i++)
+    for (i = temp_str_len + 3; i <= 16; i++)
     {
         OLED_ShowChar(3, i, ' ');
     }
