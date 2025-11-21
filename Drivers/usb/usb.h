@@ -24,12 +24,13 @@ extern "C" {
 typedef enum {
     USB_OK = ERROR_OK,                                    /**< 操作成功 */
     USB_ERROR_NOT_IMPLEMENTED = ERROR_BASE_USB - 99,      /**< 功能未实现（占位空函数） */
-    USB_ERROR_NOT_INITIALIZED = ERROR_BASE_USB - 1,      /**< 未初始化 */
-    USB_ERROR_INVALID_PARAM = ERROR_BASE_USB - 2,        /**< 参数错误 */
+    USB_ERROR_NULL_PTR = ERROR_BASE_USB - 1,              /**< 空指针错误 */
+    USB_ERROR_INVALID_PARAM = ERROR_BASE_USB - 2,         /**< 参数错误（通用） */
     USB_ERROR_INVALID_ENDPOINT = ERROR_BASE_USB - 3,      /**< 无效的端点 */
-    USB_ERROR_BUSY = ERROR_BASE_USB - 4,                 /**< USB忙 */
-    USB_ERROR_TIMEOUT = ERROR_BASE_USB - 5,               /**< 操作超时 */
-    USB_ERROR_ALREADY_INITIALIZED = ERROR_BASE_USB - 6,   /**< 已初始化 */
+    USB_ERROR_NOT_INITIALIZED = ERROR_BASE_USB - 4,       /**< 未初始化 */
+    USB_ERROR_BUSY = ERROR_BASE_USB - 5,                  /**< USB忙 */
+    USB_ERROR_TIMEOUT = ERROR_BASE_USB - 6,               /**< 操作超时 */
+    USB_ERROR_ALREADY_INITIALIZED = ERROR_BASE_USB - 7,   /**< 已初始化 */
 } USB_Status_t;
 
 /**

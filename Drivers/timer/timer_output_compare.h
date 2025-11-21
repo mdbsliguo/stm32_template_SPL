@@ -20,12 +20,14 @@ extern "C" {
 typedef enum {
     OC_OK = ERROR_OK,                                    /**< 操作成功 */
     OC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,    /**< 功能未实现（占位空函数） */
-    OC_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 30,  /**< 未初始化 */
-    OC_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 31,     /**< 参数错误 */
-    OC_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 32,    /**< 无效的外设 */
-    OC_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 33,   /**< 无效的通道 */
-    OC_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 34,       /**< GPIO配置失败 */
-    OC_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 35, /**< 已初始化 */
+    OC_ERROR_NULL_PTR = ERROR_BASE_TIMER - 30,           /**< 空指针错误 */
+    OC_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 31,     /**< 参数错误（通用） */
+    OC_ERROR_INVALID_INSTANCE = ERROR_BASE_TIMER - 32,   /**< 无效实例编号 */
+    OC_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 33,     /**< 无效的通道 */
+    OC_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 34,    /**< 未初始化 */
+    OC_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 35,      /**< 无效的外设 */
+    OC_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 36,        /**< GPIO配置失败 */
+    OC_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 37, /**< 已初始化 */
 } OC_Status_t;
 
 /**

@@ -405,7 +405,7 @@ DS3231_Status_t DS3231_Init(const DS3231_Config_t *config)
     uint8_t status_reg;
     DS3231_Status_t status;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (config == NULL)
     {
         return DS3231_ERROR_INVALID_PARAM;
@@ -526,7 +526,7 @@ DS3231_Status_t DS3231_ReadTime(DS3231_Time_t *time)
     uint8_t reg_data[7];
     uint8_t century_bit;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(time);
     DS3231_CHECK_INIT();
     
@@ -588,7 +588,7 @@ DS3231_Status_t DS3231_SetTime(const DS3231_Time_t *time)
     uint8_t reg_data[7];
     uint8_t century_bit;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(time);
     DS3231_CHECK_INIT();
     
@@ -671,7 +671,7 @@ DS3231_Status_t DS3231_ReadTemperature(int16_t *temperature)
     uint8_t temp_msb, temp_lsb;
     int16_t temp_raw;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(temperature);
     DS3231_CHECK_INIT();
     
@@ -707,7 +707,7 @@ DS3231_Status_t DS3231_ReadTemperatureFloat(float *temperature)
     int16_t temp_raw;
     DS3231_Status_t status;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (temperature == NULL)
     {
         return DS3231_ERROR_INVALID_PARAM;
@@ -734,7 +734,7 @@ DS3231_Status_t DS3231_CheckOSF(uint8_t *osf_flag)
     DS3231_Status_t status;
     uint8_t status_reg;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(osf_flag);
     DS3231_CHECK_INIT();
     
@@ -767,7 +767,7 @@ DS3231_Status_t DS3231_IsRunning(uint8_t *running)
     DS3231_Status_t status;
     uint8_t control_reg;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(running);
     DS3231_CHECK_INIT();
     
@@ -810,7 +810,7 @@ DS3231_Status_t DS3231_SetAlarm1(const DS3231_Alarm_t *alarm)
     DS3231_Status_t status;
     uint8_t reg_data[4];
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(alarm);
     DS3231_CHECK_INIT();
     
@@ -888,7 +888,7 @@ DS3231_Status_t DS3231_SetAlarm2(const DS3231_Alarm_t *alarm)
     DS3231_Status_t status;
     uint8_t reg_data[3];
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(alarm);
     DS3231_CHECK_INIT();
     
@@ -954,7 +954,7 @@ DS3231_Status_t DS3231_ReadAlarm1(DS3231_Alarm_t *alarm)
     DS3231_Status_t status;
     uint8_t reg_data[4];
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(alarm);
     DS3231_CHECK_INIT();
     
@@ -1031,7 +1031,7 @@ DS3231_Status_t DS3231_ReadAlarm2(DS3231_Alarm_t *alarm)
     DS3231_Status_t status;
     uint8_t reg_data[3];
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(alarm);
     DS3231_CHECK_INIT();
     
@@ -1227,7 +1227,7 @@ DS3231_Status_t DS3231_Is32kHzEnabled(uint8_t *enabled)
     DS3231_Status_t status;
     uint8_t status_reg;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(enabled);
     DS3231_CHECK_INIT();
     
@@ -1262,7 +1262,7 @@ DS3231_Status_t DS3231_IsTemperatureBusy(uint8_t *busy)
     DS3231_Status_t status;
     uint8_t status_reg;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(busy);
     DS3231_CHECK_INIT();
     
@@ -1298,7 +1298,7 @@ DS3231_Status_t DS3231_GetInterruptMode(DS3231_IntMode_t *mode)
     DS3231_Status_t status;
     uint8_t control_reg;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(mode);
     DS3231_CHECK_INIT();
     
@@ -1325,7 +1325,7 @@ DS3231_Status_t DS3231_ReadAgingOffset(int8_t *offset)
     DS3231_Status_t status;
     uint8_t reg_value;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     DS3231_CHECK_PARAM(offset);
     DS3231_CHECK_INIT();
     

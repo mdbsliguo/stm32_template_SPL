@@ -22,12 +22,14 @@ extern "C" {
 typedef enum {
     PWM_OK = ERROR_OK,                                    /**< 操作成功 */
     PWM_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,    /**< 功能未实现（占位空函数） */
-    PWM_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 1,    /**< 未初始化 */
-    PWM_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 2,      /**< 参数非法 */
-    PWM_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 3,      /**< 无效的外设 */
-    PWM_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 4,    /**< 无效的通道 */
-    PWM_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 5,        /**< GPIO配置失败 */
-    PWM_ERROR_FREQ_OUT_OF_RANGE = ERROR_BASE_TIMER - 6,  /**< 频率超出范围 */
+    PWM_ERROR_NULL_PTR = ERROR_BASE_TIMER - 1,            /**< 空指针错误 */
+    PWM_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 2,      /**< 参数非法（通用） */
+    PWM_ERROR_INVALID_INSTANCE = ERROR_BASE_TIMER - 3,    /**< 无效实例编号 */
+    PWM_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 4,     /**< 无效的通道 */
+    PWM_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 5,      /**< 无效的外设 */
+    PWM_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 6,     /**< 未初始化 */
+    PWM_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 7,         /**< GPIO配置失败 */
+    PWM_ERROR_FREQ_OUT_OF_RANGE = ERROR_BASE_TIMER - 8,  /**< 频率超出范围 */
 } PWM_Status_t;
 
 /**

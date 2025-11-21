@@ -28,14 +28,23 @@ static bool g_cec_initialized = false;
 CEC_Status_t CEC_Init(CEC_BitTimingMode_t bit_timing_mode, CEC_BitPeriodMode_t bit_period_mode,
                       uint8_t own_address, uint16_t prescaler)
 {
-    (void)bit_timing_mode;
-    (void)bit_period_mode;
-    (void)own_address;
-    (void)prescaler;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (bit_timing_mode > CEC_BIT_TIMING_ERR_FREE) {
+        return CEC_ERROR_INVALID_PARAM;
+    }
+    if (bit_period_mode > CEC_BIT_PERIOD_FLEXIBLE) {
+        return CEC_ERROR_INVALID_PARAM;
+    }
+    if (own_address > 15) {
+        return CEC_ERROR_INVALID_PARAM;  /* 本机地址范围：0-15 */
+    }
+    if (prescaler > 16383) {
+        return CEC_ERROR_INVALID_PARAM;  /* 预分频器范围：0-16383 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CEC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -109,11 +118,14 @@ CEC_Status_t CEC_DisableIT(void)
  */
 CEC_Status_t CEC_SetOwnAddress(uint8_t own_address)
 {
-    (void)own_address;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (own_address > 15) {
+        return CEC_ERROR_INVALID_PARAM;  /* 本机地址范围：0-15 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CEC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -122,11 +134,14 @@ CEC_Status_t CEC_SetOwnAddress(uint8_t own_address)
  */
 CEC_Status_t CEC_SetPrescaler(uint16_t prescaler)
 {
-    (void)prescaler;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (prescaler > 16383) {
+        return CEC_ERROR_INVALID_PARAM;  /* 预分频器范围：0-16383 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CEC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CEC_ERROR_NOT_IMPLEMENTED;
 }
 

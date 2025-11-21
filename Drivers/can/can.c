@@ -68,10 +68,14 @@ static uint32_t CAN_GetGPIOClock(GPIO_TypeDef *port)
  */
 CAN_Status_t CAN_Init(CAN_Instance_t instance)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -80,10 +84,14 @@ CAN_Status_t CAN_Init(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Deinit(CAN_Instance_t instance)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -92,10 +100,27 @@ CAN_Status_t CAN_Deinit(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Transmit(CAN_Instance_t instance, const CAN_Message_t *message, uint32_t timeout)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (message == NULL) {
+        return CAN_ERROR_NULL_PTR;
+    }
+    if (message->dlc > 8) {
+        return CAN_ERROR_INVALID_PARAM;  /* DLC范围：0-8 */
+    }
+    if (message->type > CAN_FRAME_EXTENDED) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    if (message->rtr > CAN_RTR_REMOTE) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
+    (void)timeout;
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -104,10 +129,21 @@ CAN_Status_t CAN_Transmit(CAN_Instance_t instance, const CAN_Message_t *message,
  */
 CAN_Status_t CAN_Receive(CAN_Instance_t instance, CAN_Message_t *message, uint8_t fifo_number, uint32_t timeout)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (message == NULL) {
+        return CAN_ERROR_NULL_PTR;
+    }
+    if (fifo_number > 1) {
+        return CAN_ERROR_INVALID_PARAM;  /* FIFO编号：0或1 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    (void)timeout;
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -116,6 +152,15 @@ CAN_Status_t CAN_Receive(CAN_Instance_t instance, CAN_Message_t *message, uint8_
  */
 uint8_t CAN_GetPendingMessageCount(CAN_Instance_t instance, uint8_t fifo_number)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    if (fifo_number > 1) {
+        return 0;  /* 无效FIFO编号返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -126,10 +171,25 @@ CAN_Status_t CAN_ConfigFilter(CAN_Instance_t instance, uint8_t filter_number,
                                uint32_t filter_id, uint32_t filter_mask,
                                CAN_FrameType_t filter_type, uint8_t fifo_number)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (filter_number > 13) {
+        return CAN_ERROR_INVALID_PARAM;  /* 过滤器编号：0-13 */
+    }
+    if (filter_type > CAN_FRAME_EXTENDED) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    if (fifo_number > 1) {
+        return CAN_ERROR_INVALID_PARAM;  /* FIFO编号：0或1 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    (void)filter_id;
+    (void)filter_mask;
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -138,6 +198,12 @@ CAN_Status_t CAN_ConfigFilter(CAN_Instance_t instance, uint8_t filter_number,
  */
 uint8_t CAN_IsInitialized(CAN_Instance_t instance)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -146,6 +212,12 @@ uint8_t CAN_IsInitialized(CAN_Instance_t instance)
  */
 CAN_TypeDef* CAN_GetPeriph(CAN_Instance_t instance)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return NULL;  /* 无效实例返回NULL */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return NULL;
 }
 
@@ -177,10 +249,17 @@ static void CAN_GetIRQn(CAN_Instance_t instance, IRQn_Type *tx_irqn, IRQn_Type *
  */
 CAN_Status_t CAN_EnableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > CAN_IT_FOV1) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -189,10 +268,17 @@ CAN_Status_t CAN_EnableIT(CAN_Instance_t instance, CAN_IT_t it_type)
  */
 CAN_Status_t CAN_DisableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > CAN_IT_FOV1) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -202,10 +288,20 @@ CAN_Status_t CAN_DisableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 CAN_Status_t CAN_SetITCallback(CAN_Instance_t instance, CAN_IT_t it_type,
                                 CAN_IT_Callback_t callback, void *user_data)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > CAN_IT_FOV1) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
+    (void)callback;
+    (void)user_data;
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -214,10 +310,26 @@ CAN_Status_t CAN_SetITCallback(CAN_Instance_t instance, CAN_IT_t it_type,
  */
 CAN_Status_t CAN_TransmitIT(CAN_Instance_t instance, const CAN_Message_t *message)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (message == NULL) {
+        return CAN_ERROR_NULL_PTR;
+    }
+    if (message->dlc > 8) {
+        return CAN_ERROR_INVALID_PARAM;  /* DLC范围：0-8 */
+    }
+    if (message->type > CAN_FRAME_EXTENDED) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    if (message->rtr > CAN_RTR_REMOTE) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -226,6 +338,16 @@ CAN_Status_t CAN_TransmitIT(CAN_Instance_t instance, const CAN_Message_t *messag
  */
 void CAN_IRQHandler(CAN_Instance_t instance, uint8_t fifo)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return;  /* 无效实例直接返回 */
+    }
+    if (fifo > 1) {
+        return;  /* 无效FIFO编号直接返回 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    /* 功能未实现 */
 }
 
 /* CAN中断服务程序入口 */
@@ -259,6 +381,12 @@ void CAN2_SCE_IRQHandler(void)
  */
 uint8_t CAN_GetInstanceLastErrorCode(CAN_Instance_t instance)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -267,10 +395,14 @@ uint8_t CAN_GetInstanceLastErrorCode(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Recovery(CAN_Instance_t instance)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -290,10 +422,17 @@ static uint8_t CAN_GetModeValue(CAN_Mode_t mode)
  */
 CAN_Status_t CAN_SetMode(CAN_Instance_t instance, CAN_Mode_t mode)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (mode > CAN_MODE_SILENT_LOOPBACK) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -302,10 +441,17 @@ CAN_Status_t CAN_SetMode(CAN_Instance_t instance, CAN_Mode_t mode)
  */
 CAN_Status_t CAN_GetMode(CAN_Instance_t instance, CAN_Mode_t *mode)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (mode == NULL) {
+        return CAN_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -314,10 +460,17 @@ CAN_Status_t CAN_GetMode(CAN_Instance_t instance, CAN_Mode_t *mode)
  */
 CAN_Status_t CAN_RequestOperatingMode(CAN_Instance_t instance, CAN_OperatingMode_t op_mode)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    if (op_mode > CAN_OP_MODE_INIT) {
+        return CAN_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -326,10 +479,14 @@ CAN_Status_t CAN_RequestOperatingMode(CAN_Instance_t instance, CAN_OperatingMode
  */
 CAN_Status_t CAN_Sleep(CAN_Instance_t instance)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -338,10 +495,14 @@ CAN_Status_t CAN_Sleep(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_WakeUp(CAN_Instance_t instance)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= CAN_INSTANCE_MAX) {
+        return CAN_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "CAN函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return CAN_ERROR_NOT_IMPLEMENTED;
 }
 

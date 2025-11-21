@@ -87,12 +87,14 @@ static __attribute__((unused)) uint16_t PWM_GetTIMChannel(PWM_Channel_t channel)
  */
 PWM_Status_t PWM_Init(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_Init: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -104,12 +106,14 @@ PWM_Status_t PWM_Init(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_Deinit(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_Deinit: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -122,13 +126,18 @@ PWM_Status_t PWM_Deinit(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency)
 {
-    (void)instance;
-    (void)frequency;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (frequency == 0) {
+        return PWM_ERROR_INVALID_PARAM;  /* 频率不能为0 */
+    }
+    /* 注意：最大频率检查需要在实现时根据系统时钟计算，这里只检查最小值 */
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_SetFrequency: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -141,13 +150,17 @@ PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency)
  */
 PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency)
 {
-    (void)instance;
-    (void)frequency;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (frequency == NULL) {
+        return PWM_ERROR_NULL_PTR;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_GetFrequency: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -161,14 +174,20 @@ PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency)
  */
 PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, float duty_cycle)
 {
-    (void)instance;
-    (void)channel;
-    (void)duty_cycle;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= PWM_CHANNEL_MAX) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
+    if (duty_cycle < 0.0f || duty_cycle > 100.0f) {
+        return PWM_ERROR_INVALID_PARAM;  /* 占空比范围：0.0 ~ 100.0 */
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_SetDutyCycle: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -181,13 +200,17 @@ PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, fl
  */
 PWM_Status_t PWM_EnableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= PWM_CHANNEL_MAX) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_EnableChannel: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -200,13 +223,17 @@ PWM_Status_t PWM_EnableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
  */
 PWM_Status_t PWM_DisableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= PWM_CHANNEL_MAX) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_DisableChannel: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -215,7 +242,12 @@ PWM_Status_t PWM_DisableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
  */
 uint8_t PWM_IsInitialized(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -224,7 +256,12 @@ uint8_t PWM_IsInitialized(PWM_Instance_t instance)
  */
 TIM_TypeDef* PWM_GetPeriph(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return NULL;  /* 无效实例返回NULL */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return NULL;
 }
 
@@ -239,13 +276,18 @@ TIM_TypeDef* PWM_GetPeriph(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= PWM_CHANNEL_MAX) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
+    /* 注意：互补输出仅支持TIM1/TIM8，但参数校验阶段只检查范围 */
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_EnableComplementary: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -258,13 +300,17 @@ PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t chan
  */
 PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= PWM_CHANNEL_MAX) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_DisableComplementary: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -277,13 +323,16 @@ PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t cha
  */
 PWM_Status_t PWM_SetDeadTime(PWM_Instance_t instance, uint16_t dead_time_ns)
 {
-    (void)instance;
-    (void)dead_time_ns;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    /* 注意：dead_time_ns范围0~65535ns，但uint16_t已经限制了范围，无需额外检查 */
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
+    (void)dead_time_ns;
     #warning "PWM_SetDeadTime: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -295,12 +344,14 @@ PWM_Status_t PWM_SetDeadTime(PWM_Instance_t instance, uint16_t dead_time_ns)
  */
 PWM_Status_t PWM_EnableMainOutput(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_EnableMainOutput: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -312,12 +363,14 @@ PWM_Status_t PWM_EnableMainOutput(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_DisableMainOutput(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_DisableMainOutput: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -331,14 +384,20 @@ PWM_Status_t PWM_DisableMainOutput(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_EnableBrake(PWM_Instance_t instance, PWM_BrakeSource_t source, PWM_BrakePolarity_t polarity)
 {
-    (void)instance;
-    (void)source;
-    (void)polarity;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (source > PWM_BRAKE_SOURCE_LOCK) {
+        return PWM_ERROR_INVALID_PARAM;
+    }
+    if (polarity > PWM_BRAKE_POLARITY_HIGH) {
+        return PWM_ERROR_INVALID_PARAM;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_EnableBrake: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -350,12 +409,14 @@ PWM_Status_t PWM_EnableBrake(PWM_Instance_t instance, PWM_BrakeSource_t source, 
  */
 PWM_Status_t PWM_DisableBrake(PWM_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_DisableBrake: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -368,13 +429,17 @@ PWM_Status_t PWM_DisableBrake(PWM_Instance_t instance)
  */
 PWM_Status_t PWM_SetAlignMode(PWM_Instance_t instance, PWM_AlignMode_t align_mode)
 {
-    (void)instance;
-    (void)align_mode;
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (align_mode > PWM_ALIGN_CENTER_3) {
+        return PWM_ERROR_INVALID_PARAM;
+    }
     
-    /* 编译时警告 */
+    /* ========== 占位空函数 ========== */
     #warning "PWM_SetAlignMode: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return PWM_ERROR_NOT_IMPLEMENTED;
 }
 

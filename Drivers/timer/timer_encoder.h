@@ -20,11 +20,13 @@ extern "C" {
 typedef enum {
     ENCODER_OK = ERROR_OK,                                    /**< 操作成功 */
     ENCODER_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,   /**< 功能未实现（占位空函数） */
-    ENCODER_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 20,  /**< 未初始化 */
-    ENCODER_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 21,     /**< 参数错误 */
-    ENCODER_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 22,    /**< 无效的外设 */
-    ENCODER_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 23,       /**< GPIO配置失败 */
-    ENCODER_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 24, /**< 已初始化 */
+    ENCODER_ERROR_NULL_PTR = ERROR_BASE_TIMER - 20,          /**< 空指针错误 */
+    ENCODER_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 21,     /**< 参数错误（通用） */
+    ENCODER_ERROR_INVALID_INSTANCE = ERROR_BASE_TIMER - 22,   /**< 无效实例编号 */
+    ENCODER_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 23,    /**< 未初始化 */
+    ENCODER_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 24,     /**< 无效的外设 */
+    ENCODER_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 25,        /**< GPIO配置失败 */
+    ENCODER_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 26, /**< 已初始化 */
 } ENCODER_Status_t;
 
 /**

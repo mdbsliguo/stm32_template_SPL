@@ -27,12 +27,16 @@ static bool g_sdio_initialized = false;
  */
 SDIO_Status_t SDIO_Init(uint8_t clock_div, SDIO_BusWidth_t bus_width)
 {
+    /* ========== 参数校验 ========== */
+    if (bus_width > SDIO_BUS_WIDTH_4BIT) {
+        return SDIO_ERROR_INVALID_PARAM;
+    }
+    /* 注意：clock_div范围检查待功能实现时完善（0-255） */
+    
+    /* ========== 占位空函数 ========== */
     (void)clock_div;
-    (void)bus_width;
-    /* 编译时警告 */
     #warning "SDIO函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 

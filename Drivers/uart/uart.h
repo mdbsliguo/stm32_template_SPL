@@ -22,13 +22,15 @@ extern "C" {
 typedef enum {
     UART_OK = ERROR_OK,                                    /**< 操作成功 */
     UART_ERROR_NOT_IMPLEMENTED = ERROR_BASE_UART - 99,    /**< 功能未实现（占位空函数） */
-    UART_ERROR_NOT_INITIALIZED = ERROR_BASE_UART - 1,     /**< 未初始化 */
-    UART_ERROR_INVALID_PARAM = ERROR_BASE_UART - 2,       /**< 参数非法 */
-    UART_ERROR_INVALID_PERIPH = ERROR_BASE_UART - 3,      /**< 无效的外设 */
-    UART_ERROR_GPIO_FAILED = ERROR_BASE_UART - 4,         /**< GPIO配置失败 */
-    UART_ERROR_TIMEOUT = ERROR_BASE_UART - 5,             /**< 操作超时 */
-    UART_ERROR_BUSY = ERROR_BASE_UART - 6,                /**< UART忙 */
-    UART_ERROR_INTERRUPT_NOT_ENABLED = ERROR_BASE_UART - 7, /**< 中断未使能 */
+    UART_ERROR_NULL_PTR = ERROR_BASE_UART - 1,             /**< 空指针错误 */
+    UART_ERROR_INVALID_PARAM = ERROR_BASE_UART - 2,        /**< 参数非法（通用） */
+    UART_ERROR_INVALID_INSTANCE = ERROR_BASE_UART - 3,    /**< 无效实例编号 */
+    UART_ERROR_INVALID_PERIPH = ERROR_BASE_UART - 4,      /**< 无效的外设 */
+    UART_ERROR_NOT_INITIALIZED = ERROR_BASE_UART - 5,     /**< 未初始化 */
+    UART_ERROR_GPIO_FAILED = ERROR_BASE_UART - 6,         /**< GPIO配置失败 */
+    UART_ERROR_TIMEOUT = ERROR_BASE_UART - 7,             /**< 操作超时 */
+    UART_ERROR_BUSY = ERROR_BASE_UART - 8,                /**< UART忙 */
+    UART_ERROR_INTERRUPT_NOT_ENABLED = ERROR_BASE_UART - 9, /**< 中断未使能 */
 } UART_Status_t;
 
 /**

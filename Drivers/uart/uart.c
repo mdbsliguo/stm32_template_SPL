@@ -109,11 +109,14 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
  */
 UART_Status_t UART_Init(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -122,11 +125,14 @@ UART_Status_t UART_Init(UART_Instance_t instance)
  */
 UART_Status_t UART_Deinit(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -135,14 +141,21 @@ UART_Status_t UART_Deinit(UART_Instance_t instance)
  */
 UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint16_t length, uint32_t timeout)
 {
-    (void)instance;
-    (void)data;
-    (void)length;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -151,14 +164,21 @@ UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint1
  */
 UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t length, uint32_t timeout)
 {
-    (void)instance;
-    (void)data;
-    (void)length;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -167,13 +187,16 @@ UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t len
  */
 UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t timeout)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)byte;
     (void)timeout;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -182,13 +205,18 @@ UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t
  */
 UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t timeout)
 {
-    (void)instance;
-    (void)byte;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (byte == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -197,13 +225,18 @@ UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t
  */
 UART_Status_t UART_TransmitString(UART_Instance_t instance, const char *str, uint32_t timeout)
 {
-    (void)instance;
-    (void)str;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (str == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -212,7 +245,12 @@ UART_Status_t UART_TransmitString(UART_Instance_t instance, const char *str, uin
  */
 uint8_t UART_IsInitialized(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -221,7 +259,12 @@ uint8_t UART_IsInitialized(UART_Instance_t instance)
  */
 USART_TypeDef* UART_GetPeriph(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return NULL;  /* 无效实例返回NULL */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return NULL;
 }
 
@@ -250,12 +293,17 @@ static IRQn_Type UART_GetIRQn(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > UART_IT_CTS) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -264,12 +312,17 @@ UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
  */
 UART_Status_t UART_DisableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > UART_IT_CTS) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -279,14 +332,20 @@ UART_Status_t UART_DisableIT(UART_Instance_t instance, UART_IT_t it_type)
 UART_Status_t UART_SetITCallback(UART_Instance_t instance, UART_IT_t it_type,
                                   UART_IT_Callback_t callback, void *user_data)
 {
-    (void)instance;
-    (void)it_type;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > UART_IT_CTS) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
     (void)callback;
     (void)user_data;
-    /* 编译时警告 */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -295,8 +354,15 @@ UART_Status_t UART_SetITCallback(UART_Instance_t instance, UART_IT_t it_type,
  */
 uint8_t UART_GetITStatus(UART_Instance_t instance, UART_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    if (it_type > UART_IT_CTS) {
+        return 0;  /* 无效中断类型返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -305,12 +371,17 @@ uint8_t UART_GetITStatus(UART_Instance_t instance, UART_IT_t it_type)
  */
 UART_Status_t UART_ClearITPendingBit(UART_Instance_t instance, UART_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > UART_IT_CTS) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -319,13 +390,20 @@ UART_Status_t UART_ClearITPendingBit(UART_Instance_t instance, UART_IT_t it_type
  */
 UART_Status_t UART_TransmitIT(UART_Instance_t instance, const uint8_t *data, uint16_t length)
 {
-    (void)instance;
-    (void)data;
-    (void)length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -334,13 +412,20 @@ UART_Status_t UART_TransmitIT(UART_Instance_t instance, const uint8_t *data, uin
  */
 UART_Status_t UART_ReceiveIT(UART_Instance_t instance, uint8_t *data, uint16_t max_length)
 {
-    (void)instance;
-    (void)data;
-    (void)max_length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (max_length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -349,7 +434,12 @@ UART_Status_t UART_ReceiveIT(UART_Instance_t instance, uint8_t *data, uint16_t m
  */
 uint16_t UART_GetTransmitRemaining(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -358,7 +448,12 @@ uint16_t UART_GetTransmitRemaining(UART_Instance_t instance)
  */
 uint16_t UART_GetReceiveCount(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -367,7 +462,13 @@ uint16_t UART_GetReceiveCount(UART_Instance_t instance)
  */
 void UART_IRQHandler(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return;  /* 无效实例直接返回 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    /* 功能未实现 */
 }
 
 /* UART中断服务程序入口（需要在启动文件中定义，或用户自己实现） */
@@ -393,13 +494,20 @@ void USART3_IRQHandler(void)
  */
 UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, uint16_t length)
 {
-    (void)instance;
-    (void)data;
-    (void)length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -408,13 +516,20 @@ UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, ui
  */
 UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t length)
 {
-    (void)instance;
-    (void)data;
-    (void)length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -423,11 +538,14 @@ UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t 
  */
 UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -436,11 +554,14 @@ UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
  */
 UART_Status_t UART_StopReceiveDMA(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -449,7 +570,12 @@ UART_Status_t UART_StopReceiveDMA(UART_Instance_t instance)
  */
 uint16_t UART_GetTransmitDMARemaining(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -458,7 +584,12 @@ uint16_t UART_GetTransmitDMARemaining(UART_Instance_t instance)
  */
 uint16_t UART_GetReceiveDMARemaining(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -469,12 +600,17 @@ uint16_t UART_GetReceiveDMARemaining(UART_Instance_t instance)
  */
 UART_Status_t UART_SetHardwareFlowControl(UART_Instance_t instance, UART_HW_FlowControl_t flow_control)
 {
-    (void)instance;
-    (void)flow_control;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (flow_control > UART_HW_FLOW_RTS_CTS) {
+        return UART_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -483,12 +619,17 @@ UART_Status_t UART_SetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
  */
 UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_FlowControl_t *flow_control)
 {
-    (void)instance;
-    (void)flow_control;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (flow_control == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -499,11 +640,14 @@ UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
  */
 UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -512,11 +656,14 @@ UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableHalfDuplex(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -525,7 +672,12 @@ UART_Status_t UART_DisableHalfDuplex(UART_Instance_t instance)
  */
 uint8_t UART_IsHalfDuplex(UART_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -536,11 +688,14 @@ uint8_t UART_IsHalfDuplex(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -549,11 +704,14 @@ UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -562,11 +720,14 @@ UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
  */
 UART_Status_t UART_SendBreak(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -575,12 +736,17 @@ UART_Status_t UART_SendBreak(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
 {
-    (void)instance;
-    (void)prescaler;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (prescaler == 0 || prescaler > 31) {
+        return UART_ERROR_INVALID_PARAM;  /* IrDA预分频器范围：1-31 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -589,11 +755,14 @@ UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
  */
 UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -602,11 +771,14 @@ UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
  */
 UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -615,11 +787,14 @@ UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
  */
 UART_Status_t UART_DisableSmartCardMode(UART_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "UART函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return UART_ERROR_NOT_IMPLEMENTED;
 }
 

@@ -23,8 +23,8 @@ extern "C" {
 typedef enum {
     CEC_OK = ERROR_OK,                                    /**< 操作成功 */
     CEC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_CEC - 99,    /**< 功能未实现（占位空函数） */
-    CEC_ERROR_NOT_INITIALIZED = ERROR_BASE_CEC - 1,     /**< 未初始化 */
-    CEC_ERROR_INVALID_PARAM = ERROR_BASE_CEC - 2,       /**< 参数非法 */
+    CEC_ERROR_INVALID_PARAM = ERROR_BASE_CEC - 1,       /**< 参数非法（通用） */
+    CEC_ERROR_NOT_INITIALIZED = ERROR_BASE_CEC - 2,      /**< 未初始化 */
 } CEC_Status_t;
 
 /**

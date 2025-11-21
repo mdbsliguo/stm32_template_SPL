@@ -22,6 +22,11 @@ static uint32_t GPIO_GetPortClock(GPIO_TypeDef* port)
  *******************************************************************************/
 GPIO_Status_t GPIO_EnableClock(GPIO_TypeDef* port)
 {
+    /* ========== 参数校验 ========== */
+    if (port == NULL) {
+        return GPIO_ERROR_NULL_PTR;
+    }
+    
     uint32_t clock = GPIO_GetPortClock(port);
     if (clock == 0xFFFFFFFF) {
         return GPIO_ERROR_INVALID_PORT;
@@ -37,13 +42,21 @@ GPIO_Status_t GPIO_EnableClock(GPIO_TypeDef* port)
  *******************************************************************************/
 GPIO_Status_t GPIO_Config(GPIO_TypeDef* port, uint16_t pin, GPIO_Mode_t mode, GPIO_Speed_t speed)
 {
+    /* ========== 参数校验 ========== */
+    if (port == NULL) {
+        return GPIO_ERROR_NULL_PTR;
+    }
+    if (pin == 0) {
+        return GPIO_ERROR_INVALID_PIN;
+    }
+    /* 注意：mode和speed的枚举值范围由编译器保证 */
+    
     GPIO_InitTypeDef GPIO_InitStructure;
     
-    if (port == NULL) return GPIO_ERROR_NULL_PTR;
-    if (pin == 0) return GPIO_ERROR_INVALID_PIN;
-    
     GPIO_Status_t status = GPIO_EnableClock(port);
-    if (status != GPIO_OK) return status;
+    if (status != GPIO_OK) {
+        return status;
+    }
     
     GPIO_InitStructure.GPIO_Pin = pin;
     GPIO_InitStructure.GPIO_Mode = (GPIOMode_TypeDef)mode;
@@ -60,8 +73,14 @@ GPIO_Status_t GPIO_Config(GPIO_TypeDef* port, uint16_t pin, GPIO_Mode_t mode, GP
  *******************************************************************************/
 GPIO_Status_t GPIO_WritePin(GPIO_TypeDef* port, uint16_t pin, BitAction bit_val)
 {
-    if (port == NULL) return GPIO_ERROR_NULL_PTR;
-    if (pin == 0) return GPIO_ERROR_INVALID_PIN;
+    /* ========== 参数校验 ========== */
+    if (port == NULL) {
+        return GPIO_ERROR_NULL_PTR;
+    }
+    if (pin == 0) {
+        return GPIO_ERROR_INVALID_PIN;
+    }
+    /* 注意：bit_val只能是Bit_SET或Bit_RESET，由编译器保证 */
     
     if (bit_val == Bit_SET) {
         GPIO_SetBits(port, pin);
@@ -76,7 +95,11 @@ GPIO_Status_t GPIO_WritePin(GPIO_TypeDef* port, uint16_t pin, BitAction bit_val)
  *******************************************************************************/
 uint8_t GPIO_ReadPin(GPIO_TypeDef* port, uint16_t pin)
 {
-    if (port == NULL || pin == 0) return 0;
+    /* ========== 参数校验 ========== */
+    if (port == NULL || pin == 0) {
+        return 0;  /* 无效参数返回0（低电平） */
+    }
+    
     return GPIO_ReadInputDataBit(port, pin);
 }
 
@@ -85,8 +108,13 @@ uint8_t GPIO_ReadPin(GPIO_TypeDef* port, uint16_t pin)
  *******************************************************************************/
 GPIO_Status_t GPIO_Toggle(GPIO_TypeDef* port, uint16_t pin)
 {
-    if (port == NULL) return GPIO_ERROR_NULL_PTR;
-    if (pin == 0) return GPIO_ERROR_INVALID_PIN;
+    /* ========== 参数校验 ========== */
+    if (port == NULL) {
+        return GPIO_ERROR_NULL_PTR;
+    }
+    if (pin == 0) {
+        return GPIO_ERROR_INVALID_PIN;
+    }
     
     port->ODR ^= pin;
     return GPIO_OK;

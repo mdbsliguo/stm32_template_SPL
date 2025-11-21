@@ -77,13 +77,20 @@ static void IC_GetGPIOConfig(IC_Instance_t instance, IC_Channel_t channel,
  */
 IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t polarity)
 {
-    (void)instance;
-    (void)channel;
-    (void)polarity;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (polarity > IC_POLARITY_BOTH) {
+        return IC_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -92,12 +99,17 @@ IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t 
  */
 IC_Status_t IC_Deinit(IC_Instance_t instance, IC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -106,12 +118,17 @@ IC_Status_t IC_Deinit(IC_Instance_t instance, IC_Channel_t channel)
  */
 IC_Status_t IC_Start(IC_Instance_t instance, IC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -120,12 +137,17 @@ IC_Status_t IC_Start(IC_Instance_t instance, IC_Channel_t channel)
  */
 IC_Status_t IC_Stop(IC_Instance_t instance, IC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -134,13 +156,20 @@ IC_Status_t IC_Stop(IC_Instance_t instance, IC_Channel_t channel)
  */
 IC_Status_t IC_ReadValue(IC_Instance_t instance, IC_Channel_t channel, uint32_t *value)
 {
-    (void)instance;
-    (void)channel;
-    (void)value;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (value == NULL) {
+        return IC_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -149,14 +178,21 @@ IC_Status_t IC_ReadValue(IC_Instance_t instance, IC_Channel_t channel, uint32_t 
  */
 IC_Status_t IC_MeasureFrequency(IC_Instance_t instance, IC_Channel_t channel, uint32_t *frequency, uint32_t timeout_ms)
 {
-    (void)instance;
-    (void)channel;
-    (void)frequency;
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (frequency == NULL) {
+        return IC_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout_ms;
-    /* 编译时警告 */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -165,14 +201,21 @@ IC_Status_t IC_MeasureFrequency(IC_Instance_t instance, IC_Channel_t channel, ui
  */
 IC_Status_t IC_MeasurePWM(IC_Instance_t instance, IC_Channel_t channel, IC_MeasureResult_t *result, uint32_t timeout_ms)
 {
-    (void)instance;
-    (void)channel;
-    (void)result;
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (result == NULL) {
+        return IC_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout_ms;
-    /* 编译时警告 */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -181,14 +224,21 @@ IC_Status_t IC_MeasurePWM(IC_Instance_t instance, IC_Channel_t channel, IC_Measu
  */
 IC_Status_t IC_MeasurePulseWidth(IC_Instance_t instance, IC_Channel_t channel, uint32_t *pulse_width_us, uint32_t timeout_ms)
 {
-    (void)instance;
-    (void)channel;
-    (void)pulse_width_us;
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (pulse_width_us == NULL) {
+        return IC_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)timeout_ms;
-    /* 编译时警告 */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -197,8 +247,15 @@ IC_Status_t IC_MeasurePulseWidth(IC_Instance_t instance, IC_Channel_t channel, u
  */
 uint8_t IC_IsInitialized(IC_Instance_t instance, IC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -228,13 +285,20 @@ static IRQn_Type IC_GetIRQn(IC_Instance_t instance)
  */
 IC_Status_t IC_EnableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it_type)
 {
-    (void)instance;
-    (void)channel;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > IC_IT_FALLING) {
+        return IC_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -243,13 +307,20 @@ IC_Status_t IC_EnableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it
  */
 IC_Status_t IC_DisableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it_type)
 {
-    (void)instance;
-    (void)channel;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > IC_IT_FALLING) {
+        return IC_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -259,15 +330,23 @@ IC_Status_t IC_DisableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t i
 IC_Status_t IC_SetITCallback(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it_type,
                              IC_IT_Callback_t callback, void *user_data)
 {
-    (void)instance;
-    (void)channel;
-    (void)it_type;
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > IC_IT_FALLING) {
+        return IC_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
     (void)callback;
     (void)user_data;
-    /* 编译时警告 */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -276,6 +355,13 @@ IC_Status_t IC_SetITCallback(IC_Instance_t instance, IC_Channel_t channel, IC_IT
  */
 void IC_IRQHandler(IC_Instance_t instance)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return;  /* 无效实例直接返回 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    /* 功能未实现 */
 }
 
 
@@ -289,13 +375,20 @@ void TIM1_CC_IRQHandler(void) {
  */
 IC_Status_t IC_SetPrescaler(IC_Instance_t instance, IC_Channel_t channel, uint8_t prescaler)
 {
-    (void)instance;
-    (void)channel;
-    (void)prescaler;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= IC_INSTANCE_MAX) {
+        return IC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= IC_CHANNEL_MAX) {
+        return IC_ERROR_INVALID_CHANNEL;
+    }
+    if (prescaler > 15) {
+        return IC_ERROR_INVALID_PARAM;  /* 预分频器范围：0-15 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "IC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return IC_ERROR_NOT_IMPLEMENTED;
 }
 

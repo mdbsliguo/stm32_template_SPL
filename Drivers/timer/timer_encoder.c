@@ -71,12 +71,17 @@ static void ENCODER_GetGPIOConfig(ENCODER_Instance_t instance,
  */
 ENCODER_Status_t ENCODER_Init(ENCODER_Instance_t instance, ENCODER_Mode_t mode)
 {
-    (void)instance;
-    (void)mode;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (mode > ENCODER_MODE_TI12) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -85,11 +90,14 @@ ENCODER_Status_t ENCODER_Init(ENCODER_Instance_t instance, ENCODER_Mode_t mode)
  */
 ENCODER_Status_t ENCODER_Deinit(ENCODER_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -98,12 +106,17 @@ ENCODER_Status_t ENCODER_Deinit(ENCODER_Instance_t instance)
  */
 ENCODER_Status_t ENCODER_ReadCount(ENCODER_Instance_t instance, int32_t *count)
 {
-    (void)instance;
-    (void)count;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (count == NULL) {
+        return ENCODER_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -112,12 +125,17 @@ ENCODER_Status_t ENCODER_ReadCount(ENCODER_Instance_t instance, int32_t *count)
  */
 ENCODER_Status_t ENCODER_ReadCountUnsigned(ENCODER_Instance_t instance, uint32_t *count)
 {
-    (void)instance;
-    (void)count;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (count == NULL) {
+        return ENCODER_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -126,12 +144,15 @@ ENCODER_Status_t ENCODER_ReadCountUnsigned(ENCODER_Instance_t instance, uint32_t
  */
 ENCODER_Status_t ENCODER_SetCount(ENCODER_Instance_t instance, int32_t count)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)count;
-    /* 编译时警告 */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -140,11 +161,14 @@ ENCODER_Status_t ENCODER_SetCount(ENCODER_Instance_t instance, int32_t count)
  */
 ENCODER_Status_t ENCODER_ClearCount(ENCODER_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -153,12 +177,17 @@ ENCODER_Status_t ENCODER_ClearCount(ENCODER_Instance_t instance)
  */
 ENCODER_Status_t ENCODER_GetDirection(ENCODER_Instance_t instance, ENCODER_Direction_t *direction)
 {
-    (void)instance;
-    (void)direction;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (direction == NULL) {
+        return ENCODER_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -167,11 +196,14 @@ ENCODER_Status_t ENCODER_GetDirection(ENCODER_Instance_t instance, ENCODER_Direc
  */
 ENCODER_Status_t ENCODER_Start(ENCODER_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -180,11 +212,14 @@ ENCODER_Status_t ENCODER_Start(ENCODER_Instance_t instance)
  */
 ENCODER_Status_t ENCODER_Stop(ENCODER_Instance_t instance)
 {
-    (void)instance;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -193,7 +228,12 @@ ENCODER_Status_t ENCODER_Stop(ENCODER_Instance_t instance)
  */
 uint8_t ENCODER_IsInitialized(ENCODER_Instance_t instance)
 {
-    (void)instance;
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -222,12 +262,17 @@ static IRQn_Type ENCODER_GetIRQn(ENCODER_Instance_t instance)
  */
 ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > ENCODER_IT_DIRECTION) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -236,12 +281,17 @@ ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_t
  */
 ENCODER_Status_t ENCODER_DisableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_type)
 {
-    (void)instance;
-    (void)it_type;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > ENCODER_IT_DIRECTION) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -251,14 +301,20 @@ ENCODER_Status_t ENCODER_DisableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_
 ENCODER_Status_t ENCODER_SetITCallback(ENCODER_Instance_t instance, ENCODER_IT_t it_type,
                                        ENCODER_IT_Callback_t callback, void *user_data)
 {
-    (void)instance;
-    (void)it_type;
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return ENCODER_ERROR_INVALID_INSTANCE;
+    }
+    if (it_type > ENCODER_IT_DIRECTION) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
     (void)callback;
     (void)user_data;
-    /* 编译时警告 */
     #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -267,6 +323,13 @@ ENCODER_Status_t ENCODER_SetITCallback(ENCODER_Instance_t instance, ENCODER_IT_t
  */
 void ENCODER_IRQHandler(ENCODER_Instance_t instance)
 {
+    /* ========== 参数校验 ========== */
+    if (instance >= ENCODER_INSTANCE_MAX) {
+        return;  /* 无效实例直接返回 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    /* 功能未实现 */
 }
 
 

@@ -69,15 +69,23 @@ static void OC_GetGPIOConfig(OC_Instance_t instance, OC_Channel_t channel,
  */
 OC_Status_t OC_Init(OC_Instance_t instance, OC_Channel_t channel, OC_Mode_t mode, uint16_t period, uint16_t compare_value)
 {
-    (void)instance;
-    (void)channel;
-    (void)mode;
-    (void)period;
-    (void)compare_value;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    if (mode > OC_MODE_TOGGLE) {
+        return OC_ERROR_INVALID_PARAM;
+    }
+    if (compare_value > period) {
+        return OC_ERROR_INVALID_PARAM;  /* 比较值不能大于周期值 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -86,12 +94,17 @@ OC_Status_t OC_Init(OC_Instance_t instance, OC_Channel_t channel, OC_Mode_t mode
  */
 OC_Status_t OC_Deinit(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -100,13 +113,18 @@ OC_Status_t OC_Deinit(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_SetCompareValue(OC_Instance_t instance, OC_Channel_t channel, uint16_t compare_value)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)compare_value;
-    /* 编译时警告 */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -115,13 +133,20 @@ OC_Status_t OC_SetCompareValue(OC_Instance_t instance, OC_Channel_t channel, uin
  */
 OC_Status_t OC_GetCompareValue(OC_Instance_t instance, OC_Channel_t channel, uint16_t *compare_value)
 {
-    (void)instance;
-    (void)channel;
-    (void)compare_value;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    if (compare_value == NULL) {
+        return OC_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -130,12 +155,17 @@ OC_Status_t OC_GetCompareValue(OC_Instance_t instance, OC_Channel_t channel, uin
  */
 OC_Status_t OC_Start(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -144,12 +174,17 @@ OC_Status_t OC_Start(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_Stop(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -158,13 +193,20 @@ OC_Status_t OC_Stop(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_GenerateSinglePulse(OC_Instance_t instance, OC_Channel_t channel, uint16_t pulse_width)
 {
-    (void)instance;
-    (void)channel;
-    (void)pulse_width;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    if (pulse_width == 0) {
+        return OC_ERROR_INVALID_PARAM;  /* 脉冲宽度不能为0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -173,8 +215,15 @@ OC_Status_t OC_GenerateSinglePulse(OC_Instance_t instance, OC_Channel_t channel,
  */
 uint8_t OC_IsInitialized(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return 0;  /* 无效实例返回0（未初始化） */
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -185,12 +234,17 @@ uint8_t OC_IsInitialized(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_EnablePreload(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -199,12 +253,17 @@ OC_Status_t OC_EnablePreload(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_DisablePreload(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -213,12 +272,17 @@ OC_Status_t OC_DisablePreload(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_ClearOutput(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -227,12 +291,17 @@ OC_Status_t OC_ClearOutput(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_ForceOutputHigh(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -241,12 +310,17 @@ OC_Status_t OC_ForceOutputHigh(OC_Instance_t instance, OC_Channel_t channel)
  */
 OC_Status_t OC_ForceOutputLow(OC_Instance_t instance, OC_Channel_t channel)
 {
-    (void)instance;
-    (void)channel;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (instance >= OC_INSTANCE_MAX) {
+        return OC_ERROR_INVALID_INSTANCE;
+    }
+    if (channel >= OC_CHANNEL_MAX) {
+        return OC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "OC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return OC_ERROR_NOT_IMPLEMENTED;
 }
 

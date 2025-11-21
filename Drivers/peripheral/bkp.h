@@ -20,10 +20,11 @@ extern "C" {
 typedef enum {
     BKP_OK = ERROR_OK,                                    /**< 操作成功 */
     BKP_ERROR_NOT_IMPLEMENTED = ERROR_BASE_RTC - 99,     /**< 功能未实现（占位空函数） */
-    BKP_ERROR_NOT_INITIALIZED = ERROR_BASE_RTC - 10,     /**< 未初始化 */
-    BKP_ERROR_INVALID_PARAM = ERROR_BASE_RTC - 11,       /**< 参数错误 */
-    BKP_ERROR_INVALID_REGISTER = ERROR_BASE_RTC - 12,    /**< 无效的寄存器 */
-    BKP_ERROR_ALREADY_INITIALIZED = ERROR_BASE_RTC - 13,  /**< 已初始化 */
+    BKP_ERROR_NULL_PTR = ERROR_BASE_RTC - 10,             /**< 空指针错误 */
+    BKP_ERROR_INVALID_PARAM = ERROR_BASE_RTC - 11,       /**< 参数错误（通用） */
+    BKP_ERROR_INVALID_REGISTER = ERROR_BASE_RTC - 12,     /**< 无效的寄存器 */
+    BKP_ERROR_NOT_INITIALIZED = ERROR_BASE_RTC - 13,      /**< 未初始化 */
+    BKP_ERROR_ALREADY_INITIALIZED = ERROR_BASE_RTC - 14,  /**< 已初始化 */
 } BKP_Status_t;
 
 /**

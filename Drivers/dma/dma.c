@@ -66,10 +66,14 @@ static uint32_t DMA_GetPeriphClock(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_HW_Init(DMA_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -78,10 +82,14 @@ DMA_Status_t DMA_HW_Init(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_Deinit(DMA_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -92,10 +100,29 @@ DMA_Status_t DMA_ConfigTransfer(DMA_Channel_t channel, uint32_t peripheral_addr,
                                 uint32_t memory_addr, uint16_t data_size,
                                 DMA_Direction_t direction, uint8_t data_width)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (peripheral_addr == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (memory_addr == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (data_size == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (direction > DMA_DIR_MEMORY_TO_MEMORY) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (data_width != 1 && data_width != 2 && data_width != 4) {
+        return DMA_ERROR_INVALID_PARAM;  /* 数据宽度：1=字节，2=半字，4=字 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -105,10 +132,26 @@ DMA_Status_t DMA_ConfigTransfer(DMA_Channel_t channel, uint32_t peripheral_addr,
 DMA_Status_t DMA_ConfigMemoryToMemory(DMA_Channel_t channel, uint32_t src_addr,
                                       uint32_t dst_addr, uint16_t data_size, uint8_t data_width)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (src_addr == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (dst_addr == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (data_size == 0) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    if (data_width != 1 && data_width != 2 && data_width != 4) {
+        return DMA_ERROR_INVALID_PARAM;  /* 数据宽度：1=字节，2=半字，4=字 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -117,10 +160,14 @@ DMA_Status_t DMA_ConfigMemoryToMemory(DMA_Channel_t channel, uint32_t src_addr,
  */
 DMA_Status_t DMA_Start(DMA_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -129,10 +176,14 @@ DMA_Status_t DMA_Start(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_Stop(DMA_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -141,10 +192,15 @@ DMA_Status_t DMA_Stop(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_WaitComplete(DMA_Channel_t channel, uint32_t timeout)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
+    (void)timeout;
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -153,6 +209,12 @@ DMA_Status_t DMA_WaitComplete(DMA_Channel_t channel, uint32_t timeout)
  */
 uint8_t DMA_IsComplete(DMA_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0（未完成） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -161,6 +223,12 @@ uint8_t DMA_IsComplete(DMA_Channel_t channel)
  */
 uint16_t DMA_GetRemainingDataSize(DMA_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -171,10 +239,17 @@ DMA_Status_t DMA_SetTransferCompleteCallback(DMA_Channel_t channel,
                                              DMA_TransferCompleteCallback_t callback,
                                              void *user_data)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
+    (void)callback;
+    (void)user_data;
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -183,6 +258,12 @@ DMA_Status_t DMA_SetTransferCompleteCallback(DMA_Channel_t channel,
  */
 uint8_t DMA_IsInitialized(DMA_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -191,6 +272,12 @@ uint8_t DMA_IsInitialized(DMA_Channel_t channel)
  */
 DMA_Channel_TypeDef* DMA_GetChannel(DMA_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return NULL;  /* 无效通道返回NULL */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return NULL;
 }
 
@@ -199,10 +286,17 @@ DMA_Channel_TypeDef* DMA_GetChannel(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_SetMode(DMA_Channel_t channel, uint8_t mode)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (mode > 1) {
+        return DMA_ERROR_INVALID_PARAM;  /* 模式：0=正常，1=循环 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -231,10 +325,17 @@ static IRQn_Type DMA_GetIRQn(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_EnableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > DMA_IT_TYPE_TE) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -243,10 +344,17 @@ DMA_Status_t DMA_EnableIT(DMA_Channel_t channel, DMA_IT_t it_type)
  */
 DMA_Status_t DMA_DisableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > DMA_IT_TYPE_TE) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -256,10 +364,20 @@ DMA_Status_t DMA_DisableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 DMA_Status_t DMA_SetITCallback(DMA_Channel_t channel, DMA_IT_t it_type,
                                 DMA_IT_Callback_t callback, void *user_data)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return DMA_ERROR_INVALID_CHANNEL;
+    }
+    if (it_type > DMA_IT_TYPE_TE) {
+        return DMA_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
+    (void)callback;
+    (void)user_data;
     #warning "DMA函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -268,6 +386,13 @@ DMA_Status_t DMA_SetITCallback(DMA_Channel_t channel, DMA_IT_t it_type,
  */
 void DMA_IRQHandler(DMA_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DMA_CHANNEL_MAX) {
+        return;  /* 无效通道直接返回 */
+    }
+    
+    /* ========== 占位空函数 ========== */
+    /* 功能未实现 */
 }
 
 /* DMA中断服务程序入口 */

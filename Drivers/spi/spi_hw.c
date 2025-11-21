@@ -89,6 +89,7 @@ static SPI_Status_t SPI_WaitFlag(SPI_TypeDef *spi_periph, uint16_t flag, uint32_
 {
     uint32_t timeout_count;
     
+    /* ========== 参数校验 ========== */
     if (spi_periph == NULL)
     {
         return SPI_ERROR_INVALID_PERIPH;
@@ -123,6 +124,7 @@ SPI_Status_t SPI_HW_Init(SPI_Instance_t instance)
     GPIO_InitTypeDef GPIO_InitStructure;
     const SPI_Config_t *config;
     
+    /* ========== 参数校验 ========== */
     if (instance >= SPI_INSTANCE_MAX)
     {
         return SPI_ERROR_INVALID_PARAM;

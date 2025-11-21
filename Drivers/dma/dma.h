@@ -22,12 +22,13 @@ extern "C" {
 typedef enum {
     DMA_OK = ERROR_OK,                                    /**< 操作成功 */
     DMA_ERROR_NOT_IMPLEMENTED = ERROR_BASE_DMA - 99,      /**< 功能未实现（占位空函数） */
-    DMA_ERROR_NOT_INITIALIZED = ERROR_BASE_DMA - 1,      /**< 未初始化 */
-    DMA_ERROR_INVALID_PARAM = ERROR_BASE_DMA - 2,        /**< 参数非法 */
-    DMA_ERROR_INVALID_CHANNEL = ERROR_BASE_DMA - 3,      /**< 无效的通道 */
-    DMA_ERROR_BUSY = ERROR_BASE_DMA - 4,                 /**< DMA忙 */
-    DMA_ERROR_TIMEOUT = ERROR_BASE_DMA - 5,               /**< 操作超时 */
-    DMA_ERROR_TRANSFER_FAILED = ERROR_BASE_DMA - 6,      /**< 传输失败 */
+    DMA_ERROR_NULL_PTR = ERROR_BASE_DMA - 1,             /**< 空指针错误 */
+    DMA_ERROR_INVALID_PARAM = ERROR_BASE_DMA - 2,        /**< 参数非法（通用） */
+    DMA_ERROR_INVALID_CHANNEL = ERROR_BASE_DMA - 3,       /**< 无效的通道 */
+    DMA_ERROR_NOT_INITIALIZED = ERROR_BASE_DMA - 4,       /**< 未初始化 */
+    DMA_ERROR_BUSY = ERROR_BASE_DMA - 5,                  /**< DMA忙 */
+    DMA_ERROR_TIMEOUT = ERROR_BASE_DMA - 6,               /**< 操作超时 */
+    DMA_ERROR_TRANSFER_FAILED = ERROR_BASE_DMA - 7,       /**< 传输失败 */
 } DMA_Status_t;
 
 /**

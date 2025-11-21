@@ -46,8 +46,15 @@ uint32_t CRC_Calculate(uint32_t data)
  */
 uint32_t CRC_CalculateBlock(uint32_t *buffer, uint32_t length)
 {
-    (void)buffer;
-    (void)length;
+    /* ========== 参数校验 ========== */
+    if (buffer == NULL) {
+        return 0;  /* 空指针返回0 */
+    }
+    if (length == 0) {
+        return 0;  /* 长度为0返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 

@@ -199,6 +199,7 @@ static OLED_Status_t OLED_WriteCommand(uint8_t command)
     error_code_t status;
     uint8_t data[2];
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -233,6 +234,7 @@ static OLED_Status_t OLED_WriteData(uint8_t data)
     error_code_t status;
     uint8_t data_packet[2];
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -432,6 +434,7 @@ OLED_Status_t OLED_SetCursor(uint8_t y, uint8_t x)
 {
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -476,6 +479,7 @@ OLED_Status_t OLED_Clear(void)
     uint8_t i, j;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -517,6 +521,8 @@ OLED_Status_t OLED_ShowChar(uint8_t line, uint8_t column, char ch)
     uint8_t i;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -581,6 +587,7 @@ OLED_Status_t OLED_ShowString(uint8_t line, uint8_t column, const char *str)
     uint8_t i;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -623,6 +630,7 @@ OLED_Status_t OLED_ShowNum(uint8_t line, uint8_t column, uint32_t number, uint8_
     uint8_t i;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -667,6 +675,7 @@ OLED_Status_t OLED_ShowSignedNum(uint8_t line, uint8_t column, int32_t number, u
     uint32_t number1;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -727,6 +736,7 @@ OLED_Status_t OLED_ShowHexNum(uint8_t line, uint8_t column, uint32_t number, uin
     uint8_t i, single_number;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;
@@ -781,6 +791,7 @@ OLED_Status_t OLED_ShowBinNum(uint8_t line, uint8_t column, uint32_t number, uin
     uint8_t i;
     OLED_Status_t status;
     
+    /* ========== 参数校验 ========== */
     if (!g_oled_initialized)
     {
         return OLED_ERROR_NOT_INITIALIZED;

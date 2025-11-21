@@ -59,12 +59,15 @@ BKP_Status_t BKP_Deinit(void)
  */
 BKP_Status_t BKP_WriteRegister(BKP_Register_t reg, uint16_t data)
 {
-    (void)reg;
+    /* ========== 参数校验 ========== */
+    if (reg < BKP_REG_DR1 || reg > BKP_REG_MAX) {
+        return BKP_ERROR_INVALID_REGISTER;  /* 寄存器范围：DR1-DR42 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     (void)data;
-    /* 编译时警告 */
     #warning "BKP函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return BKP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -73,12 +76,17 @@ BKP_Status_t BKP_WriteRegister(BKP_Register_t reg, uint16_t data)
  */
 BKP_Status_t BKP_ReadRegister(BKP_Register_t reg, uint16_t *data)
 {
-    (void)reg;
-    (void)data;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (reg < BKP_REG_DR1 || reg > BKP_REG_MAX) {
+        return BKP_ERROR_INVALID_REGISTER;  /* 寄存器范围：DR1-DR42 */
+    }
+    if (data == NULL) {
+        return BKP_ERROR_NULL_PTR;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "BKP函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return BKP_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -101,13 +109,17 @@ static void *g_bkp_tamper_user_data = NULL;
  */
 BKP_Status_t BKP_ConfigTamperPin(BKP_TamperLevel_t level, BKP_TamperCallback_t callback, void *user_data)
 {
-    (void)level;
+    /* ========== 参数校验 ========== */
+    if (level > BKP_TAMPER_LEVEL_HIGH) {
+        return BKP_ERROR_INVALID_PARAM;
+    }
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
     (void)callback;
     (void)user_data;
-    /* 编译时警告 */
     #warning "BKP函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return BKP_ERROR_NOT_IMPLEMENTED;
 }
 

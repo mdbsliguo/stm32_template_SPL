@@ -22,13 +22,15 @@ extern "C" {
 typedef enum {
     ADC_OK = ERROR_OK,                                    /**< 操作成功 */
     ADC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_ADC - 99,     /**< 功能未实现（占位空函数） */
-    ADC_ERROR_NOT_INITIALIZED = ERROR_BASE_ADC - 1,      /**< 未初始化 */
-    ADC_ERROR_INVALID_PARAM = ERROR_BASE_ADC - 2,        /**< 参数非法 */
-    ADC_ERROR_INVALID_PERIPH = ERROR_BASE_ADC - 3,       /**< 无效的外设 */
-    ADC_ERROR_INVALID_CHANNEL = ERROR_BASE_ADC - 4,      /**< 无效的通道 */
-    ADC_ERROR_GPIO_FAILED = ERROR_BASE_ADC - 5,          /**< GPIO配置失败 */
-    ADC_ERROR_TIMEOUT = ERROR_BASE_ADC - 6,             /**< 操作超时 */
-    ADC_ERROR_BUSY = ERROR_BASE_ADC - 7,                 /**< ADC忙 */
+    ADC_ERROR_NULL_PTR = ERROR_BASE_ADC - 1,              /**< 空指针错误 */
+    ADC_ERROR_INVALID_PARAM = ERROR_BASE_ADC - 2,        /**< 参数非法（通用） */
+    ADC_ERROR_INVALID_INSTANCE = ERROR_BASE_ADC - 3,      /**< 无效实例编号 */
+    ADC_ERROR_INVALID_CHANNEL = ERROR_BASE_ADC - 4,       /**< 无效的通道 */
+    ADC_ERROR_INVALID_PERIPH = ERROR_BASE_ADC - 5,        /**< 无效的外设 */
+    ADC_ERROR_NOT_INITIALIZED = ERROR_BASE_ADC - 6,       /**< 未初始化 */
+    ADC_ERROR_GPIO_FAILED = ERROR_BASE_ADC - 7,           /**< GPIO配置失败 */
+    ADC_ERROR_TIMEOUT = ERROR_BASE_ADC - 8,               /**< 操作超时 */
+    ADC_ERROR_BUSY = ERROR_BASE_ADC - 9,                   /**< ADC忙 */
 } ADC_Status_t;
 
 /**

@@ -64,10 +64,20 @@ static uint32_t DAC_GetTriggerValue(DAC_Trigger_t trigger)
  */
 DAC_Status_t DAC_Init(DAC_Channel_t channel, DAC_Trigger_t trigger, DAC_OutputBuffer_t output_buffer)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    if (trigger > DAC_TRIGGER_EXTI9) {
+        return DAC_ERROR_INVALID_PARAM;
+    }
+    if (output_buffer > DAC_OUTPUT_BUFFER_DISABLE) {
+        return DAC_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -76,10 +86,14 @@ DAC_Status_t DAC_Init(DAC_Channel_t channel, DAC_Trigger_t trigger, DAC_OutputBu
  */
 DAC_Status_t DAC_Deinit(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -88,10 +102,17 @@ DAC_Status_t DAC_Deinit(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SetValue(DAC_Channel_t channel, uint16_t value)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    if (value > DAC_MAX_VALUE) {
+        return DAC_ERROR_INVALID_PARAM;  /* 值范围：0-4095 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -100,10 +121,17 @@ DAC_Status_t DAC_SetValue(DAC_Channel_t channel, uint16_t value)
  */
 DAC_Status_t DAC_SetVoltage(DAC_Channel_t channel, float voltage)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    if (voltage < 0.0f || voltage > DAC_VREF_DEFAULT) {
+        return DAC_ERROR_INVALID_PARAM;  /* 电压范围：0.0-3.3V */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -112,10 +140,14 @@ DAC_Status_t DAC_SetVoltage(DAC_Channel_t channel, float voltage)
  */
 DAC_Status_t DAC_Enable(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -124,10 +156,14 @@ DAC_Status_t DAC_Enable(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_Disable(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -136,10 +172,20 @@ DAC_Status_t DAC_Disable(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_ConfigWave(DAC_Channel_t channel, DAC_Wave_t wave, uint16_t amplitude)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    if (wave > DAC_WAVE_TRIANGLE) {
+        return DAC_ERROR_INVALID_PARAM;
+    }
+    if (amplitude == 0 || amplitude > DAC_MAX_VALUE) {
+        return DAC_ERROR_INVALID_PARAM;  /* 幅度范围：1-4095 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -148,10 +194,14 @@ DAC_Status_t DAC_ConfigWave(DAC_Channel_t channel, DAC_Wave_t wave, uint16_t amp
  */
 DAC_Status_t DAC_DisableWave(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -160,10 +210,14 @@ DAC_Status_t DAC_DisableWave(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SoftwareTrigger(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -172,6 +226,12 @@ DAC_Status_t DAC_SoftwareTrigger(DAC_Channel_t channel)
  */
 uint8_t DAC_IsInitialized(DAC_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0（未初始化） */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -180,6 +240,12 @@ uint8_t DAC_IsInitialized(DAC_Channel_t channel)
  */
 uint16_t DAC_GetValue(DAC_Channel_t channel)
 {
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return 0;  /* 无效通道返回0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     return 0;
 }
 
@@ -190,10 +256,20 @@ uint16_t DAC_GetValue(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_StartDMA(DAC_Channel_t channel, const uint16_t *buffer, uint16_t length)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    if (buffer == NULL) {
+        return DAC_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return DAC_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -202,10 +278,14 @@ DAC_Status_t DAC_StartDMA(DAC_Channel_t channel, const uint16_t *buffer, uint16_
  */
 DAC_Status_t DAC_StopDMA(DAC_Channel_t channel)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel >= DAC_CHANNEL_MAX) {
+        return DAC_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -216,10 +296,17 @@ DAC_Status_t DAC_StopDMA(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SetDualValue(uint16_t channel1_value, uint16_t channel2_value)
 {
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (channel1_value > DAC_MAX_VALUE) {
+        return DAC_ERROR_INVALID_PARAM;  /* 值范围：0-4095 */
+    }
+    if (channel2_value > DAC_MAX_VALUE) {
+        return DAC_ERROR_INVALID_PARAM;  /* 值范围：0-4095 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "DAC函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return DAC_ERROR_NOT_IMPLEMENTED;
 }
 

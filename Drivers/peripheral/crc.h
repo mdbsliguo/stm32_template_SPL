@@ -22,7 +22,8 @@ extern "C" {
 typedef enum {
     CRC_OK = ERROR_OK,                                    /**< 操作成功 */
     CRC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_CRC - 99,      /**< 功能未实现（占位空函数） */
-    CRC_ERROR_INVALID_PARAM = ERROR_BASE_CRC - 1,       /**< 参数非法 */
+    CRC_ERROR_NULL_PTR = ERROR_BASE_CRC - 1,              /**< 空指针错误 */
+    CRC_ERROR_INVALID_PARAM = ERROR_BASE_CRC - 2,         /**< 参数非法（通用） */
 } CRC_Status_t;
 
 /* Include board.h, which includes stm32f10x.h and stm32f10x_crc.h */

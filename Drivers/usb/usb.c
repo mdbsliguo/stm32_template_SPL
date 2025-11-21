@@ -82,11 +82,20 @@ USB_Status_t USB_Deinit(void)
  */
 USB_Status_t USB_ConfigEndpoint(const USB_EP_Config_t *config)
 {
-    (void)config;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (config == NULL) {
+        return USB_ERROR_NULL_PTR;
+    }
+    if (config->endpoint > 7) {
+        return USB_ERROR_INVALID_ENDPOINT;  /* 端点号范围：0-7 */
+    }
+    if (config->type > USB_EP_TYPE_INTERRUPT) {
+        return USB_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "USB函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return USB_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -95,13 +104,20 @@ USB_Status_t USB_ConfigEndpoint(const USB_EP_Config_t *config)
  */
 USB_Status_t USB_Send(uint8_t endpoint, const uint8_t *data, uint16_t length)
 {
-    (void)endpoint;
-    (void)data;
-    (void)length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (endpoint > 7) {
+        return USB_ERROR_INVALID_ENDPOINT;  /* 端点号范围：0-7 */
+    }
+    if (data == NULL) {
+        return USB_ERROR_NULL_PTR;
+    }
+    if (length == 0) {
+        return USB_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "USB函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return USB_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -110,13 +126,23 @@ USB_Status_t USB_Send(uint8_t endpoint, const uint8_t *data, uint16_t length)
  */
 USB_Status_t USB_Receive(uint8_t endpoint, uint8_t *data, uint16_t *length)
 {
-    (void)endpoint;
-    (void)data;
-    (void)length;
-    /* 编译时警告 */
+    /* ========== 参数校验 ========== */
+    if (endpoint > 7) {
+        return USB_ERROR_INVALID_ENDPOINT;  /* 端点号范围：0-7 */
+    }
+    if (data == NULL) {
+        return USB_ERROR_NULL_PTR;
+    }
+    if (length == NULL) {
+        return USB_ERROR_NULL_PTR;
+    }
+    if (*length == 0) {
+        return USB_ERROR_INVALID_PARAM;  /* 缓冲区大小不能为0 */
+    }
+    
+    /* ========== 占位空函数 ========== */
     #warning "USB函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return USB_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -125,12 +151,14 @@ USB_Status_t USB_Receive(uint8_t endpoint, uint8_t *data, uint16_t *length)
  */
 USB_Status_t USB_SetEventCallback(USB_EventCallback_t callback, void *user_data)
 {
+    /* ========== 参数校验 ========== */
+    /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
+    
+    /* ========== 占位空函数 ========== */
     (void)callback;
     (void)user_data;
-    /* 编译时警告 */
     #warning "USB函数: 占位空函数，功能未实现，待完善"
     
-    /* ⚠️ 占位空函数：功能未实现，待完善 */
     return USB_ERROR_NOT_IMPLEMENTED;
 }
 

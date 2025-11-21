@@ -20,13 +20,15 @@ extern "C" {
 typedef enum {
     IC_OK = ERROR_OK,                                    /**< 操作成功 */
     IC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,    /**< 功能未实现（占位空函数） */
-    IC_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 10,   /**< 未初始化 */
-    IC_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 11,     /**< 参数错误 */
-    IC_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 12,    /**< 无效的外设 */
-    IC_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 13,   /**< 无效的通道 */
-    IC_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 14,       /**< GPIO配置失败 */
-    IC_ERROR_TIMEOUT = ERROR_BASE_TIMER - 15,           /**< 操作超时 */
-    IC_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 16, /**< 已初始化 */
+    IC_ERROR_NULL_PTR = ERROR_BASE_TIMER - 10,           /**< 空指针错误 */
+    IC_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 11,     /**< 参数错误（通用） */
+    IC_ERROR_INVALID_INSTANCE = ERROR_BASE_TIMER - 12,   /**< 无效实例编号 */
+    IC_ERROR_INVALID_CHANNEL = ERROR_BASE_TIMER - 13,     /**< 无效的通道 */
+    IC_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 14,    /**< 未初始化 */
+    IC_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 15,      /**< 无效的外设 */
+    IC_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 16,        /**< GPIO配置失败 */
+    IC_ERROR_TIMEOUT = ERROR_BASE_TIMER - 17,            /**< 操作超时 */
+    IC_ERROR_ALREADY_INITIALIZED = ERROR_BASE_TIMER - 18, /**< 已初始化 */
 } IC_Status_t;
 
 /**

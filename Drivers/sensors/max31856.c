@@ -268,7 +268,7 @@ static MAX31856_Status_t MAX31856_SPI_ReadRegs(uint8_t reg_addr, uint8_t *data, 
     uint8_t rx_buf[5];
     uint8_t i;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (length > 4 || data == NULL)
     {
         return MAX31856_ERROR_INVALID_PARAM;
@@ -402,7 +402,7 @@ static MAX31856_Status_t MAX31856_ModifyCR1(uint8_t mask, uint8_t value)
  */
 MAX31856_Status_t MAX31856_Init(const MAX31856_Config_t *config)
 {
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (config == NULL)
     {
         return MAX31856_ERROR_INVALID_PARAM;

@@ -22,15 +22,17 @@ extern "C" {
 typedef enum {
     CAN_OK = ERROR_OK,                                    /**< 操作成功 */
     CAN_ERROR_NOT_IMPLEMENTED = ERROR_BASE_CAN - 99,      /**< 功能未实现（占位空函数） */
-    CAN_ERROR_NOT_INITIALIZED = ERROR_BASE_CAN - 1,      /**< 未初始化 */
-    CAN_ERROR_INVALID_PARAM = ERROR_BASE_CAN - 2,        /**< 参数非法 */
-    CAN_ERROR_INVALID_PERIPH = ERROR_BASE_CAN - 3,       /**< 无效的外设 */
-    CAN_ERROR_GPIO_FAILED = ERROR_BASE_CAN - 4,          /**< GPIO配置失败 */
-    CAN_ERROR_INIT_FAILED = ERROR_BASE_CAN - 5,          /**< 初始化失败 */
-    CAN_ERROR_BUSY = ERROR_BASE_CAN - 6,                  /**< CAN总线忙 */
-    CAN_ERROR_TIMEOUT = ERROR_BASE_CAN - 7,              /**< 操作超时 */
-    CAN_ERROR_NO_MAILBOX = ERROR_BASE_CAN - 8,            /**< 无可用邮箱 */
-    CAN_ERROR_NO_MESSAGE = ERROR_BASE_CAN - 9,           /**< 无消息 */
+    CAN_ERROR_NULL_PTR = ERROR_BASE_CAN - 1,              /**< 空指针错误 */
+    CAN_ERROR_INVALID_PARAM = ERROR_BASE_CAN - 2,        /**< 参数非法（通用） */
+    CAN_ERROR_INVALID_INSTANCE = ERROR_BASE_CAN - 3,      /**< 无效实例编号 */
+    CAN_ERROR_INVALID_PERIPH = ERROR_BASE_CAN - 4,        /**< 无效的外设 */
+    CAN_ERROR_GPIO_FAILED = ERROR_BASE_CAN - 5,           /**< GPIO配置失败 */
+    CAN_ERROR_NOT_INITIALIZED = ERROR_BASE_CAN - 6,       /**< 未初始化 */
+    CAN_ERROR_INIT_FAILED = ERROR_BASE_CAN - 7,            /**< 初始化失败 */
+    CAN_ERROR_BUSY = ERROR_BASE_CAN - 8,                  /**< CAN总线忙 */
+    CAN_ERROR_TIMEOUT = ERROR_BASE_CAN - 9,               /**< 操作超时 */
+    CAN_ERROR_NO_MAILBOX = ERROR_BASE_CAN - 10,           /**< 无可用邮箱 */
+    CAN_ERROR_NO_MESSAGE = ERROR_BASE_CAN - 11,           /**< 无消息 */
 } CAN_Status_t;
 
 /**

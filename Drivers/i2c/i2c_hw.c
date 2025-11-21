@@ -212,7 +212,7 @@ I2C_Status_t I2C_HW_Init(I2C_Instance_t instance)
     GPIO_InitTypeDef GPIO_InitStructure;
     uint32_t i2c_clock;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -306,7 +306,7 @@ I2C_Status_t I2C_Deinit(I2C_Instance_t instance)
 {
     uint32_t i2c_clock;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -345,7 +345,7 @@ I2C_Status_t I2C_MasterTransmit(I2C_Instance_t instance, uint8_t slave_addr,
     uint16_t i;
     uint32_t actual_timeout;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -439,7 +439,7 @@ I2C_Status_t I2C_MasterReceive(I2C_Instance_t instance, uint8_t slave_addr,
     uint16_t i;
     uint32_t actual_timeout;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -669,7 +669,7 @@ I2C_Status_t I2C_MasterWriteRegs(I2C_Instance_t instance, uint8_t slave_addr,
 {
     uint16_t i;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -1019,7 +1019,7 @@ I2C_Status_t I2C_MasterTransmit10bit(I2C_Instance_t instance, uint16_t slave_add
     uint16_t i;
     uint32_t actual_timeout;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
@@ -1133,7 +1133,7 @@ I2C_Status_t I2C_MasterReceive10bit(I2C_Instance_t instance, uint16_t slave_addr
     uint16_t i;
     uint32_t actual_timeout;
     
-    /* 参数校验 */
+    /* ========== 参数校验 ========== */
     if (instance >= I2C_INSTANCE_MAX)
     {
         return I2C_ERROR_INVALID_PARAM;
