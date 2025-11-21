@@ -31,7 +31,8 @@ STM32F103C8T6 SPL库快速开发工程模板，基于board.h硬件隔离和modul
 BSP/              # 硬件抽象层（board.h硬件配置隔离）
 Core/             # 应用层（main.c，中断处理）
 Drivers/          # 驱动层（按类型分类：basic/i2c/spi/display/sensors等）
-system/           # 系统服务层（base_TIM2、delay、clock_manager、system_init）
+system/           # 系统服务层（delay、clock_manager、system_init）
+Drivers/timer/    # 定时器驱动（TIM2_TimeBase、PWM、输入捕获等）
 Debug/            # 调试工具层（debug、log、assert）
 common/           # 公共模块（error_code、error_handler）
 middlewares/      # 中间件层（协议栈、算法）
@@ -58,7 +59,7 @@ Examples/         # 演示案例（example1_led_blink等）
 - DS3231（实时时钟，支持软硬I2C）
 
 **系统服务模块：**
-- base_TIM2（1ms中断，动态调频自适应）
+- TIM2_TimeBase（1ms中断，动态调频自适应）
 - delay（阻塞式+非阻塞式，频率自适应）
 - clock_manager（DVFS，9档位，自动调频）
 - system_init（统一初始化框架）
@@ -78,7 +79,7 @@ Examples/         # 演示案例（example1_led_blink等）
 - GPIO模块
 - LED模块
 - delay模块
-- base_TIM2模块
+- TIM2_TimeBase模块
 
 **需要手动初始化的模块：**
 - OLED模块（需要调用`OLED_Init()`）

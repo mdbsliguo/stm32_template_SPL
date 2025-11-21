@@ -50,7 +50,7 @@
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */
-#define CONFIG_MODULE_BASE_TIMER_ENABLED   1   /**< 基时定时器模块开关 */
+#define CONFIG_MODULE_BASE_TIMER_ENABLED   1   /**< TIM2时间基准模块开关 */
 #define CONFIG_MODULE_CLOCK_MANAGER_ENABLED 1   /**< 时钟管理模块开关 */
 #define CONFIG_MODULE_SYSTEM_INIT_ENABLED   1   /**< 系统初始化模块开关 */
 #define CONFIG_MODULE_IWDG_ENABLED         1   /**< 独立看门狗模块开关 */
@@ -74,7 +74,7 @@
 
 /* 日志模块功能 */
 #define CONFIG_LOG_LEVEL                    2   /**< 日志级别：0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=NONE */
-#define CONFIG_LOG_TIMESTAMP_EN             0   /**< 时间戳功能开关（需要base_TIM2模块） */
+#define CONFIG_LOG_TIMESTAMP_EN             0   /**< 时间戳功能开关（需要TIM2_TimeBase模块） */
 #define CONFIG_LOG_MODULE_EN                1   /**< 模块名显示开关 */
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关（需要终端支持ANSI转义码） */
 

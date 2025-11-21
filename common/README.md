@@ -43,7 +43,7 @@ common/
 | System | ERROR_BASE_SYSTEM (-500) | ✅ 已支持 |
 | Clock Manager | ERROR_BASE_CLOCK_MANAGER (-600) | ✅ 已支持 |
 | Delay | ERROR_BASE_DELAY (-700) | ✅ 已支持 |
-| Base Timer | ERROR_BASE_BASE_TIMER (-800) | ✅ 已支持 |
+| TIM2_TimeBase | ERROR_BASE_BASE_TIMER (-800) | ✅ 已支持 |
 
 **注意**：clock_manager模块目前使用 `ERROR_BASE_SYSTEM` 作为错误码基值（历史原因），错误处理模块同时支持两种错误码范围。
 

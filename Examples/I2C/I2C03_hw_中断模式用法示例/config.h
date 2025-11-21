@@ -38,7 +38,7 @@
 
 /* 日志模块功能 */
 #define CONFIG_LOG_LEVEL                    1   /**< 日志级别：0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=NONE */
-#define CONFIG_LOG_TIMESTAMP_EN             0   /**< 时间戳功能开关（需要base_TIM2模块） */
+#define CONFIG_LOG_TIMESTAMP_EN             0   /**< 时间戳功能开关（需要TIM2_TimeBase模块） */
 #define CONFIG_LOG_MODULE_EN                1   /**< 模块名显示开关 */
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关（需要终端支持ANSI转义码） */
 

@@ -661,14 +661,14 @@
           <GroupName>system</GroupName>
           <Files>
             <File>
-              <FileName>base_TIM2.c</FileName>
+              <FileName>TIM2_TimeBase.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\system\base_TIM2.c</FilePath>
+              <FilePath>.\Drivers\timer\TIM2_TimeBase.c</FilePath>
             </File>
             <File>
-              <FileName>base_TIM2.h</FileName>
+              <FileName>TIM2_TimeBase.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\system\base_TIM2.h</FilePath>
+              <FilePath>.\Drivers\timer\TIM2_TimeBase.h</FilePath>
             </File>
             <File>
               <FileName>delay.c</FileName>

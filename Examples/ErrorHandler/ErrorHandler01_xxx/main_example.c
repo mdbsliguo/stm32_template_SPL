@@ -33,7 +33,7 @@
 #include "led.h"
 #include "delay.h"
 #include "clock_manager.h"
-#include "base_TIM2.h"
+#include "TIM2_TimeBase.h"
 #include "oled_ssd1306.h"
 #include "error_handler.h"
 #include "error_code.h"

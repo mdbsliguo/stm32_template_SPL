@@ -42,17 +42,17 @@ typedef enum {
  * @note 按初始化顺序排列，依赖关系：后面的模块可能依赖前面的模块
  */
 typedef enum {
-    MODCTRL_ID_BASE_TIMER = 0,      /**< base_TIM2基时定时器（最基础，无依赖） */
-    MODCTRL_ID_DELAY,               /**< delay延时模块（依赖base_TIM2） */
+    MODCTRL_ID_BASE_TIMER = 0,      /**< TIM2_TimeBase时间基准（最基础，无依赖） */
+    MODCTRL_ID_DELAY,               /**< delay延时模块（依赖TIM2_TimeBase） */
     MODCTRL_ID_GPIO,                /**< GPIO模块（基础驱动，无依赖） */
     MODCTRL_ID_LED,                 /**< LED模块（依赖GPIO） */
     MODCTRL_ID_OLED,                /**< OLED模块（依赖GPIO） */
     MODCTRL_ID_CLOCK_MANAGER,       /**< clock_manager时钟管理（依赖GPIO） */
     MODCTRL_ID_ERROR_HANDLER,       /**< error_handler错误处理（基础模块，无依赖） */
-    MODCTRL_ID_LOG,                 /**< log日志模块（依赖error_handler、base_TIM2） */
+    MODCTRL_ID_LOG,                 /**< log日志模块（依赖error_handler、TIM2_TimeBase） */
     MODCTRL_ID_IWDG,                /**< iwdg独立看门狗（无依赖） */
     MODCTRL_ID_SYSTEM_INIT,         /**< system_init系统初始化（依赖其他模块） */
-    MODCTRL_ID_SYSTEM_MONITOR,      /**< system_monitor系统监控（依赖base_TIM2、error_handler、log、clock_manager） */
+    MODCTRL_ID_SYSTEM_MONITOR,      /**< system_monitor系统监控（依赖TIM2_TimeBase、error_handler、log、clock_manager） */
     MODCTRL_ID_MAX                  /**< 最大模块数量 */
 } MODCTRL_ModuleID_t;
 

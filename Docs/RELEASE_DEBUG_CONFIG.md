@@ -82,7 +82,7 @@
 // 4 = NONE（禁用输出）
 
 // 日志功能开关
-#define CONFIG_LOG_TIMESTAMP_EN  0  // 时间戳（需要base_TIM2）
+#define CONFIG_LOG_TIMESTAMP_EN  0  // 时间戳（需要TIM2_TimeBase）
 #define CONFIG_LOG_MODULE_EN     1  // 模块名显示
 #define CONFIG_LOG_COLOR_EN      0  // 颜色输出（需要终端支持）
 ```

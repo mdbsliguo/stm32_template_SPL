@@ -460,6 +460,16 @@
               <FileType>5</FileType>
               <FilePath>..\..\..\Drivers\timer\timer_pwm.h</FilePath>
             </File>
+            <File>
+              <FileName>TIM2_TimeBase.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>
+            </File>
+            <File>
+              <FileName>TIM2_TimeBase.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -500,16 +510,6 @@
         <Group>
           <GroupName>system</GroupName>
           <Files>
-            <File>
-              <FileName>base_TIM2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\system\base_TIM2.c</FilePath>
-            </File>
-            <File>
-              <FileName>base_TIM2.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\system\base_TIM2.h</FilePath>
-            </File>
             <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>

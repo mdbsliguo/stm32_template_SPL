@@ -11,7 +11,7 @@
 #include "stm32f10x.h"
 #include <stdbool.h>
 
-/* 任务tick计数器（在base_TIM2.c中定义，TIM2中断中递增） */
+/* 任务tick计数器（在TIM2_TimeBase.c中定义，TIM2中断中递增） */
 extern volatile uint32_t g_task_tick;
 
 /* 频率配置表（系数1-9，对应72MHz-8MHz） */

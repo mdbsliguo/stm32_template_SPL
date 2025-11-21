@@ -24,7 +24,7 @@
 │  │  system/system_init.c    - 系统初始化（自动初始化各模块）│  │
 │  │  system/delay.c          - 延时服务                      │  │
 │  │  system/clock_manager.c  - 时钟管理                      │  │
-│  │  system/base_TIM2.c      - 基础定时器（系统心跳）        │  │
+│  │  Drivers/timer/TIM2_TimeBase.c - TIM2时间基准（系统心跳）│  │
 │  │  system/iwdg.c           - 独立看门狗                    │  │
 │  │  system/module_controller.c - 模块控制器                 │  │
 │  │  system/system_monitor.c - 系统监控                      │  │
@@ -250,7 +250,7 @@ main()
   │     │
   │     ├─→ Delay_Init()            - 延时模块初始化
   │     │
-  │     ├─→ Base_TIM2_Init()        - 基础定时器初始化（系统心跳）
+  │     ├─→ TIM2_TimeBase_Init()    - TIM2时间基准初始化（系统心跳）
   │     │
   │     ├─→ ClockManager_Init()     - 时钟管理初始化
   │     │

@@ -366,11 +366,11 @@ const char* ErrorHandler_GetString(error_code_t error_code)
     {
         switch (error_code)
         {
-            case ERROR_BASE_BASE_TIMER - 1: return "BaseTimer: Not initialized";
-            case ERROR_BASE_BASE_TIMER - 2: return "BaseTimer: Invalid parameter";
-            case ERROR_BASE_BASE_TIMER - 3: return "BaseTimer: Calculation failed";
-            case ERROR_BASE_BASE_TIMER - 4: return "BaseTimer: Reconfig failed";
-            default: return "BaseTimer: Unknown error";
+            case ERROR_BASE_BASE_TIMER - 1: return "TIM2_TimeBase: Not initialized";
+            case ERROR_BASE_BASE_TIMER - 2: return "TIM2_TimeBase: Invalid parameter";
+            case ERROR_BASE_BASE_TIMER - 3: return "TIM2_TimeBase: Calculation failed";
+            case ERROR_BASE_BASE_TIMER - 4: return "TIM2_TimeBase: Reconfig failed";
+            default: return "TIM2_TimeBase: Unknown error";
         }
     }
     /* 日志模块错误码 */

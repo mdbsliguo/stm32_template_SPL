@@ -23,9 +23,9 @@
 #include "debug.h"
 #endif
 
-/* 时间戳支持（如果存在base_TIM2） */
-#ifdef BASE_TIM2_H
-#include "base_TIM2.h"
+/* 时间戳支持（如果存在TIM2_TimeBase） */
+#ifdef TIM2_TIMEBASE_H
+#include "TIM2_TimeBase.h"
 #endif
 
 /* 模块开关检查 */
@@ -251,7 +251,7 @@ void Log_Print(log_level_t level, const char* module, const char* format, ...)
     if (g_log_config.enable_timestamp)
     {
 #ifdef BASE_TIM2_H
-        uint32_t tick = BaseTimer_GetTick();
+        uint32_t tick = TIM2_TimeBase_GetTick();
         len += snprintf(buffer + len, sizeof(buffer) - len, "[T+%lu] ", (unsigned long)tick);
 #else
         len += snprintf(buffer + len, sizeof(buffer) - len, "[T+0] ");

@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors</IncludePath>
+              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors;..\..\..\Drivers\timer</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -440,6 +440,16 @@
               <FileType>5</FileType>
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.h</FilePath>
             </File>
+            <File>
+              <FileName>TIM2_TimeBase.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>
+            </File>
+            <File>
+              <FileName>TIM2_TimeBase.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -480,16 +490,6 @@
         <Group>
           <GroupName>system</GroupName>
           <Files>
-            <File>
-              <FileName>base_TIM2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\system\base_TIM2.c</FilePath>
-            </File>
-            <File>
-              <FileName>base_TIM2.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\system\base_TIM2.h</FilePath>
-            </File>
             <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>

@@ -6,12 +6,12 @@
  *
  * 测试内容：
  * 1. 在不同频率下测试阻塞式延时（Delay_ms，基于SysTick，频率切换时自动适配）
- * 2. 在不同频率下测试非阻塞式延时（Delay_ms_nonblock，基于base_TIM2，频率切换时自动适配）
+ * 2. 在不同频率下测试非阻塞式延时（Delay_ms_nonblock，基于TIM2_TimeBase，频率切换时自动适配）
  * 3. 验证频率切换时，延时时间是否保持准确（1秒永远是1秒）
  *
  * 模块依赖：
- * - base_TIM2：TIM2外设定时器，提供1ms时间基准，频率切换时自动适配
- * - delay：阻塞式延时（SysTick）+ 非阻塞式延时（base_TIM2），频率切换时自动适配
+ * - TIM2_TimeBase：TIM2外设定时器，提供1ms时间基准，频率切换时自动适配
+ * - delay：阻塞式延时（SysTick）+ 非阻塞式延时（TIM2_TimeBase），频率切换时自动适配
  * - clock_manager：时钟管理模块，支持手动和自动调频
  *
  * 硬件要求：
@@ -32,7 +32,7 @@
 #include "led.h"
 #include "delay.h"
 #include "clock_manager.h"
-#include "base_TIM2.h"
+#include "TIM2_TimeBase.h"
 #include "oled_ssd1306.h"
 
 int main(void)

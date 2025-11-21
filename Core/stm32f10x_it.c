@@ -319,7 +319,7 @@ void PendSV_Handler(void)
   * @param  None
   * @retval None
   */
-/* g_task_tick 在base_TIM2模块中定义，在中断中递增，作为时间基准 */
+/* g_task_tick 在TIM2_TimeBase模块中定义，在中断中递增，作为时间基准 */
 extern volatile uint32_t g_task_tick;
 
 #ifdef CLOCK_MANAGER_H
@@ -332,7 +332,7 @@ void TIM2_IRQHandler(void)
     if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
     {
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-        g_task_tick++;  /* base_TIM2模块的时间基准，1ms递增一次 */
+        g_task_tick++;  /* TIM2_TimeBase模块的时间基准，1ms递增一次 */
         
         /* 1秒定时器：每1000ms计算一次CPU使用率 */
         #ifdef CLOCK_MANAGER_H

@@ -14,8 +14,8 @@
  * - LED2：闪烁速度与频率成正比（系数1闪9次/秒，系数9闪1次/秒）
  *
  * 模块依赖：
- * - base_TIM2：TIM2外设定时器，提供1ms时间基准
- * - delay：阻塞式延时（SysTick）+ 非阻塞式延时（base_TIM2）
+ * - TIM2_TimeBase：TIM2外设定时器，提供1ms时间基准
+ * - delay：阻塞式延时（SysTick）+ 非阻塞式延时（TIM2_TimeBase）
  * - clock_manager：时钟管理模块，支持自动调频
  * - OLED：SSD1306软件I2C驱动
  *
@@ -33,7 +33,7 @@
 #include "led.h"
 #include "delay.h"
 #include "clock_manager.h"
-#include "base_TIM2.h"
+#include "TIM2_TimeBase.h"
 #include "oled_ssd1306.h"
 #include "cpu_load_simulator.h"
 

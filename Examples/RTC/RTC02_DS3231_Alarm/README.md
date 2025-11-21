@@ -56,7 +56,7 @@
 - `led`：LED驱动模块（闹钟触发指示）
 - `oled`：OLED显示模块（显示时间和闹钟信息）
 - `delay`：延时模块
-- `base_timer`：基时定时器模块（延时模块依赖）
+- `TIM2_TimeBase`：TIM2时间基准模块（延时模块依赖）
 - `system_init`：系统初始化模块
 
 ## 🔄 实现流程

@@ -11,7 +11,7 @@
 
 #include "system_monitor.h"
 #include <config.h>
-#include "base_TIM2.h"
+#include "TIM2_TimeBase.h"
 #include "delay.h"
 #include "stm32f10x.h"  /* 用于SystemCoreClock */
 #include "core_cm3.h"   /* 用于访问SCB寄存器 */
@@ -377,7 +377,7 @@ SystemMonitor_ErrorCode_t SystemMonitor_Init(void)
     memset(&g_sysmon_state, 0, sizeof(g_sysmon_state));
     
     /* 记录初始化时间 */
-    g_sysmon_state.init_tick = BaseTimer_GetTick();
+    g_sysmon_state.init_tick = TIM2_TimeBase_GetTick();
     g_sysmon_state.last_check_tick = g_sysmon_state.init_tick;
     g_sysmon_state.last_log_tick = g_sysmon_state.init_tick;
     g_sysmon_state.min_free_heap_recorded = UINT32_MAX;
@@ -433,7 +433,7 @@ void SystemMonitor_Task(void)
         return;
     }
     
-    uint32_t current_tick = BaseTimer_GetTick();
+    uint32_t current_tick = TIM2_TimeBase_GetTick();
     
     /* 定期检查系统健康状态 */
     uint32_t check_elapsed = CalculateElapsed(current_tick, g_sysmon_state.last_check_tick);
@@ -505,7 +505,7 @@ SystemMonitor_ErrorCode_t SystemMonitor_GetStatus(SystemMonitor_Status_t* status
     status->exception_count = g_sysmon_state.exception_count;
     
     /* 获取运行时间 */
-    uint32_t current_tick = BaseTimer_GetTick();
+    uint32_t current_tick = TIM2_TimeBase_GetTick();
     status->uptime_sec = CalculateUptime(current_tick);
     
     /* 获取当前频率 */
@@ -622,7 +622,7 @@ uint32_t SystemMonitor_GetUptime(void)
         return 0;
     }
     
-    uint32_t current_tick = BaseTimer_GetTick();
+    uint32_t current_tick = TIM2_TimeBase_GetTick();
     return CalculateUptime(current_tick);
 }
 

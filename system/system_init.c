@@ -6,7 +6,7 @@
  */
 
 #include "system_init.h"
-#include "base_TIM2.h"  /* 基时定时器 */
+#include "TIM2_TimeBase.h"  /* TIM2时间基准 */
 #include "delay.h"
 #include "gpio.h"
 /* 使用 <config.h> 而不是 "config.h"，这样会优先在包含路径中查找 */
@@ -31,10 +31,10 @@ sys_init_error_t System_Init(void)
         return SYS_INIT_OK;
     }
     
-    /* 步骤1：初始化基时定时器（时间基准，1ms中断） */
-    BaseTimer_Init();
+    /* 步骤1：初始化TIM2时间基准（时间基准，1ms中断） */
+    TIM2_TimeBase_Init();
     
-    /* 步骤2：初始化延时模块（基于base_TIM2） */
+    /* 步骤2：初始化延时模块（基于TIM2_TimeBase） */
     Delay_Init();
     
     /* 步骤2：BSP层初始化（板级配置）

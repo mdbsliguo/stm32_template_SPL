@@ -210,7 +210,7 @@ CLKM_SetMode(CLKM_MODE_AUTO, CLKM_LVL_8MHZ);     // 设置为自动模�?
 ### 编译错误
 
 - 确保已包含必要的头文�?- 确保 `clock_manager.c/h` 已添加到项目
-- 确保 `base_TIM2.c/h` 已添加到项目
+- 确保 `TIM2_TimeBase.c/h` 已添加到项目
 
 ---
 
@@ -227,7 +227,7 @@ CLKM_SetMode(CLKM_MODE_AUTO, CLKM_LVL_8MHZ);     // 设置为自动模�?
 
 - **时钟管理**：`system/clock_manager.c/h`
 - **延时功能**：`system/delay.c/h`
-- **基时定时�?*：`system/base_TIM2.c/h`
+- **基时定时�?*：`Drivers/timer/TIM2_TimeBase.c/h`
 - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
 - **LED驱动**：`Drivers/basic/led.c/h`
 - **系统初始�?*：`system/system_init.c/h`

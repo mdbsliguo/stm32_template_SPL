@@ -1,6 +1,41 @@
 # 定时器模块
 
-本模块包含定时器的各种功能：PWM输出、输入捕获、编码器模式、输出比较。
+本模块包含定时器的各种功能：TIM2时间基准、PWM输出、输入捕获、编码器模式、输出比较。
+
+## TIM2时间基准模块 (TIM2_TimeBase)
+
+### 功能列表
+
+| 功能 | 函数 | 说明 |
+|------|------|------|
+| 初始化 | `TIM2_TimeBase_Init()` | 初始化TIM2时间基准（1ms中断） |
+| 重新配置 | `TIM2_TimeBase_Reconfig()` | 频率切换时重新配置，保持1ms中断间隔不变 |
+| 获取tick | `TIM2_TimeBase_GetTick()` | 获取当前tick值（代表真实时间，毫秒） |
+| 检查状态 | `TIM2_TimeBase_IsInitialized()` | 检查是否已初始化 |
+
+### 重要提醒
+
+1. **TIM2被占用**：TIM2被TIM2_TimeBase模块占用，用于系统时间基准（1ms中断）
+2. **时间基准**：提供系统时间基准，确保频率变化时1秒永远是1秒
+3. **动态适配**：频率切换时自动重新配置，保持1ms中断间隔不变
+4. **全局变量**：`g_task_tick` 在TIM2中断中递增，代表真实时间（毫秒）
+
+### 使用说明
+
+TIM2_TimeBase模块通常由系统初始化框架自动初始化，无需手动调用。如果需要手动使用：
+
+```c
+/* 初始化TIM2时间基准 */
+TIM2_TimeBase_Init();
+
+/* 获取当前tick（毫秒） */
+uint32_t tick = TIM2_TimeBase_GetTick();
+
+/* 频率切换时重新配置 */
+TIM2_TimeBase_Reconfig(72000000);  /* 切换到72MHz */
+```
+
+---
 
 ## PWM模块 (timer_pwm)
 
@@ -19,7 +54,7 @@
 
 ### 重要提醒
 
-1. **实例选择**：支持TIM1、TIM3、TIM4三个实例（TIM2已被base_TIM2占用），使用`PWM_INSTANCE_TIM1`、`PWM_INSTANCE_TIM3`或`PWM_INSTANCE_TIM4`
+1. **实例选择**：支持TIM1、TIM3、TIM4三个实例（TIM2已被TIM2_TimeBase占用），使用`PWM_INSTANCE_TIM1`、`PWM_INSTANCE_TIM3`或`PWM_INSTANCE_TIM4`
 2. **配置驱动**：GPIO和定时器参数在`BSP/board.h`中配置，自动初始化
 3. **频率设置**：所有通道共享同一个频率，设置频率会影响所有通道
 4. **占空比设置**：每个通道可以独立设置占空比（0.0~100.0%）

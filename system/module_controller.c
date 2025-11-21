@@ -42,16 +42,16 @@ static const char* g_module_names[MODCTRL_ID_MAX] = {
 /* 模块依赖关系表（依赖的模块ID数组，以MODCTRL_ID_MAX结尾） */
 static const MODCTRL_ModuleID_t g_module_dependencies[MODCTRL_ID_MAX][4] = {
     {MODCTRL_ID_MAX},                          /* MODCTRL_ID_BASE_TIMER：无依赖 */
-    {MODCTRL_ID_BASE_TIMER, MODCTRL_ID_MAX},   /* MODCTRL_ID_DELAY：依赖base_TIM2 */
+    {MODCTRL_ID_BASE_TIMER, MODCTRL_ID_MAX},   /* MODCTRL_ID_DELAY：依赖TIM2_TimeBase */
     {MODCTRL_ID_MAX},                          /* MODCTRL_ID_GPIO：无依赖 */
     {MODCTRL_ID_GPIO, MODCTRL_ID_MAX},         /* MODCTRL_ID_LED：依赖GPIO */
     {MODCTRL_ID_GPIO, MODCTRL_ID_MAX},         /* MODCTRL_ID_OLED：依赖GPIO */
     {MODCTRL_ID_GPIO, MODCTRL_ID_MAX},         /* MODCTRL_ID_CLOCK_MANAGER：依赖GPIO */
     {MODCTRL_ID_MAX},                          /* MODCTRL_ID_ERROR_HANDLER：无依赖 */
-    {MODCTRL_ID_ERROR_HANDLER, MODCTRL_ID_BASE_TIMER, MODCTRL_ID_MAX}, /* MODCTRL_ID_LOG：依赖error_handler、base_TIM2 */
+    {MODCTRL_ID_ERROR_HANDLER, MODCTRL_ID_BASE_TIMER, MODCTRL_ID_MAX}, /* MODCTRL_ID_LOG：依赖error_handler、TIM2_TimeBase */
     {MODCTRL_ID_MAX},                          /* MODCTRL_ID_IWDG：无依赖 */
     {MODCTRL_ID_BASE_TIMER, MODCTRL_ID_DELAY, MODCTRL_ID_GPIO, MODCTRL_ID_MAX}, /* MODCTRL_ID_SYSTEM_INIT：依赖多个模块 */
-    {MODCTRL_ID_BASE_TIMER, MODCTRL_ID_ERROR_HANDLER, MODCTRL_ID_MAX}, /* MODCTRL_ID_SYSTEM_MONITOR：依赖base_TIM2、error_handler（可选log、clock_manager） */
+    {MODCTRL_ID_BASE_TIMER, MODCTRL_ID_ERROR_HANDLER, MODCTRL_ID_MAX}, /* MODCTRL_ID_SYSTEM_MONITOR：依赖TIM2_TimeBase、error_handler（可选log、clock_manager） */
 };
 
 /* 模块状态表 */

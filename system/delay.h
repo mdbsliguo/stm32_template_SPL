@@ -1,9 +1,9 @@
 /**
  * @file delay.h
- * @brief 延时模块接口（阻塞式+非阻塞式，基于base_TIM2）
+ * @brief 延时模块接口（阻塞式+非阻塞式，基于TIM2_TimeBase）
  * @version 2.0.0
  * @date 2024-01-01
- * @note 基于base_TIM2模块，确保频率变化时1秒永远是1秒
+ * @note 基于TIM2_TimeBase模块，确保频率变化时1秒永远是1秒
  */
 
 #ifndef DELAY_H
@@ -12,17 +12,17 @@
 #include <stdint.h>
 
 /**
- * @brief 初始化延时模块（基于base_TIM2）
- * @note 初始化base_TIM2（如果未初始化），然后计算阻塞式延时的系数
- * @note 阻塞式延时基于SysTick寄存器，非阻塞式延时基于base_TIM2
+ * @brief 初始化延时模块（基于TIM2_TimeBase）
+ * @note 初始化TIM2_TimeBase（如果未初始化），然后计算阻塞式延时的系数
+ * @note 阻塞式延时基于SysTick寄存器，非阻塞式延时基于TIM2_TimeBase
  */
 void Delay_Init(void);
 
 /**
  * @brief 重新配置延时模块（频率切换时调用）
  * @param[in] new_freq 新的系统频率（Hz）
- * @note 频率切换时，调用base_TIM2的重新配置，然后更新阻塞式延时的系数
- * @note base_TIM2会自动保持1ms中断间隔不变，确保1秒永远是1秒
+ * @note 频率切换时，调用TIM2_TimeBase的重新配置，然后更新阻塞式延时的系数
+ * @note TIM2_TimeBase会自动保持1ms中断间隔不变，确保1秒永远是1秒
  */
 void Delay_Reconfig(uint32_t new_freq);
 
@@ -43,11 +43,11 @@ void Delay_us(uint32_t us);
 void Delay_ms(uint32_t ms);
 
 /**
- * @brief 毫秒级非阻塞延时（基于base_TIM2，动态降频自适应）
+ * @brief 毫秒级非阻塞延时（基于TIM2_TimeBase，动态降频自适应）
  * @param[in] start_tick 开始时间（Delay_GetTick()的返回值）
  * @param[in] delay_ms 延时毫秒数
  * @return 1=延时完成，0=延时未完成
- * @note 基于base_TIM2，频率切换时自动适配（1秒永远是1秒）
+ * @note 基于TIM2_TimeBase，频率切换时自动适配（1秒永远是1秒）
  * @note 用于长时间延时（>100ms），不阻塞CPU
  * 
  * @example
@@ -62,7 +62,7 @@ uint8_t Delay_ms_nonblock(uint32_t start_tick, uint32_t delay_ms);
 /**
  * @brief 获取当前tick（用于非阻塞延时）
  * @return 当前tick值（代表真实时间，毫秒）
- * @note 基于base_TIM2，频率切换时自动适配
+ * @note 基于TIM2_TimeBase，频率切换时自动适配
  */
 uint32_t Delay_GetTick(void);
 
