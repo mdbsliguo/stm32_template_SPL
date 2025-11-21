@@ -21,6 +21,7 @@ extern "C" {
  */
 typedef enum {
     PWM_OK = ERROR_OK,                                    /**< 操作成功 */
+    PWM_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,    /**< 功能未实现（占位空函数） */
     PWM_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 1,    /**< 未初始化 */
     PWM_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 2,      /**< 参数非法 */
     PWM_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 3,      /**< 无效的外设 */

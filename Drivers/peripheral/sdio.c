@@ -29,7 +29,11 @@ SDIO_Status_t SDIO_Init(uint8_t clock_div, SDIO_BusWidth_t bus_width)
 {
     (void)clock_div;
     (void)bus_width;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -38,7 +42,11 @@ SDIO_Status_t SDIO_Init(uint8_t clock_div, SDIO_BusWidth_t bus_width)
 SDIO_Status_t SDIO_Deinit(void)
 {
     
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -47,7 +55,11 @@ SDIO_Status_t SDIO_Deinit(void)
 SDIO_Status_t SDIO_EnableClock(void)
 {
     
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -56,7 +68,11 @@ SDIO_Status_t SDIO_EnableClock(void)
 SDIO_Status_t SDIO_DisableClock(void)
 {
     
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -65,7 +81,11 @@ SDIO_Status_t SDIO_DisableClock(void)
 SDIO_Status_t SDIO_SetPowerState(uint32_t power_state)
 {
     (void)power_state;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -82,7 +102,11 @@ uint32_t SDIO_GetPowerState(void)
 SDIO_Status_t SDIO_EnableIT(uint32_t sdio_it)
 {
     (void)sdio_it;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -91,7 +115,11 @@ SDIO_Status_t SDIO_EnableIT(uint32_t sdio_it)
 SDIO_Status_t SDIO_DisableIT(uint32_t sdio_it)
 {
     (void)sdio_it;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -100,7 +128,11 @@ SDIO_Status_t SDIO_DisableIT(uint32_t sdio_it)
 SDIO_Status_t SDIO_EnableDMA(void)
 {
     
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -109,7 +141,11 @@ SDIO_Status_t SDIO_EnableDMA(void)
 SDIO_Status_t SDIO_DisableDMA(void)
 {
     
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -120,7 +156,11 @@ SDIO_Status_t SDIO_SendCommand(uint8_t cmd_index, uint32_t argument, uint32_t re
     (void)cmd_index;
     (void)argument;
     (void)response_type;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -139,7 +179,11 @@ SDIO_Status_t SDIO_ConfigData(uint32_t data_length, uint32_t block_size,
 {
     (void)data_length;
     (void)block_size;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -156,7 +200,11 @@ uint32_t SDIO_ReadData(void)
 SDIO_Status_t SDIO_WriteData(uint32_t data)
 {
     (void)data;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -182,7 +230,11 @@ uint8_t SDIO_GetFlagStatus(uint32_t flag)
 SDIO_Status_t SDIO_ClearFlag(uint32_t flag)
 {
     (void)flag;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -200,7 +252,11 @@ uint8_t SDIO_GetITStatus(uint32_t it)
 SDIO_Status_t SDIO_ClearITPendingBit(uint32_t it)
 {
     (void)it;
-    return SDIO_OK;
+    /* 编译时警告 */
+    #warning "SDIO函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return SDIO_ERROR_NOT_IMPLEMENTED;
 }
 
 /**

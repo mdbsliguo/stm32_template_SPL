@@ -16,6 +16,8 @@
 #define CONFIG_MODULE_I2C_ENABLED           1   /**< I2C模块开关 - 必须（DS3231使用硬件I2C） */
 #define CONFIG_MODULE_SOFT_I2C_ENABLED   1   /**< 软件I2C模块开关 - 必须（OLED使用） */
 #define CONFIG_MODULE_DS3231_ENABLED        1   /**< DS3231模块开关 - 必须（案例11使用） */
+#define CONFIG_MODULE_NVIC_ENABLED          1   /**< NVIC模块开关 - 必须（I2C中断需要） */
+#define CONFIG_MODULE_DMA_ENABLED           0   /**< DMA模块开关 - 禁用（案例11不使用DMA） */
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 - 必须（案例11使用） */

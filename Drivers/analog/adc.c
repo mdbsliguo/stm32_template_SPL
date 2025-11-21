@@ -90,7 +90,11 @@ static ADC_Status_t ADC_GetChannelGPIO(uint8_t channel, GPIO_TypeDef **port, uin
     (void)channel;
     (void)port;
     (void)pin;
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -105,7 +109,11 @@ static ADC_Status_t ADC_WaitFlag(ADC_TypeDef *adc_periph, uint32_t flag, uint32_
     (void)adc_periph;
     (void)flag;
     (void)timeout_ms;
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -113,7 +121,11 @@ static ADC_Status_t ADC_WaitFlag(ADC_TypeDef *adc_periph, uint32_t flag, uint32_
  */
 ADC_Status_t ADC_Init(ADC_Instance_t instance)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -121,7 +133,11 @@ ADC_Status_t ADC_Init(ADC_Instance_t instance)
  */
 ADC_Status_t ADC_Deinit(ADC_Instance_t instance)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -129,7 +145,11 @@ ADC_Status_t ADC_Deinit(ADC_Instance_t instance)
  */
 ADC_Status_t ADC_ReadChannel(ADC_Instance_t instance, uint8_t channel, uint16_t *value, uint32_t timeout)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -137,7 +157,11 @@ ADC_Status_t ADC_ReadChannel(ADC_Instance_t instance, uint8_t channel, uint16_t 
  */
 ADC_Status_t ADC_SetChannelSampleTime(ADC_Instance_t instance, uint8_t channel, uint8_t sample_time)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -146,7 +170,11 @@ ADC_Status_t ADC_SetChannelSampleTime(ADC_Instance_t instance, uint8_t channel, 
 ADC_Status_t ADC_ReadChannels(ADC_Instance_t instance, const uint8_t *channels, uint8_t channel_count,
                               uint16_t *values, uint32_t timeout)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -154,7 +182,11 @@ ADC_Status_t ADC_ReadChannels(ADC_Instance_t instance, const uint8_t *channels, 
  */
 ADC_Status_t ADC_StartContinuous(ADC_Instance_t instance, uint8_t channel)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -162,7 +194,11 @@ ADC_Status_t ADC_StartContinuous(ADC_Instance_t instance, uint8_t channel)
  */
 ADC_Status_t ADC_StopContinuous(ADC_Instance_t instance)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -170,7 +206,11 @@ ADC_Status_t ADC_StopContinuous(ADC_Instance_t instance)
  */
 ADC_Status_t ADC_ReadContinuous(ADC_Instance_t instance, uint16_t *value)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -205,7 +245,11 @@ static uint16_t ADC_GetITValue(ADC_IT_t it_type)
  */
 ADC_Status_t ADC_EnableIT(ADC_Instance_t instance, ADC_IT_t it_type)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -213,7 +257,11 @@ ADC_Status_t ADC_EnableIT(ADC_Instance_t instance, ADC_IT_t it_type)
  */
 ADC_Status_t ADC_DisableIT(ADC_Instance_t instance, ADC_IT_t it_type)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -222,7 +270,11 @@ ADC_Status_t ADC_DisableIT(ADC_Instance_t instance, ADC_IT_t it_type)
 ADC_Status_t ADC_SetITCallback(ADC_Instance_t instance, ADC_IT_t it_type,
                                 ADC_IT_Callback_t callback, void *user_data)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -246,7 +298,11 @@ void ADC1_2_IRQHandler(void)
 ADC_Status_t ADC_StartDMA(ADC_Instance_t instance, const uint8_t *channels, uint8_t channel_count,
                           uint16_t *buffer, uint16_t buffer_size)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -254,7 +310,11 @@ ADC_Status_t ADC_StartDMA(ADC_Instance_t instance, const uint8_t *channels, uint
  */
 ADC_Status_t ADC_StopDMA(ADC_Instance_t instance)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== 注入通道功能实现 ========== */
@@ -264,7 +324,11 @@ ADC_Status_t ADC_StopDMA(ADC_Instance_t instance)
  */
 ADC_Status_t ADC_ConfigInjectedChannel(ADC_Instance_t instance, uint8_t channel, uint8_t rank, uint8_t sample_time)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -272,7 +336,11 @@ ADC_Status_t ADC_ConfigInjectedChannel(ADC_Instance_t instance, uint8_t channel,
  */
 ADC_Status_t ADC_StartInjectedConversion(ADC_Instance_t instance, uint8_t external_trigger)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -280,7 +348,11 @@ ADC_Status_t ADC_StartInjectedConversion(ADC_Instance_t instance, uint8_t extern
  */
 ADC_Status_t ADC_ReadInjectedChannel(ADC_Instance_t instance, uint8_t rank, uint16_t *value)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -288,7 +360,11 @@ ADC_Status_t ADC_ReadInjectedChannel(ADC_Instance_t instance, uint8_t rank, uint
  */
 ADC_Status_t ADC_SetInjectedOffset(ADC_Instance_t instance, uint8_t rank, uint16_t offset)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== 双ADC模式功能实现 ========== */
@@ -307,7 +383,11 @@ static uint32_t ADC_GetDualModeValue(ADC_DualMode_t mode)
  */
 ADC_Status_t ADC_ConfigDualMode(ADC_DualMode_t mode)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -315,7 +395,11 @@ ADC_Status_t ADC_ConfigDualMode(ADC_DualMode_t mode)
  */
 ADC_Status_t ADC_GetDualMode(ADC_DualMode_t *mode)
 {
-    return ADC_OK;
+    /* 编译时警告 */
+    #warning "ADC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ADC_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* CONFIG_MODULE_ADC_ENABLED */

@@ -64,7 +64,11 @@ static uint32_t DAC_GetTriggerValue(DAC_Trigger_t trigger)
  */
 DAC_Status_t DAC_Init(DAC_Channel_t channel, DAC_Trigger_t trigger, DAC_OutputBuffer_t output_buffer)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -72,7 +76,11 @@ DAC_Status_t DAC_Init(DAC_Channel_t channel, DAC_Trigger_t trigger, DAC_OutputBu
  */
 DAC_Status_t DAC_Deinit(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -80,7 +88,11 @@ DAC_Status_t DAC_Deinit(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SetValue(DAC_Channel_t channel, uint16_t value)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -88,7 +100,11 @@ DAC_Status_t DAC_SetValue(DAC_Channel_t channel, uint16_t value)
  */
 DAC_Status_t DAC_SetVoltage(DAC_Channel_t channel, float voltage)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -96,7 +112,11 @@ DAC_Status_t DAC_SetVoltage(DAC_Channel_t channel, float voltage)
  */
 DAC_Status_t DAC_Enable(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -104,7 +124,11 @@ DAC_Status_t DAC_Enable(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_Disable(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -112,7 +136,11 @@ DAC_Status_t DAC_Disable(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_ConfigWave(DAC_Channel_t channel, DAC_Wave_t wave, uint16_t amplitude)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -120,7 +148,11 @@ DAC_Status_t DAC_ConfigWave(DAC_Channel_t channel, DAC_Wave_t wave, uint16_t amp
  */
 DAC_Status_t DAC_DisableWave(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -128,7 +160,11 @@ DAC_Status_t DAC_DisableWave(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SoftwareTrigger(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -154,7 +190,11 @@ uint16_t DAC_GetValue(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_StartDMA(DAC_Channel_t channel, const uint16_t *buffer, uint16_t length)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -162,7 +202,11 @@ DAC_Status_t DAC_StartDMA(DAC_Channel_t channel, const uint16_t *buffer, uint16_
  */
 DAC_Status_t DAC_StopDMA(DAC_Channel_t channel)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== 双通道同步输出功能实现 ========== */
@@ -172,7 +216,11 @@ DAC_Status_t DAC_StopDMA(DAC_Channel_t channel)
  */
 DAC_Status_t DAC_SetDualValue(uint16_t channel1_value, uint16_t channel2_value)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -180,7 +228,11 @@ DAC_Status_t DAC_SetDualValue(uint16_t channel1_value, uint16_t channel2_value)
  */
 DAC_Status_t DAC_DualSoftwareTrigger(void)
 {
-    return DAC_OK;
+    /* 编译时警告 */
+    #warning "DAC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DAC_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* STM32F10X_HD || STM32F10X_CL || STM32F10X_HD_VL || STM32F10X_MD_VL */

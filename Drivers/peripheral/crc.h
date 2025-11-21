@@ -21,6 +21,7 @@ extern "C" {
  */
 typedef enum {
     CRC_OK = ERROR_OK,                                    /**< 操作成功 */
+    CRC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_CRC - 99,      /**< 功能未实现（占位空函数） */
     CRC_ERROR_INVALID_PARAM = ERROR_BASE_CRC - 1,       /**< 参数非法 */
 } CRC_Status_t;
 

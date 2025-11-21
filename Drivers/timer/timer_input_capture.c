@@ -80,7 +80,11 @@ IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t 
     (void)instance;
     (void)channel;
     (void)polarity;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -90,7 +94,11 @@ IC_Status_t IC_Deinit(IC_Instance_t instance, IC_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -100,7 +108,11 @@ IC_Status_t IC_Start(IC_Instance_t instance, IC_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -110,7 +122,11 @@ IC_Status_t IC_Stop(IC_Instance_t instance, IC_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -121,7 +137,11 @@ IC_Status_t IC_ReadValue(IC_Instance_t instance, IC_Channel_t channel, uint32_t 
     (void)instance;
     (void)channel;
     (void)value;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -133,7 +153,11 @@ IC_Status_t IC_MeasureFrequency(IC_Instance_t instance, IC_Channel_t channel, ui
     (void)channel;
     (void)frequency;
     (void)timeout_ms;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -145,7 +169,11 @@ IC_Status_t IC_MeasurePWM(IC_Instance_t instance, IC_Channel_t channel, IC_Measu
     (void)channel;
     (void)result;
     (void)timeout_ms;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -157,7 +185,11 @@ IC_Status_t IC_MeasurePulseWidth(IC_Instance_t instance, IC_Channel_t channel, u
     (void)channel;
     (void)pulse_width_us;
     (void)timeout_ms;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -199,7 +231,11 @@ IC_Status_t IC_EnableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t it
     (void)instance;
     (void)channel;
     (void)it_type;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -210,7 +246,11 @@ IC_Status_t IC_DisableIT(IC_Instance_t instance, IC_Channel_t channel, IC_IT_t i
     (void)instance;
     (void)channel;
     (void)it_type;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -224,7 +264,11 @@ IC_Status_t IC_SetITCallback(IC_Instance_t instance, IC_Channel_t channel, IC_IT
     (void)it_type;
     (void)callback;
     (void)user_data;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -248,7 +292,11 @@ IC_Status_t IC_SetPrescaler(IC_Instance_t instance, IC_Channel_t channel, uint8_
     (void)instance;
     (void)channel;
     (void)prescaler;
-    return IC_OK;
+    /* 编译时警告 */
+    #warning "IC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return IC_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */

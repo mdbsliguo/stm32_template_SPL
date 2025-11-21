@@ -18,7 +18,9 @@
 #include "gpio.h"
 #include "delay.h"
 #include "nvic.h"
+#if CONFIG_MODULE_DMA_ENABLED
 #include "dma.h"
+#endif
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_i2c.h"
 #include "misc.h"
@@ -58,6 +60,7 @@ static uint16_t g_i2c_rx_index[I2C_INSTANCE_MAX] = {0};
 static uint8_t g_i2c_slave_addr[I2C_INSTANCE_MAX] = {0};
 static I2C_Status_t g_i2c_status[I2C_INSTANCE_MAX] = {I2C_OK};
 
+#if CONFIG_MODULE_DMA_ENABLED
 /* DMA通道映射（I2C TX/RX对应的DMA通道） */
 /* 注意：I2C1使用DMA1_CH6(TX)/CH7(RX)，I2C2使用DMA1_CH4(TX)/CH5(RX) */
 static const DMA_Channel_t i2c_tx_dma_channels[I2C_INSTANCE_MAX] = {
@@ -69,6 +72,7 @@ static const DMA_Channel_t i2c_rx_dma_channels[I2C_INSTANCE_MAX] = {
     DMA_CHANNEL_1_7,  /* I2C1 RX -> DMA1_CH7 */
     DMA_CHANNEL_1_5,  /* I2C2 RX -> DMA1_CH5 */
 };
+#endif /* CONFIG_MODULE_DMA_ENABLED */
 
 /**
  * @brief 获取I2C外设时钟
@@ -1391,6 +1395,7 @@ I2C_Status_t I2C_SetCallback(I2C_Instance_t instance, I2C_Callback_t callback)
     return I2C_OK;
 }
 
+#if CONFIG_MODULE_DMA_ENABLED
 /**
  * @brief I2C主模式发送数据（DMA模式）
  */
@@ -1588,6 +1593,7 @@ I2C_Status_t I2C_MasterReceiveDMA(I2C_Instance_t instance, uint8_t slave_addr,
     
     return I2C_OK;
 }
+#endif /* CONFIG_MODULE_DMA_ENABLED */
 
 /* ========== 中断模式功能实现 ========== */
 

@@ -22,6 +22,7 @@ extern "C" {
  */
 typedef enum {
     DAC_OK = ERROR_OK,                                    /**< 操作成功 */
+    DAC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_DAC - 99,     /**< 功能未实现（占位空函数） */
     DAC_ERROR_NOT_INITIALIZED = ERROR_BASE_DAC - 1,      /**< 未初始化 */
     DAC_ERROR_INVALID_PARAM = ERROR_BASE_DAC - 2,        /**< 参数错误 */
     DAC_ERROR_INVALID_CHANNEL = ERROR_BASE_DAC - 3,      /**< 无效的通道 */

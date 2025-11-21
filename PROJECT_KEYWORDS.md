@@ -28,7 +28,7 @@
 - [规范变更历史](#规范变更历史) ⭐ 新增
 
 ### 按主题查找
-- **代码规范**：[命名规范](#命名规范) | [错误处理](#错误处理) | [模块函数返回类型规范](#模块函数返回类型规范-通用-p0) | [占位空函数规范](#占位空函数规范-通用-p1) | [防御性编程](#防御性编程) | [代码格式规范](#代码格式规范)
+- **代码规范**：[命名规范](#命名规范) | [错误处理](#错误处理) | [模块函数返回类型规范](#模块函数返回类型规范-通用-p0) | [占位空函数规范](#占位空函数规范-通用-p1) | [参数校验规范](#参数校验规范-通用-p1) | [防御性编程](#防御性编程) | [代码格式规范](#代码格式规范)
 - **案例规范**：[board.h配置规范](#boardh配置规范-案例-p1) | [config.h配置规范](#configh配置规范-案例-p1) | [错误处理规范](#错误处理规范-案例-p1)
 - **架构规范**：[分层原则](#分层原则) | [模块解耦原则](#模块解耦原则)
 - **开发流程**：[标准工作流程](#标准工作流程) | [模块创建流程](#模块创建流程) | [案例开发流程](#案例开发流程)
@@ -384,6 +384,318 @@ typedef enum {
 **与模块禁用时的区别**：
 - **模块禁用**：模块被`CONFIG_MODULE_XXX_ENABLED=0`禁用时，函数可以返回成功（因为模块本身被禁用）
 - **占位空函数**：模块已启用，但函数未实现，必须返回错误码
+
+#### 参数校验规范 `[通用]` `[P1]`
+
+**强制要求**：
+- **所有公共函数必须进行参数校验**，包括：
+  - `Init()` 函数
+  - `Deinit()` 函数
+  - `Set*()` 函数
+  - `Get*()` 函数
+  - `Enable*()` / `Disable*()` 函数
+  - 所有其他公共接口函数
+- **占位空函数也必须进行参数校验**（即使功能未实现，也要校验参数有效性）
+
+**校验优先级顺序**：
+
+参数校验必须按照以下优先级顺序进行（最危险的先检查）：
+
+1. **空指针检查**（最危险，最先检查）
+   - 所有指针参数（输入/输出）必须检查
+   - 包括结构体指针、数组指针、回调函数指针等
+
+2. **枚举/范围检查**（避免数组越界、非法枚举值）
+   - 枚举类型参数必须检查是否在有效范围内
+   - 数组索引必须检查边界
+   - 实例编号必须检查有效性
+
+3. **状态检查**（模块状态、初始化状态等）
+   - 检查模块是否已初始化
+   - 检查模块是否已禁用
+   - 检查资源是否已被占用
+
+4. **业务逻辑检查**（数值范围、缓冲区大小等）
+   - 数值参数的范围检查
+   - 缓冲区大小检查
+   - 数据有效性检查
+
+**标准实现格式**：
+
+```c
+/**
+ * @brief 函数功能描述
+ * @param[in] param1 参数1描述
+ * @param[in] param2 参数2描述
+ * @param[out] result 输出参数描述
+ * @return XXX_Status_t 错误码
+ */
+XXX_Status_t XXX_Function(Type1 param1, Type2 param2, Type3* result)
+{
+    /* ========== 参数校验 ========== */
+    
+    /* 1. 空指针检查（输出参数优先） */
+    if (result == NULL) {
+        return XXX_ERROR_NULL_PTR;
+    }
+    
+    /* 2. 空指针检查（输入参数） */
+    if (param1 == NULL) {
+        return XXX_ERROR_NULL_PTR;
+    }
+    
+    /* 3. 枚举值范围检查 */
+    if (param2 < XXX_ENUM_MIN || param2 > XXX_ENUM_MAX) {
+        return XXX_ERROR_INVALID_PARAM;
+    }
+    
+    /* 4. 数值范围检查 */
+    if (param1->value < MIN_VALUE || param1->value > MAX_VALUE) {
+        return XXX_ERROR_INVALID_PARAM;
+    }
+    
+    /* 5. 状态检查 */
+    if (!g_xxx_initialized) {
+        return XXX_ERROR_NOT_INIT;
+    }
+    
+    /* ========== 业务逻辑 ========== */
+    // ... 实际功能代码 ...
+    
+    return XXX_OK;
+}
+```
+
+**常见参数类型校验方法**：
+
+1. **指针参数（输入/输出）**：
+```c
+/* 输入指针 */
+if (config == NULL) {
+    return XXX_ERROR_NULL_PTR;
+}
+
+/* 输出指针 */
+if (result == NULL) {
+    return XXX_ERROR_NULL_PTR;
+}
+```
+
+2. **枚举参数**：
+```c
+/* 方法1：使用范围检查 */
+if (instance < XXX_INSTANCE_MIN || instance > XXX_INSTANCE_MAX) {
+    return XXX_ERROR_INVALID_INSTANCE;
+}
+
+/* 方法2：使用查表法（推荐，如LED模块） */
+XXX_Config_t* cfg = XXX_GetConfig(instance);
+if (cfg == NULL) {
+    return XXX_ERROR_INVALID_INSTANCE;
+}
+```
+
+3. **数值范围参数**：
+```c
+/* 波特率范围检查 */
+if (baudrate < UART_BAUDRATE_MIN || baudrate > UART_BAUDRATE_MAX) {
+    return UART_ERROR_INVALID_BAUDRATE;
+}
+
+/* 频率范围检查 */
+if (freq < PWM_FREQ_MIN || freq > PWM_FREQ_MAX) {
+    return PWM_ERROR_INVALID_FREQ;
+}
+```
+
+4. **数组索引参数**：
+```c
+/* 数组索引边界检查 */
+if (index >= ARRAY_SIZE) {
+    return XXX_ERROR_INVALID_INDEX;
+}
+
+/* 或使用查表法（推荐） */
+if (index < 1 || index > CONFIG_COUNT) {
+    return XXX_ERROR_INVALID_INDEX;
+}
+```
+
+5. **缓冲区参数**：
+```c
+/* 缓冲区空指针和大小检查 */
+if (buffer == NULL || size == 0) {
+    return XXX_ERROR_INVALID_PARAM;
+}
+
+/* 缓冲区大小不足检查 */
+if (required_size > buffer_size) {
+    return XXX_ERROR_BUFFER_TOO_SMALL;
+}
+
+/* 长度参数有效性检查 */
+if (length == 0 || length > MAX_LENGTH) {
+    return XXX_ERROR_INVALID_PARAM;
+}
+```
+
+6. **引脚/GPIO参数**：
+```c
+/* GPIO端口空指针检查 */
+if (port == NULL) {
+    return GPIO_ERROR_NULL_PTR;
+}
+
+/* 引脚有效性检查（pin不能为0） */
+if (pin == 0) {
+    return GPIO_ERROR_INVALID_PIN;
+}
+```
+
+**错误码定义规范**：
+
+每个模块必须定义以下标准错误码（按优先级从高到低）：
+
+```c
+typedef enum {
+    XXX_OK = ERROR_OK,                                    // 成功
+    XXX_ERROR_NULL_PTR = ERROR_BASE_XXX - 1,             // 空指针错误
+    XXX_ERROR_INVALID_PARAM = ERROR_BASE_XXX - 2,        // 无效参数（通用）
+    XXX_ERROR_INVALID_INSTANCE = ERROR_BASE_XXX - 3,     // 无效实例编号
+    XXX_ERROR_INVALID_INDEX = ERROR_BASE_XXX - 4,        // 无效索引
+    XXX_ERROR_INVALID_PIN = ERROR_BASE_XXX - 5,          // 无效引脚（GPIO相关）
+    XXX_ERROR_NOT_INIT = ERROR_BASE_XXX - 6,             // 未初始化
+    XXX_ERROR_ALREADY_INIT = ERROR_BASE_XXX - 7,         // 已初始化（重复初始化）
+    XXX_ERROR_DISABLED = ERROR_BASE_XXX - 8,            // 模块已禁用
+    XXX_ERROR_BUFFER_TOO_SMALL = ERROR_BASE_XXX - 9,    // 缓冲区太小
+    // ... 其他模块特定错误码
+} XXX_Status_t;
+```
+
+**占位空函数的参数校验**：
+
+**重要**：占位空函数也必须进行参数校验，即使功能未实现：
+
+```c
+/**
+ * @brief 设置PWM频率
+ * @param[in] instance PWM实例索引
+ * @param[in] frequency 频率（Hz）
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
+ */
+PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency)
+{
+    /* ========== 参数校验 ========== */
+    
+    /* 1. 实例有效性检查 */
+    if (instance < PWM_INSTANCE_MIN || instance > PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    
+    /* 2. 频率范围检查 */
+    if (frequency < PWM_FREQ_MIN || frequency > PWM_FREQ_MAX) {
+        return PWM_ERROR_INVALID_FREQ;
+    }
+    
+    /* ========== 占位空函数 ========== */
+    (void)instance;  /* 避免未使用参数警告 */
+    (void)frequency;
+    
+    #warning "PWM_SetFrequency: 占位空函数，功能未实现，待完善"
+    
+    return PWM_ERROR_NOT_IMPLEMENTED;
+}
+```
+
+**参数校验代码组织**：
+
+1. **校验代码位置**：必须放在函数开头，在业务逻辑之前
+2. **代码分隔**：使用注释分隔参数校验和业务逻辑
+3. **快速失败**：一旦发现参数错误，立即返回，不继续执行
+
+```c
+XXX_Status_t XXX_Function(...)
+{
+    /* ========== 参数校验 ========== */
+    // 所有校验代码集中在这里
+    
+    /* ========== 业务逻辑 ========== */
+    // 实际功能代码
+}
+```
+
+**性能考虑**：
+
+1. **参数校验不会被优化掉**：这是防御性编程的一部分，Release模式下也应保留
+2. **快速失败原则**：最危险的检查放在最前面，尽快返回错误
+3. **避免重复校验**：如果函数内部调用其他已校验的函数，可以省略重复校验（但公共接口必须校验）
+
+**实际代码示例**：
+
+参考项目中已实现的良好示例：
+
+1. **GPIO模块**（`Drivers/basic/gpio.c`）：
+```c
+GPIO_Status_t GPIO_Config(GPIO_TypeDef* port, uint16_t pin, GPIO_Mode_t mode, GPIO_Speed_t speed)
+{
+    if (port == NULL) return GPIO_ERROR_NULL_PTR;  // 空指针检查
+    if (pin == 0) return GPIO_ERROR_INVALID_PIN;    // 引脚有效性检查
+    
+    // ... 业务逻辑
+}
+```
+
+2. **LED模块**（`Drivers/basic/led.c`）：
+```c
+LED_Status_t LED_GetState(LED_Number_t num, LED_State_t* state)
+{
+    /* 输出参数空指针检查 */
+    if (state == NULL) {
+        return LED_ERROR_NULL_PTR;
+    }
+    
+    /* 使用查表法检查实例有效性 */
+    LED_Config_t* cfg = LED_GetConfig(num);
+    if (cfg == NULL) {
+        return LED_ERROR_INVALID_ID;
+    }
+    
+    /* 状态检查 */
+    if (!cfg->enabled) {
+        return LED_ERROR_DISABLED;
+    }
+    
+    // ... 业务逻辑
+}
+```
+
+**测试要求**：
+
+- 所有公共函数必须测试参数校验路径
+- 测试用例应包含：
+  - NULL指针测试
+  - 无效枚举值测试
+  - 越界值测试（数组索引、数值范围）
+  - 未初始化状态测试
+  - 已禁用状态测试
+
+**AI开发时的处理**：
+
+1. **创建新模块时**：
+   - 必须为所有公共函数添加参数校验
+   - 必须定义标准错误码（NULL_PTR、INVALID_PARAM等）
+   - 参考现有模块（GPIO、LED）的实现方式
+
+2. **完善占位空函数时**：
+   - 保留参数校验代码
+   - 添加业务逻辑实现
+   - 移除`#warning`和占位注释
+
+3. **修改现有函数时**：
+   - 检查是否已有参数校验
+   - 如果缺少，必须补充
+   - 遵循校验优先级顺序
 
 #### 防御性编程
 
@@ -1675,7 +1987,7 @@ static LED_Config_t led_configs[] = LED_CONFIGS;
 | 统一返回类型 | P0 | [通用] | [错误处理](#错误处理) |
 | 错误码设计 | P1 | [通用] | [错误处理](#错误处理) |
 | 模块基值预留 | P1 | [通用] | [错误处理](#错误处理) |
-| 参数校验 | P1 | [通用] | [错误处理](#错误处理) |
+| 参数校验 | P1 | [通用] | [参数校验规范](#参数校验规范-通用-p1) |
 | 空指针检查 | P1 | [通用] | [防御性编程](#防御性编程) |
 | 边界检查 | P1 | [通用] | [防御性编程](#防御性编程) |
 | 溢出保护 | P2 | [通用] | [防御性编程](#防御性编程) |

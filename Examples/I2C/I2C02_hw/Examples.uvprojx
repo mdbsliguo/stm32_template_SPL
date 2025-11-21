@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors</IncludePath>
+              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors;..\..\..\Drivers\timer;..\..\..\Drivers\peripheral</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -469,6 +469,16 @@
               <FileName>TIM2_TimeBase.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
+            </File>
+            <File>
+              <FileName>nvic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\peripheral\nvic.c</FilePath>
+            </File>
+            <File>
+              <FileName>nvic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\peripheral\nvic.h</FilePath>
             </File>
           </Files>
         </Group>

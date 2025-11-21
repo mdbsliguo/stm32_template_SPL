@@ -97,7 +97,11 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
     (void)uart_periph;
     (void)flag;
     (void)timeout_ms;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -106,7 +110,11 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
 UART_Status_t UART_Init(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -115,7 +123,11 @@ UART_Status_t UART_Init(UART_Instance_t instance)
 UART_Status_t UART_Deinit(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -127,7 +139,11 @@ UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint1
     (void)data;
     (void)length;
     (void)timeout;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -139,7 +155,11 @@ UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t len
     (void)data;
     (void)length;
     (void)timeout;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -150,7 +170,11 @@ UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t
     (void)instance;
     (void)byte;
     (void)timeout;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -161,7 +185,11 @@ UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t
     (void)instance;
     (void)byte;
     (void)timeout;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -172,7 +200,11 @@ UART_Status_t UART_TransmitString(UART_Instance_t instance, const char *str, uin
     (void)instance;
     (void)str;
     (void)timeout;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -220,7 +252,11 @@ UART_Status_t UART_EnableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
     (void)instance;
     (void)it_type;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -230,7 +266,11 @@ UART_Status_t UART_DisableIT(UART_Instance_t instance, UART_IT_t it_type)
 {
     (void)instance;
     (void)it_type;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -243,7 +283,11 @@ UART_Status_t UART_SetITCallback(UART_Instance_t instance, UART_IT_t it_type,
     (void)it_type;
     (void)callback;
     (void)user_data;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -263,7 +307,11 @@ UART_Status_t UART_ClearITPendingBit(UART_Instance_t instance, UART_IT_t it_type
 {
     (void)instance;
     (void)it_type;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -274,7 +322,11 @@ UART_Status_t UART_TransmitIT(UART_Instance_t instance, const uint8_t *data, uin
     (void)instance;
     (void)data;
     (void)length;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -285,7 +337,11 @@ UART_Status_t UART_ReceiveIT(UART_Instance_t instance, uint8_t *data, uint16_t m
     (void)instance;
     (void)data;
     (void)max_length;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -340,7 +396,11 @@ UART_Status_t UART_TransmitDMA(UART_Instance_t instance, const uint8_t *data, ui
     (void)instance;
     (void)data;
     (void)length;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -351,7 +411,11 @@ UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t 
     (void)instance;
     (void)data;
     (void)length;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -360,7 +424,11 @@ UART_Status_t UART_ReceiveDMA(UART_Instance_t instance, uint8_t *data, uint16_t 
 UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -369,7 +437,11 @@ UART_Status_t UART_StopTransmitDMA(UART_Instance_t instance)
 UART_Status_t UART_StopReceiveDMA(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -399,7 +471,11 @@ UART_Status_t UART_SetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
 {
     (void)instance;
     (void)flow_control;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -409,7 +485,11 @@ UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
 {
     (void)instance;
     (void)flow_control;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== 单线半双工模式功能实现 ========== */
@@ -420,7 +500,11 @@ UART_Status_t UART_GetHardwareFlowControl(UART_Instance_t instance, UART_HW_Flow
 UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -429,7 +513,11 @@ UART_Status_t UART_EnableHalfDuplex(UART_Instance_t instance)
 UART_Status_t UART_DisableHalfDuplex(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -449,7 +537,11 @@ uint8_t UART_IsHalfDuplex(UART_Instance_t instance)
 UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -458,7 +550,11 @@ UART_Status_t UART_EnableLINMode(UART_Instance_t instance)
 UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -467,7 +563,11 @@ UART_Status_t UART_DisableLINMode(UART_Instance_t instance)
 UART_Status_t UART_SendBreak(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -477,7 +577,11 @@ UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
 {
     (void)instance;
     (void)prescaler;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -486,7 +590,11 @@ UART_Status_t UART_EnableIrDAMode(UART_Instance_t instance, uint8_t prescaler)
 UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -495,7 +603,11 @@ UART_Status_t UART_DisableIrDAMode(UART_Instance_t instance)
 UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -504,7 +616,11 @@ UART_Status_t UART_EnableSmartCardMode(UART_Instance_t instance)
 UART_Status_t UART_DisableSmartCardMode(UART_Instance_t instance)
 {
     (void)instance;
-    return UART_OK;
+    /* 编译时警告 */
+    #warning "UART函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return UART_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* CONFIG_MODULE_UART_ENABLED */

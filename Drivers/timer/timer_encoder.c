@@ -73,7 +73,11 @@ ENCODER_Status_t ENCODER_Init(ENCODER_Instance_t instance, ENCODER_Mode_t mode)
 {
     (void)instance;
     (void)mode;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -82,7 +86,11 @@ ENCODER_Status_t ENCODER_Init(ENCODER_Instance_t instance, ENCODER_Mode_t mode)
 ENCODER_Status_t ENCODER_Deinit(ENCODER_Instance_t instance)
 {
     (void)instance;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -92,7 +100,11 @@ ENCODER_Status_t ENCODER_ReadCount(ENCODER_Instance_t instance, int32_t *count)
 {
     (void)instance;
     (void)count;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -102,7 +114,11 @@ ENCODER_Status_t ENCODER_ReadCountUnsigned(ENCODER_Instance_t instance, uint32_t
 {
     (void)instance;
     (void)count;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -112,7 +128,11 @@ ENCODER_Status_t ENCODER_SetCount(ENCODER_Instance_t instance, int32_t count)
 {
     (void)instance;
     (void)count;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -121,7 +141,11 @@ ENCODER_Status_t ENCODER_SetCount(ENCODER_Instance_t instance, int32_t count)
 ENCODER_Status_t ENCODER_ClearCount(ENCODER_Instance_t instance)
 {
     (void)instance;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -131,7 +155,11 @@ ENCODER_Status_t ENCODER_GetDirection(ENCODER_Instance_t instance, ENCODER_Direc
 {
     (void)instance;
     (void)direction;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -140,7 +168,11 @@ ENCODER_Status_t ENCODER_GetDirection(ENCODER_Instance_t instance, ENCODER_Direc
 ENCODER_Status_t ENCODER_Start(ENCODER_Instance_t instance)
 {
     (void)instance;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -149,7 +181,11 @@ ENCODER_Status_t ENCODER_Start(ENCODER_Instance_t instance)
 ENCODER_Status_t ENCODER_Stop(ENCODER_Instance_t instance)
 {
     (void)instance;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -188,7 +224,11 @@ ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_t
 {
     (void)instance;
     (void)it_type;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -198,7 +238,11 @@ ENCODER_Status_t ENCODER_DisableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_
 {
     (void)instance;
     (void)it_type;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -211,7 +255,11 @@ ENCODER_Status_t ENCODER_SetITCallback(ENCODER_Instance_t instance, ENCODER_IT_t
     (void)it_type;
     (void)callback;
     (void)user_data;
-    return ENCODER_OK;
+    /* 编译时警告 */
+    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return ENCODER_ERROR_NOT_IMPLEMENTED;
 }
 
 /**

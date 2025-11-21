@@ -135,11 +135,13 @@ static uint32_t TIM2_TimeBase_GetTIM2Clock(void)
 
 /**
  * @brief 初始化TIM2时间基准（配置1ms中断，作为时间基准）
+ * @return error_code_t 错误码（TIM2_TIMEBASE_OK表示成功）
  * @note 使用TIM2外设定时器，配置为1ms中断一次
  * @note g_task_tick在TIM2_IRQHandler中递增，代表真实时间（毫秒）
  * @note 频率切换时调用TIM2_TimeBase_Reconfig()重新配置，保持1ms中断间隔不变
+ * @note 历史遗留模块，待重构
  */
-void TIM2_TimeBase_Init(void)
+error_code_t TIM2_TimeBase_Init(void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -149,7 +151,7 @@ void TIM2_TimeBase_Init(void)
     /* 防止重复初始化 */
     if (g_tim2_timebase_initialized)
     {
-        return;
+        return TIM2_TIMEBASE_ERROR_ALREADY_INITIALIZED;
     }
     
     /* 等待时钟稳定 */
@@ -165,9 +167,8 @@ void TIM2_TimeBase_Init(void)
     /* 计算PSC和ARR */
     if (TIM2_TimeBase_CalculateParams(tim2_clk, &psc, &arr) != 0)
     {
-        /* 配置失败，进入死循环 */
-        while (1)
-            ;
+        /* 配置失败，返回错误码 */
+        return TIM2_TIMEBASE_ERROR_CALC_FAILED;
     }
     
     /* 配置TIM2 */
@@ -194,16 +195,20 @@ void TIM2_TimeBase_Init(void)
     g_task_tick = 0;
     
     g_tim2_timebase_initialized = true;
+    
+    return TIM2_TIMEBASE_OK;
 }
 
 /**
  * @brief 重新配置TIM2时间基准（频率切换时调用，保持1ms中断间隔不变）
  * @param[in] new_freq 新的系统频率（Hz）
+ * @return error_code_t 错误码（TIM2_TIMEBASE_OK表示成功）
  * @note 频率切换时，重新计算TIM2的PSC和ARR，保持1ms中断间隔不变
  * @note 这样g_task_tick始终代表真实时间（毫秒），无论频率如何变化
  * @note 1秒永远是1秒，无论频率如何变化
+ * @note 历史遗留模块，待重构
  */
-void TIM2_TimeBase_Reconfig(uint32_t new_freq)
+error_code_t TIM2_TimeBase_Reconfig(uint32_t new_freq)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
     uint16_t psc, arr;
@@ -213,8 +218,7 @@ void TIM2_TimeBase_Reconfig(uint32_t new_freq)
     if (!g_tim2_timebase_initialized)
     {
         /* 未初始化，直接调用TIM2_TimeBase_Init() */
-        TIM2_TimeBase_Init();
-        return;
+        return TIM2_TimeBase_Init();
     }
     
     /* 更新SystemCoreClock */
@@ -234,9 +238,8 @@ void TIM2_TimeBase_Reconfig(uint32_t new_freq)
     /* 重新计算PSC和ARR */
     if (TIM2_TimeBase_CalculateParams(tim2_clk, &psc, &arr) != 0)
     {
-        /* 配置失败，进入死循环 */
-        while (1)
-            ;
+        /* 配置失败，返回错误码 */
+        return TIM2_TIMEBASE_ERROR_CALC_FAILED;
     }
     
     /* 重新配置TIM2 */
@@ -252,6 +255,8 @@ void TIM2_TimeBase_Reconfig(uint32_t new_freq)
     /* 重新使能TIM2中断和定时器 */
     TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
     TIM_Cmd(TIM2, ENABLE);
+    
+    return TIM2_TIMEBASE_OK;
 }
 
 /**

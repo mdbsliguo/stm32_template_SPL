@@ -22,6 +22,7 @@ extern "C" {
  */
 typedef enum {
     SDIO_OK = ERROR_OK,                                    /**< 操作成功 */
+    SDIO_ERROR_NOT_IMPLEMENTED = ERROR_BASE_SDIO - 99,    /**< 功能未实现（占位空函数） */
     SDIO_ERROR_NOT_INITIALIZED = ERROR_BASE_SDIO - 1,     /**< 未初始化 */
     SDIO_ERROR_INVALID_PARAM = ERROR_BASE_SDIO - 2,       /**< 参数非法 */
     SDIO_ERROR_TIMEOUT = ERROR_BASE_SDIO - 3,             /**< 操作超时 */

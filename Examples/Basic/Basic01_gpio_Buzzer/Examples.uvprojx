@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\system;..\..\..\Debug;..\..\..\common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\timer</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

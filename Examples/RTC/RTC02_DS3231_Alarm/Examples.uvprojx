@@ -451,16 +451,6 @@
               <FilePath>..\..\..\Drivers\sensors\ds3231.h</FilePath>
             </File>
             <File>
-              <FileName>timer_pwm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\timer\timer_pwm.c</FilePath>
-            </File>
-            <File>
-              <FileName>timer_pwm.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\timer\timer_pwm.h</FilePath>
-            </File>
-            <File>
               <FileName>TIM2_TimeBase.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>

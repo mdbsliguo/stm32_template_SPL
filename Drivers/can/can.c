@@ -68,7 +68,11 @@ static uint32_t CAN_GetGPIOClock(GPIO_TypeDef *port)
  */
 CAN_Status_t CAN_Init(CAN_Instance_t instance)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -76,7 +80,11 @@ CAN_Status_t CAN_Init(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Deinit(CAN_Instance_t instance)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -84,7 +92,11 @@ CAN_Status_t CAN_Deinit(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Transmit(CAN_Instance_t instance, const CAN_Message_t *message, uint32_t timeout)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -92,7 +104,11 @@ CAN_Status_t CAN_Transmit(CAN_Instance_t instance, const CAN_Message_t *message,
  */
 CAN_Status_t CAN_Receive(CAN_Instance_t instance, CAN_Message_t *message, uint8_t fifo_number, uint32_t timeout)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -110,7 +126,11 @@ CAN_Status_t CAN_ConfigFilter(CAN_Instance_t instance, uint8_t filter_number,
                                uint32_t filter_id, uint32_t filter_mask,
                                CAN_FrameType_t filter_type, uint8_t fifo_number)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -157,7 +177,11 @@ static void CAN_GetIRQn(CAN_Instance_t instance, IRQn_Type *tx_irqn, IRQn_Type *
  */
 CAN_Status_t CAN_EnableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -165,7 +189,11 @@ CAN_Status_t CAN_EnableIT(CAN_Instance_t instance, CAN_IT_t it_type)
  */
 CAN_Status_t CAN_DisableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -174,7 +202,11 @@ CAN_Status_t CAN_DisableIT(CAN_Instance_t instance, CAN_IT_t it_type)
 CAN_Status_t CAN_SetITCallback(CAN_Instance_t instance, CAN_IT_t it_type,
                                 CAN_IT_Callback_t callback, void *user_data)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -182,7 +214,11 @@ CAN_Status_t CAN_SetITCallback(CAN_Instance_t instance, CAN_IT_t it_type,
  */
 CAN_Status_t CAN_TransmitIT(CAN_Instance_t instance, const CAN_Message_t *message)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -231,7 +267,11 @@ uint8_t CAN_GetInstanceLastErrorCode(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_Recovery(CAN_Instance_t instance)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== CAN测试模式功能实现 ========== */
@@ -250,7 +290,11 @@ static uint8_t CAN_GetModeValue(CAN_Mode_t mode)
  */
 CAN_Status_t CAN_SetMode(CAN_Instance_t instance, CAN_Mode_t mode)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -258,7 +302,11 @@ CAN_Status_t CAN_SetMode(CAN_Instance_t instance, CAN_Mode_t mode)
  */
 CAN_Status_t CAN_GetMode(CAN_Instance_t instance, CAN_Mode_t *mode)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -266,7 +314,11 @@ CAN_Status_t CAN_GetMode(CAN_Instance_t instance, CAN_Mode_t *mode)
  */
 CAN_Status_t CAN_RequestOperatingMode(CAN_Instance_t instance, CAN_OperatingMode_t op_mode)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -274,7 +326,11 @@ CAN_Status_t CAN_RequestOperatingMode(CAN_Instance_t instance, CAN_OperatingMode
  */
 CAN_Status_t CAN_Sleep(CAN_Instance_t instance)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -282,7 +338,11 @@ CAN_Status_t CAN_Sleep(CAN_Instance_t instance)
  */
 CAN_Status_t CAN_WakeUp(CAN_Instance_t instance)
 {
-    return CAN_OK;
+    /* 编译时警告 */
+    #warning "CAN函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CAN_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* CONFIG_MODULE_CAN_ENABLED */

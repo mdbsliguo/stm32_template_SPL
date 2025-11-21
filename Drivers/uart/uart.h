@@ -21,6 +21,7 @@ extern "C" {
  */
 typedef enum {
     UART_OK = ERROR_OK,                                    /**< 操作成功 */
+    UART_ERROR_NOT_IMPLEMENTED = ERROR_BASE_UART - 99,    /**< 功能未实现（占位空函数） */
     UART_ERROR_NOT_INITIALIZED = ERROR_BASE_UART - 1,     /**< 未初始化 */
     UART_ERROR_INVALID_PARAM = ERROR_BASE_UART - 2,       /**< 参数非法 */
     UART_ERROR_INVALID_PERIPH = ERROR_BASE_UART - 3,      /**< 无效的外设 */

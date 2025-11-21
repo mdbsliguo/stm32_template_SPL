@@ -81,71 +81,133 @@ static __attribute__((unused)) uint16_t PWM_GetTIMChannel(PWM_Channel_t channel)
 
 /**
  * @brief PWM初始化
+ * @param[in] instance PWM实例索引
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_Init(PWM_Instance_t instance)
 {
     (void)instance;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_Init: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief PWM反初始化
+ * @param[in] instance PWM实例索引
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_Deinit(PWM_Instance_t instance)
 {
     (void)instance;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_Deinit: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 设置PWM频率
+ * @param[in] instance PWM实例索引
+ * @param[in] frequency 频率（Hz）
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_SetFrequency(PWM_Instance_t instance, uint32_t frequency)
 {
     (void)instance;
     (void)frequency;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_SetFrequency: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 获取PWM频率
+ * @param[in] instance PWM实例索引
+ * @param[out] frequency 频率指针（Hz）
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency)
 {
     (void)instance;
     (void)frequency;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_GetFrequency: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 设置PWM占空比
+ * @param[in] instance PWM实例索引
+ * @param[in] channel PWM通道
+ * @param[in] duty_cycle 占空比（0.0~100.0%）
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, float duty_cycle)
 {
     (void)instance;
     (void)channel;
     (void)duty_cycle;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_SetDutyCycle: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 使能PWM通道
+ * @param[in] instance PWM实例索引
+ * @param[in] channel PWM通道
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_EnableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_EnableChannel: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 禁用PWM通道
+ * @param[in] instance PWM实例索引
+ * @param[in] channel PWM通道
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_DisableChannel(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_DisableChannel: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -170,80 +232,150 @@ TIM_TypeDef* PWM_GetPeriph(PWM_Instance_t instance)
 
 /**
  * @brief 使能PWM互补输出
+ * @param[in] instance PWM实例索引
+ * @param[in] channel PWM通道
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_EnableComplementary: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 禁用PWM互补输出
+ * @param[in] instance PWM实例索引
+ * @param[in] channel PWM通道
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t channel)
 {
     (void)instance;
     (void)channel;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_DisableComplementary: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 设置PWM死区时间
+ * @param[in] instance PWM实例索引
+ * @param[in] dead_time_ns 死区时间（纳秒）
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_SetDeadTime(PWM_Instance_t instance, uint16_t dead_time_ns)
 {
     (void)instance;
     (void)dead_time_ns;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_SetDeadTime: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 使能PWM主输出（MOE）
+ * @param[in] instance PWM实例索引
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_EnableMainOutput(PWM_Instance_t instance)
 {
     (void)instance;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_EnableMainOutput: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 禁用PWM主输出（MOE）
+ * @param[in] instance PWM实例索引
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_DisableMainOutput(PWM_Instance_t instance)
 {
     (void)instance;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_DisableMainOutput: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 使能PWM刹车功能
+ * @param[in] instance PWM实例索引
+ * @param[in] source 刹车源
+ * @param[in] polarity 刹车极性
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_EnableBrake(PWM_Instance_t instance, PWM_BrakeSource_t source, PWM_BrakePolarity_t polarity)
 {
     (void)instance;
     (void)source;
     (void)polarity;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_EnableBrake: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 禁用PWM刹车功能
+ * @param[in] instance PWM实例索引
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_DisableBrake(PWM_Instance_t instance)
 {
     (void)instance;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_DisableBrake: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
  * @brief 设置PWM对齐模式
+ * @param[in] instance PWM实例索引
+ * @param[in] align_mode 对齐模式
+ * @return PWM_Status_t 错误码
+ * @note 占位空函数，功能未实现，待完善
  */
 PWM_Status_t PWM_SetAlignMode(PWM_Instance_t instance, PWM_AlignMode_t align_mode)
 {
     (void)instance;
     (void)align_mode;
-    return PWM_OK;
+    
+    /* 编译时警告 */
+    #warning "PWM_SetAlignMode: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return PWM_ERROR_NOT_IMPLEMENTED;
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */

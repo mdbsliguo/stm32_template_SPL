@@ -511,9 +511,9 @@
               <FilePath>..\..\..\Core\stm32f10x_it.c</FilePath>
             </File>
             <File>
-              <FileName>main_simple.c</FileName>
+              <FileName>main_example.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\main_simple.c</FilePath>
+              <FilePath>.\main_example.c</FilePath>
             </File>
           </Files>
         </Group>

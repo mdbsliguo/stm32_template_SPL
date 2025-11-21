@@ -57,7 +57,11 @@ static volatile uint16_t *USB_GetEPRegister(uint8_t endpoint)
 USB_Status_t USB_Init(void)
 {
     
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -66,7 +70,11 @@ USB_Status_t USB_Init(void)
 USB_Status_t USB_Deinit(void)
 {
     
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -75,7 +83,11 @@ USB_Status_t USB_Deinit(void)
 USB_Status_t USB_ConfigEndpoint(const USB_EP_Config_t *config)
 {
     (void)config;
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -86,7 +98,11 @@ USB_Status_t USB_Send(uint8_t endpoint, const uint8_t *data, uint16_t length)
     (void)endpoint;
     (void)data;
     (void)length;
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -97,7 +113,11 @@ USB_Status_t USB_Receive(uint8_t endpoint, uint8_t *data, uint16_t *length)
     (void)endpoint;
     (void)data;
     (void)length;
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -107,7 +127,11 @@ USB_Status_t USB_SetEventCallback(USB_EventCallback_t callback, void *user_data)
 {
     (void)callback;
     (void)user_data;
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -116,7 +140,11 @@ USB_Status_t USB_SetEventCallback(USB_EventCallback_t callback, void *user_data)
 USB_Status_t USB_Enable(void)
 {
     
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -125,7 +153,11 @@ USB_Status_t USB_Enable(void)
 USB_Status_t USB_Disable(void)
 {
     
-    return USB_OK;
+    /* 编译时警告 */
+    #warning "USB函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return USB_ERROR_NOT_IMPLEMENTED;
 }
 
 /**

@@ -32,7 +32,11 @@ CEC_Status_t CEC_Init(CEC_BitTimingMode_t bit_timing_mode, CEC_BitPeriodMode_t b
     (void)bit_period_mode;
     (void)own_address;
     (void)prescaler;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -41,7 +45,11 @@ CEC_Status_t CEC_Init(CEC_BitTimingMode_t bit_timing_mode, CEC_BitPeriodMode_t b
 CEC_Status_t CEC_Deinit(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -50,7 +58,11 @@ CEC_Status_t CEC_Deinit(void)
 CEC_Status_t CEC_Enable(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -59,7 +71,11 @@ CEC_Status_t CEC_Enable(void)
 CEC_Status_t CEC_Disable(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -68,7 +84,11 @@ CEC_Status_t CEC_Disable(void)
 CEC_Status_t CEC_EnableIT(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -77,7 +97,11 @@ CEC_Status_t CEC_EnableIT(void)
 CEC_Status_t CEC_DisableIT(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -86,7 +110,11 @@ CEC_Status_t CEC_DisableIT(void)
 CEC_Status_t CEC_SetOwnAddress(uint8_t own_address)
 {
     (void)own_address;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -95,7 +123,11 @@ CEC_Status_t CEC_SetOwnAddress(uint8_t own_address)
 CEC_Status_t CEC_SetPrescaler(uint16_t prescaler)
 {
     (void)prescaler;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -104,7 +136,11 @@ CEC_Status_t CEC_SetPrescaler(uint16_t prescaler)
 CEC_Status_t CEC_SendDataByte(uint8_t data)
 {
     (void)data;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -122,7 +158,11 @@ uint8_t CEC_ReceiveDataByte(void)
 CEC_Status_t CEC_StartOfMessage(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -131,7 +171,11 @@ CEC_Status_t CEC_StartOfMessage(void)
 CEC_Status_t CEC_EndOfMessage(void)
 {
     
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -149,7 +193,11 @@ uint8_t CEC_GetFlagStatus(uint32_t flag)
 CEC_Status_t CEC_ClearFlag(uint32_t flag)
 {
     (void)flag;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -167,7 +215,11 @@ uint8_t CEC_GetITStatus(uint8_t it)
 CEC_Status_t CEC_ClearITPendingBit(uint16_t it)
 {
     (void)it;
-    return CEC_OK;
+    /* 编译时警告 */
+    #warning "CEC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CEC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**

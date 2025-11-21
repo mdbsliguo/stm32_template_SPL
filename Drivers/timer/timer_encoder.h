@@ -19,6 +19,7 @@ extern "C" {
  */
 typedef enum {
     ENCODER_OK = ERROR_OK,                                    /**< 操作成功 */
+    ENCODER_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,   /**< 功能未实现（占位空函数） */
     ENCODER_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 20,  /**< 未初始化 */
     ENCODER_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 21,     /**< 参数错误 */
     ENCODER_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 22,    /**< 无效的外设 */

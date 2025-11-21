@@ -22,6 +22,8 @@ static Buzzer_Config_t buzzer_configs[] = BUZZER_CONFIGS;
 #define BUZZER_COUNT (sizeof(buzzer_configs) / sizeof(buzzer_configs[0]))
 
 /* 音调频率映射表（Hz，基于A4=440Hz标准音调） */
+/* 仅在TIMER模块启用时定义，因为PWM模式才需要 */
+#if CONFIG_MODULE_TIMER_ENABLED
 static const uint32_t tone_frequencies[BUZZER_TONE_MAX] = {
     262,  /* C4 (261.63 Hz，四舍五入) */
     294,  /* D4 (293.66 Hz，四舍五入) */
@@ -32,6 +34,7 @@ static const uint32_t tone_frequencies[BUZZER_TONE_MAX] = {
     494,  /* B4 (493.88 Hz，四舍五入) */
     523   /* C5 (523.25 Hz，四舍五入) */
 };
+#endif /* CONFIG_MODULE_TIMER_ENABLED */
 
 /**
  * @brief 获取Buzzer配置指针（私有函数）

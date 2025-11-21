@@ -66,7 +66,11 @@ static uint32_t DMA_GetPeriphClock(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_HW_Init(DMA_Channel_t channel)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -74,7 +78,11 @@ DMA_Status_t DMA_HW_Init(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_Deinit(DMA_Channel_t channel)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -84,7 +92,11 @@ DMA_Status_t DMA_ConfigTransfer(DMA_Channel_t channel, uint32_t peripheral_addr,
                                 uint32_t memory_addr, uint16_t data_size,
                                 DMA_Direction_t direction, uint8_t data_width)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -93,7 +105,11 @@ DMA_Status_t DMA_ConfigTransfer(DMA_Channel_t channel, uint32_t peripheral_addr,
 DMA_Status_t DMA_ConfigMemoryToMemory(DMA_Channel_t channel, uint32_t src_addr,
                                       uint32_t dst_addr, uint16_t data_size, uint8_t data_width)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -101,7 +117,11 @@ DMA_Status_t DMA_ConfigMemoryToMemory(DMA_Channel_t channel, uint32_t src_addr,
  */
 DMA_Status_t DMA_Start(DMA_Channel_t channel)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -109,7 +129,11 @@ DMA_Status_t DMA_Start(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_Stop(DMA_Channel_t channel)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -117,7 +141,11 @@ DMA_Status_t DMA_Stop(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_WaitComplete(DMA_Channel_t channel, uint32_t timeout)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -143,7 +171,11 @@ DMA_Status_t DMA_SetTransferCompleteCallback(DMA_Channel_t channel,
                                              DMA_TransferCompleteCallback_t callback,
                                              void *user_data)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -167,7 +199,11 @@ DMA_Channel_TypeDef* DMA_GetChannel(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_SetMode(DMA_Channel_t channel, uint8_t mode)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /* ========== 中断模式功能实现 ========== */
@@ -195,7 +231,11 @@ static IRQn_Type DMA_GetIRQn(DMA_Channel_t channel)
  */
 DMA_Status_t DMA_EnableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -203,7 +243,11 @@ DMA_Status_t DMA_EnableIT(DMA_Channel_t channel, DMA_IT_t it_type)
  */
 DMA_Status_t DMA_DisableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -212,7 +256,11 @@ DMA_Status_t DMA_DisableIT(DMA_Channel_t channel, DMA_IT_t it_type)
 DMA_Status_t DMA_SetITCallback(DMA_Channel_t channel, DMA_IT_t it_type,
                                 DMA_IT_Callback_t callback, void *user_data)
 {
-    return DMA_OK;
+    /* 编译时警告 */
+    #warning "DMA函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return DMA_ERROR_NOT_IMPLEMENTED;
 }
 
 /**

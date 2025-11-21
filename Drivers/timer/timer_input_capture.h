@@ -19,6 +19,7 @@ extern "C" {
  */
 typedef enum {
     IC_OK = ERROR_OK,                                    /**< 操作成功 */
+    IC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_TIMER - 99,    /**< 功能未实现（占位空函数） */
     IC_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 10,   /**< 未初始化 */
     IC_ERROR_INVALID_PARAM = ERROR_BASE_TIMER - 11,     /**< 参数错误 */
     IC_ERROR_INVALID_PERIPH = ERROR_BASE_TIMER - 12,    /**< 无效的外设 */

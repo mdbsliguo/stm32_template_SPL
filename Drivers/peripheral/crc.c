@@ -25,7 +25,11 @@
 CRC_Status_t CRC_Reset(void)
 {
     
-    return CRC_OK;
+    /* 编译时警告 */
+    #warning "CRC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CRC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
@@ -62,7 +66,11 @@ uint32_t CRC_GetValue(void)
 CRC_Status_t CRC_WriteIDRegister(uint8_t id_value)
 {
     (void)id_value;
-    return CRC_OK;
+    /* 编译时警告 */
+    #warning "CRC函数: 占位空函数，功能未实现，待完善"
+    
+    /* ⚠️ 占位空函数：功能未实现，待完善 */
+    return CRC_ERROR_NOT_IMPLEMENTED;
 }
 
 /**
