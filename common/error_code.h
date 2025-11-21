@@ -20,6 +20,13 @@ typedef int32_t error_code_t;
 #define ERROR_OK 0
 
 /**
+ * @brief 功能未实现错误码（占位空函数）
+ * @note 占位空函数应返回此错误码或模块特定的NOT_IMPLEMENTED错误码
+ * @note 禁止占位空函数返回成功码（ERROR_OK），必须返回错误码
+ */
+#define ERROR_NOT_IMPLEMENTED -9999
+
+/**
  * @defgroup Error_Base 模块错误码基值
  * @brief 各模块错误码枚举值应在对应基值上递减定义
  * @note  每个模块预留100个错误码空间
