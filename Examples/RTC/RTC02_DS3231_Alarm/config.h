@@ -1,0 +1,28 @@
+#ifndef EXAMPLE_CONFIG_H
+#define EXAMPLE_CONFIG_H
+
+/* ==================== 模块开关 ==================== */
+#define CONFIG_MODULE_GPIO_ENABLED          1
+#define CONFIG_MODULE_LED_ENABLED           1
+#define CONFIG_MODULE_OLED_ENABLED         1
+#define CONFIG_MODULE_SOFT_I2C_ENABLED   1
+#define CONFIG_MODULE_DS3231_ENABLED      1
+#define CONFIG_MODULE_TIMER_ENABLED      1
+
+/* 系统层模块 */
+#define CONFIG_MODULE_DELAY_ENABLED        1
+#define CONFIG_MODULE_BASE_TIMER_ENABLED   1
+#define CONFIG_MODULE_CLOCK_MANAGER_ENABLED 0
+#define CONFIG_MODULE_SYSTEM_INIT_ENABLED   1
+#define CONFIG_MODULE_IWDG_ENABLED         0
+
+/* 通用模块 */
+#define CONFIG_MODULE_ERROR_HANDLER_ENABLED 0
+#define CONFIG_MODULE_LOG_ENABLED           0
+#define CONFIG_MODULE_MODULE_CTRL_ENABLED   0
+#define CONFIG_MODULE_SYSTEM_MONITOR_ENABLED 0
+
+/* ==================== 功能开关 ==================== */
+
+#endif /* EXAMPLE_CONFIG_H */
+

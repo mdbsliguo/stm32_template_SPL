@@ -1,0 +1,73 @@
+# ========== 核心：排除所有编译产物 ==========
+Build/
+
+# ========== Keil编译产物（根目录和其他目录） ==========
+*.axf
+*.hex
+*.bin
+*.elf
+*.map
+*.lst
+*.o
+*.obj
+*.d
+*.crf
+*.dep
+*.sct
+*.lnp
+*.htm
+*.iex
+*.tra
+*.omf
+*.plg
+*.rpt
+*.__i
+*.ddk
+*.edk
+*.mpf
+*.mpj
+
+# ========== Keil用户配置（个人设置，不共享） ==========
+*.uvoptx
+*.uvopt
+*.uvguix.*
+*.db
+DebugConfig/
+*.dbgconf
+PROJECT_KEYWORDS.md
+项目深度分析报告.md
+
+# ========== 下载器和调试器日志 ==========
+JLinkLog.txt
+*.jlink
+
+# ========== 备份和临时文件 ==========
+*.bak
+*.tmp
+*~
+*.swp
+*.swo
+
+# ========== STM32CubeMX自动备份 ==========
+*.ioc.bak
+
+# ========== IDE无关文件 ==========
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ========== 操作系统垃圾 ==========
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ========== 日志文件 ==========
+*.log
+build_log.txt
+download_log.txt
+
+# ========== 其他临时文件 ==========
+*.orig
+*.rej
