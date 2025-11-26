@@ -96,6 +96,7 @@ GPIO_Config(GPIOA, GPIO_Pin_5, GPIO_MODE_OUTPUT_PP, GPIO_Speed_50MHz);  // GPIO�
 
 - **error_handler**：统一错误处理框架
 - **log**：分级日志系统（DEBUG/INFO/WARN/ERROR）
+- **printf_wrapper**：printf封装模块，提供便捷的格式化输出函数（Printf_UART1/2/3、Printf_OLED1/2/3/4）
 
 > **详细配置说明请参考各模块README和案例代码**
 

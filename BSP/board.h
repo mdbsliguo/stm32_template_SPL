@@ -355,6 +355,28 @@ typedef struct
     {BUZZER_MODE_GPIO, GPIOA, GPIO_Pin_2, 1, 0, Bit_RESET, 0}, /* Buzzer1：GPIO模式，PA2，低电平有效，禁用（PWM实例和通道在GPIO模式下忽略） */ \
 }
 
+/* ==================== TB6612配置 ==================== */
+
+/* TB6612配置结构体 */
+typedef struct
+{
+    GPIO_TypeDef *ain1_port;      /**< AIN1引脚端口（方向控制） */
+    uint16_t ain1_pin;            /**< AIN1引脚号 */
+    GPIO_TypeDef *ain2_port;      /**< AIN2引脚端口（方向控制） */
+    uint16_t ain2_pin;            /**< AIN2引脚号 */
+    GPIO_TypeDef *stby_port;      /**< STBY引脚端口（待机控制） */
+    uint16_t stby_pin;            /**< STBY引脚号 */
+    uint8_t pwm_instance;        /**< PWM实例（0=TIM1, 1=TIM3, 2=TIM4） */
+    uint8_t pwm_channel;          /**< PWM通道（0=CH1, 1=CH2, 2=CH3, 3=CH4） */
+    uint8_t enabled;              /**< 使能标志：1=启用，0=禁用 */
+} TB6612_Config_t;
+
+/* TB6612统一配置表 - 默认配置（未使用，占位） */
+#define TB6612_CONFIGS {                                                                                    \
+    {NULL, 0, NULL, 0, NULL, 0, 0, 0, 0}, /* TB6612实例1：未使用，占位 */ \
+    {NULL, 0, NULL, 0, NULL, 0, 0, 0, 0}, /* TB6612实例2：未使用，占位 */ \
+}
+
 /* ==================== 时钟管理配置 ==================== */
 
 /* 时钟管理配置 - 案例10配置（自动模式，用于CPU负载监控） */

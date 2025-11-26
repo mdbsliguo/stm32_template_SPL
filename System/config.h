@@ -47,6 +47,7 @@
 #define CONFIG_MODULE_SDIO_ENABLED     1   /**< SDIO模块开关（SD卡接口，需要外部SD卡槽） */
 #define CONFIG_MODULE_FSMC_ENABLED    1   /**< FSMC模块开关（外部存储器接口，需要外部存储器） */
 #define CONFIG_MODULE_CEC_ENABLED     1   /**< CEC模块开关（消费电子控制协议，仅CL型号） */
+#define CONFIG_MODULE_TB6612_ENABLED  1   /**< TB6612模块开关（双路直流电机驱动） */
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */

@@ -36,12 +36,12 @@ Examples/
 │   ├── I2C01_DS3231_SoftwareI2C/  # DS3231软件I2C示例
 │   └── I2C02_DS3231_HardwareI2C/  # DS3231硬件I2C示例
 ├── MAX31856/                     # MAX31856热电偶传感器相关案例
-│   ├── MAX31856_01_ReadTemperature/  # MAX31856温度读取示例（完整版）
-│   └── MAX31856_02_Simple/       # MAX31856温度读取示例（简化版）
+│   └── MAX31856_01_ReadTemperature/  # MAX31856温度读取示例
 ├── OLED/                         # OLED显示相关案例
 │   └── OLED01_helloword/         # OLED显示测试
 ├── PWM/                          # PWM相关案例
-│   └── PWM01_pwm_Buzzer/         # PWM模式Buzzer控制示例
+│   ├── PWM01_pwm_Buzzer/         # PWM模式Buzzer控制示例
+│   └── PWM02_ThreeDevicesDemo/   # PWM频率、占空比、分辨率三参数演示
 ├── RTC/                          # RTC实时时钟相关案例
 │   ├── RTC01_DS3231_Reading_writing/  # DS3231读写时间示例
 │   └── RTC02_DS3231_Alarm/       # DS3231闹钟功能示例
@@ -107,7 +107,6 @@ Examples/
 | 序号 | 目录名 | 说明 | 状态 |
 |------|--------|------|------|
 | 01 | `MAX31856_01_ReadTemperature` | MAX31856温度读取示例（完整版） | ✅ 已调试完成 |
-| 02 | `MAX31856_02_Simple` | MAX31856温度读取示例（简化版） | ✅ 已调试完成 |
 
 ### OLED显示相关案例
 
@@ -120,6 +119,7 @@ Examples/
 | 序号 | 目录名 | 说明 | 状态 |
 |------|--------|------|------|
 | 01 | `PWM01_pwm_Buzzer` | PWM模式Buzzer控制示例 | ✅ 已调试完成 |
+| 02 | `PWM02_ThreeDevicesDemo` | PWM频率、占空比、分辨率三参数演示 | ✅ 已调试完成 |
 
 ### RTC实时时钟相关案例
 

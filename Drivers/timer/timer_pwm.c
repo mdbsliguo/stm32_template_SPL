@@ -31,6 +31,9 @@ static bool g_pwm_initialized[PWM_INSTANCE_MAX] __attribute__((unused)) = {false
 /* 当前频率（Hz） */
 static uint32_t g_pwm_frequency[PWM_INSTANCE_MAX] __attribute__((unused)) = {1000, 1000, 1000};
 
+/* 当前分辨率 */
+static PWM_Resolution_t g_pwm_resolution[PWM_INSTANCE_MAX] __attribute__((unused)) = {PWM_RESOLUTION_16BIT, PWM_RESOLUTION_16BIT, PWM_RESOLUTION_16BIT};
+
 /**
  * @brief 获取GPIO时钟使能值
  * @param[in] port GPIO端口指针
@@ -312,6 +315,7 @@ PWM_Status_t PWM_Init(PWM_Instance_t instance)
     /* ========== 9. 保存状态 ========== */
     g_pwm_initialized[instance] = true;
     g_pwm_frequency[instance] = target_freq;
+    g_pwm_resolution[instance] = PWM_RESOLUTION_16BIT;  /* 默认16位分辨率 */
     
     return PWM_OK;
 }
@@ -352,6 +356,7 @@ PWM_Status_t PWM_Deinit(PWM_Instance_t instance)
     /* 清除初始化标志 */
     g_pwm_initialized[instance] = false;
     g_pwm_frequency[instance] = 1000;  /* 重置为默认频率 */
+    g_pwm_resolution[instance] = PWM_RESOLUTION_16BIT;  /* 重置为默认分辨率 */
     
     return PWM_OK;
 }
@@ -452,6 +457,127 @@ PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency)
     
     /* 返回保存的频率值 */
     *frequency = g_pwm_frequency[instance];
+    
+    return PWM_OK;
+}
+
+/**
+ * @brief 设置PWM分辨率
+ * @param[in] instance PWM实例索引
+ * @param[in] resolution 分辨率（PWM_RESOLUTION_8BIT或PWM_RESOLUTION_16BIT）
+ * @return PWM_Status_t 错误码
+ * @note 设置分辨率时保持当前频率不变（重新计算PSC）
+ * @note 8位分辨率：ARR=256，16位分辨率：ARR=65536
+ */
+PWM_Status_t PWM_SetResolution(PWM_Instance_t instance, PWM_Resolution_t resolution)
+{
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (resolution >= PWM_RESOLUTION_MAX) {
+        return PWM_ERROR_INVALID_RESOLUTION;
+    }
+    
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
+    
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 获取当前频率 */
+    uint32_t current_freq = g_pwm_frequency[instance];
+    
+    /* 获取定时器时钟频率 */
+    uint32_t tim_clk = PWM_GetTimerClock(tim_periph);
+    if (tim_clk == 0) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 根据分辨率确定ARR值 */
+    uint32_t arr;
+    if (resolution == PWM_RESOLUTION_8BIT) {
+        arr = 256;  /* 8位分辨率 */
+    } else {
+        arr = 65536;  /* 16位分辨率 */
+    }
+    
+    /* 计算PSC值以保持当前频率：tim_clk / ((PSC + 1) * (ARR + 1)) = frequency */
+    uint32_t psc = (tim_clk / (arr * current_freq)) - 1;
+    
+    /* 如果PSC太大，调整ARR（但保持分辨率要求） */
+    if (psc > 65535) {
+        /* 如果16位分辨率时PSC仍然太大，说明频率太低，无法使用16位分辨率 */
+        if (resolution == PWM_RESOLUTION_16BIT) {
+            /* 尝试使用最大ARR值 */
+            arr = 65535;
+            psc = (tim_clk / (arr * current_freq)) - 1;
+            if (psc > 65535) {
+                psc = 65535;
+            }
+        } else {
+            /* 8位分辨率，调整ARR */
+            arr = tim_clk / (current_freq * 65536);
+            if (arr < 1) arr = 1;
+            if (arr > 256) arr = 256;  /* 8位分辨率最大ARR=256 */
+            psc = (tim_clk / (arr * current_freq)) - 1;
+            if (psc > 65535) psc = 65535;
+        }
+    }
+    
+    /* 如果PSC为0，调整ARR */
+    if (psc == 0 && arr > 1) {
+        arr = tim_clk / current_freq;
+        if (arr < 1) arr = 1;
+        /* 限制ARR在分辨率范围内 */
+        if (resolution == PWM_RESOLUTION_8BIT && arr > 256) {
+            arr = 256;
+        } else if (resolution == PWM_RESOLUTION_16BIT && arr > 65536) {
+            arr = 65536;
+        }
+    }
+    
+    /* 更新ARR寄存器 */
+    TIM_SetAutoreload(tim_periph, arr - 1);
+    
+    /* 更新PSC寄存器 */
+    TIM_PrescalerConfig(tim_periph, psc, TIM_PSCReloadMode_Immediate);
+    
+    /* 保存当前分辨率 */
+    g_pwm_resolution[instance] = resolution;
+    
+    return PWM_OK;
+}
+
+/**
+ * @brief 获取PWM分辨率
+ * @param[in] instance PWM实例索引
+ * @param[out] resolution 分辨率指针
+ * @return PWM_Status_t 错误码
+ */
+PWM_Status_t PWM_GetResolution(PWM_Instance_t instance, PWM_Resolution_t *resolution)
+{
+    /* ========== 参数校验 ========== */
+    if (instance >= PWM_INSTANCE_MAX) {
+        return PWM_ERROR_INVALID_INSTANCE;
+    }
+    if (resolution == NULL) {
+        return PWM_ERROR_NULL_PTR;
+    }
+    
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
+    
+    /* 返回保存的分辨率值 */
+    *resolution = g_pwm_resolution[instance];
     
     return PWM_OK;
 }
@@ -717,12 +843,35 @@ PWM_Status_t PWM_EnableComplementary(PWM_Instance_t instance, PWM_Channel_t chan
     if (channel >= PWM_CHANNEL_MAX) {
         return PWM_ERROR_INVALID_CHANNEL;
     }
-    /* 注意：互补输出仅支持TIM1/TIM8，但参数校验阶段只检查范围 */
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_EnableComplementary: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 互补输出仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 获取TIM通道值 */
+    uint16_t tim_channel = PWM_GetTIMChannel(channel);
+    if (tim_channel != TIM_Channel_1 && tim_channel != TIM_Channel_2 && 
+        tim_channel != TIM_Channel_3 && tim_channel != TIM_Channel_4) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* 使能互补输出 */
+    TIM_CCxNCmd(tim_periph, tim_channel, TIM_CCxN_Enable);
+    
+    return PWM_OK;
 }
 
 /**
@@ -742,10 +891,34 @@ PWM_Status_t PWM_DisableComplementary(PWM_Instance_t instance, PWM_Channel_t cha
         return PWM_ERROR_INVALID_CHANNEL;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_DisableComplementary: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 互补输出仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 获取TIM通道值 */
+    uint16_t tim_channel = PWM_GetTIMChannel(channel);
+    if (tim_channel != TIM_Channel_1 && tim_channel != TIM_Channel_2 && 
+        tim_channel != TIM_Channel_3 && tim_channel != TIM_Channel_4) {
+        return PWM_ERROR_INVALID_CHANNEL;
+    }
+    
+    /* 禁用互补输出 */
+    TIM_CCxNCmd(tim_periph, tim_channel, TIM_CCxN_Disable);
+    
+    return PWM_OK;
 }
 
 /**
@@ -763,11 +936,58 @@ PWM_Status_t PWM_SetDeadTime(PWM_Instance_t instance, uint16_t dead_time_ns)
     }
     /* 注意：dead_time_ns范围0~65535ns，但uint16_t已经限制了范围，无需额外检查 */
     
-    /* ========== 占位空函数 ========== */
-    (void)dead_time_ns;
-    #warning "PWM_SetDeadTime: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 死区时间仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 计算死区时间值（DTG）
+     * 死区时间 = (DTG[7:0] + 1) * tDTS
+     * 其中 tDTS = 1 / 定时器时钟频率
+     * 简化计算：DTG = (dead_time_ns * tim_clk_hz / 1000000000) - 1
+     * 注意：实际计算需要考虑DTG寄存器的分段编码，这里使用简化版本
+     */
+    uint32_t tim_clk = PWM_GetTimerClock(tim_periph);
+    if (tim_clk == 0) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 计算DTG值（简化版本，实际应该使用分段编码） */
+    uint32_t tDTS_ns = 1000000000UL / tim_clk;  /* tDTS的纳秒值 */
+    uint32_t dtg = (dead_time_ns + tDTS_ns - 1) / tDTS_ns;  /* 向上取整 */
+    if (dtg > 0) {
+        dtg -= 1;  /* DTG = (dead_time_ns / tDTS) - 1 */
+    }
+    if (dtg > 255) {
+        dtg = 255;  /* DTG最大值为255 */
+    }
+    
+    /* 配置死区时间 */
+    TIM_BDTRInitTypeDef BDTR_InitStructure;
+    TIM_BDTRStructInit(&BDTR_InitStructure);
+    BDTR_InitStructure.TIM_DeadTime = (uint8_t)dtg;
+    BDTR_InitStructure.TIM_OSSRState = TIM_OSSRState_Enable;
+    BDTR_InitStructure.TIM_OSSIState = TIM_OSSIState_Enable;
+    BDTR_InitStructure.TIM_LOCKLevel = TIM_LOCKLevel_OFF;
+    BDTR_InitStructure.TIM_Break = TIM_Break_Disable;
+    BDTR_InitStructure.TIM_BreakPolarity = TIM_BreakPolarity_Low;
+    BDTR_InitStructure.TIM_AutomaticOutput = TIM_AutomaticOutput_Disable;
+    
+    TIM_BDTRConfig(tim_periph, &BDTR_InitStructure);
+    
+    return PWM_OK;
 }
 
 /**
@@ -783,10 +1003,27 @@ PWM_Status_t PWM_EnableMainOutput(PWM_Instance_t instance)
         return PWM_ERROR_INVALID_INSTANCE;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_EnableMainOutput: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 主输出使能仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 使能主输出 */
+    TIM_CtrlPWMOutputs(tim_periph, ENABLE);
+    
+    return PWM_OK;
 }
 
 /**
@@ -802,10 +1039,27 @@ PWM_Status_t PWM_DisableMainOutput(PWM_Instance_t instance)
         return PWM_ERROR_INVALID_INSTANCE;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_DisableMainOutput: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 主输出使能仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 禁用主输出 */
+    TIM_CtrlPWMOutputs(tim_periph, DISABLE);
+    
+    return PWM_OK;
 }
 
 /**
@@ -829,10 +1083,42 @@ PWM_Status_t PWM_EnableBrake(PWM_Instance_t instance, PWM_BrakeSource_t source, 
         return PWM_ERROR_INVALID_PARAM;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_EnableBrake: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 刹车功能仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 配置刹车功能 */
+    TIM_BDTRInitTypeDef BDTR_InitStructure;
+    TIM_BDTRStructInit(&BDTR_InitStructure);
+    
+    /* 读取当前BDTR配置（保留死区时间等设置） */
+    uint16_t current_bdtr = tim_periph->BDTR;
+    BDTR_InitStructure.TIM_DeadTime = (uint8_t)(current_bdtr & TIM_BDTR_DTG);
+    BDTR_InitStructure.TIM_OSSRState = (current_bdtr & TIM_BDTR_OSSR) ? TIM_OSSRState_Enable : TIM_OSSRState_Disable;
+    BDTR_InitStructure.TIM_OSSIState = (current_bdtr & TIM_BDTR_OSSI) ? TIM_OSSIState_Enable : TIM_OSSIState_Disable;
+    BDTR_InitStructure.TIM_LOCKLevel = (uint16_t)((current_bdtr & TIM_BDTR_LOCK) >> 8);
+    BDTR_InitStructure.TIM_AutomaticOutput = (current_bdtr & TIM_BDTR_AOE) ? TIM_AutomaticOutput_Enable : TIM_AutomaticOutput_Disable;
+    
+    /* 设置刹车参数 */
+    BDTR_InitStructure.TIM_Break = TIM_Break_Enable;
+    BDTR_InitStructure.TIM_BreakPolarity = (polarity == PWM_BRAKE_POLARITY_HIGH) ? TIM_BreakPolarity_High : TIM_BreakPolarity_Low;
+    
+    TIM_BDTRConfig(tim_periph, &BDTR_InitStructure);
+    
+    return PWM_OK;
 }
 
 /**
@@ -848,10 +1134,42 @@ PWM_Status_t PWM_DisableBrake(PWM_Instance_t instance)
         return PWM_ERROR_INVALID_INSTANCE;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_DisableBrake: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 刹车功能仅支持TIM1/TIM8 */
+    if (tim_periph != TIM1) {
+        return PWM_ERROR_INVALID_PERIPH;  /* 当前仅支持TIM1，TIM8未实现 */
+    }
+    
+    /* 配置刹车功能（禁用） */
+    TIM_BDTRInitTypeDef BDTR_InitStructure;
+    TIM_BDTRStructInit(&BDTR_InitStructure);
+    
+    /* 读取当前BDTR配置（保留死区时间等设置） */
+    uint16_t current_bdtr = tim_periph->BDTR;
+    BDTR_InitStructure.TIM_DeadTime = (uint8_t)(current_bdtr & TIM_BDTR_DTG);
+    BDTR_InitStructure.TIM_OSSRState = (current_bdtr & TIM_BDTR_OSSR) ? TIM_OSSRState_Enable : TIM_OSSRState_Disable;
+    BDTR_InitStructure.TIM_OSSIState = (current_bdtr & TIM_BDTR_OSSI) ? TIM_OSSIState_Enable : TIM_OSSIState_Disable;
+    BDTR_InitStructure.TIM_LOCKLevel = (uint16_t)((current_bdtr & TIM_BDTR_LOCK) >> 8);
+    BDTR_InitStructure.TIM_AutomaticOutput = (current_bdtr & TIM_BDTR_AOE) ? TIM_AutomaticOutput_Enable : TIM_AutomaticOutput_Disable;
+    
+    /* 禁用刹车 */
+    BDTR_InitStructure.TIM_Break = TIM_Break_Disable;
+    BDTR_InitStructure.TIM_BreakPolarity = TIM_BreakPolarity_Low;
+    
+    TIM_BDTRConfig(tim_periph, &BDTR_InitStructure);
+    
+    return PWM_OK;
 }
 
 /**
@@ -871,10 +1189,41 @@ PWM_Status_t PWM_SetAlignMode(PWM_Instance_t instance, PWM_AlignMode_t align_mod
         return PWM_ERROR_INVALID_PARAM;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "PWM_SetAlignMode: 占位空函数，功能未实现，待完善"
+    /* 检查是否已初始化 */
+    if (!g_pwm_initialized[instance]) {
+        return PWM_ERROR_NOT_INITIALIZED;
+    }
     
-    return PWM_ERROR_NOT_IMPLEMENTED;
+    /* 获取配置 */
+    PWM_Config_t *cfg = &g_pwm_configs[instance];
+    TIM_TypeDef *tim_periph = cfg->tim_periph;
+    if (tim_periph == NULL) {
+        return PWM_ERROR_INVALID_PERIPH;
+    }
+    
+    /* 转换对齐模式 */
+    uint16_t tim_counter_mode;
+    switch (align_mode) {
+        case PWM_ALIGN_EDGE:
+            tim_counter_mode = TIM_CounterMode_Up;
+            break;
+        case PWM_ALIGN_CENTER_1:
+            tim_counter_mode = TIM_CounterMode_CenterAligned1;
+            break;
+        case PWM_ALIGN_CENTER_2:
+            tim_counter_mode = TIM_CounterMode_CenterAligned2;
+            break;
+        case PWM_ALIGN_CENTER_3:
+            tim_counter_mode = TIM_CounterMode_CenterAligned3;
+            break;
+        default:
+            return PWM_ERROR_INVALID_PARAM;
+    }
+    
+    /* 配置对齐模式 */
+    TIM_CounterModeConfig(tim_periph, tim_counter_mode);
+    
+    return PWM_OK;
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
