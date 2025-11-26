@@ -30,6 +30,7 @@ typedef enum {
     PWM_ERROR_NOT_INITIALIZED = ERROR_BASE_TIMER - 6,     /**< 未初始化 */
     PWM_ERROR_GPIO_FAILED = ERROR_BASE_TIMER - 7,         /**< GPIO配置失败 */
     PWM_ERROR_FREQ_OUT_OF_RANGE = ERROR_BASE_TIMER - 8,  /**< 频率超出范围 */
+    PWM_ERROR_INVALID_RESOLUTION = ERROR_BASE_TIMER - 9,  /**< 无效的分辨率 */
 } PWM_Status_t;
 
 /**
@@ -97,6 +98,26 @@ PWM_Status_t PWM_SetDutyCycle(PWM_Instance_t instance, PWM_Channel_t channel, fl
  * @return PWM_Status_t 错误码
  */
 PWM_Status_t PWM_GetFrequency(PWM_Instance_t instance, uint32_t *frequency);
+
+/**
+ * @brief 设置PWM分辨率
+ * @param[in] instance PWM实例索引
+ * @param[in] resolution 分辨率（PWM_RESOLUTION_8BIT或PWM_RESOLUTION_16BIT）
+ * @return PWM_Status_t 错误码
+ * @note 设置分辨率时保持当前频率不变（重新计算PSC）
+ * @note 8位分辨率：ARR=256，16位分辨率：ARR=65536
+ * @note PWM_Resolution_t类型需要在board.h中定义
+ */
+PWM_Status_t PWM_SetResolution(PWM_Instance_t instance, PWM_Resolution_t resolution);
+
+/**
+ * @brief 获取PWM分辨率
+ * @param[in] instance PWM实例索引
+ * @param[out] resolution 分辨率指针
+ * @return PWM_Status_t 错误码
+ * @note PWM_Resolution_t类型需要在board.h中定义
+ */
+PWM_Status_t PWM_GetResolution(PWM_Instance_t instance, PWM_Resolution_t *resolution);
 
 /**
  * @brief 使能PWM通道
