@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>RTC02_Alarm</OutputName>
+          <OutputName>Flash01</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors;..\..\..\Drivers\timer</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -401,6 +401,16 @@
               <FilePath>..\..\..\Drivers\basic\gpio.h</FilePath>
             </File>
             <File>
+              <FileName>buzzer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\basic\buzzer.c</FilePath>
+            </File>
+            <File>
+              <FileName>buzzer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\basic\buzzer.h</FilePath>
+            </File>
+            <File>
               <FileName>led.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\basic\led.c</FilePath>
@@ -421,16 +431,6 @@
               <FilePath>..\..\..\Drivers\display\oled_ssd1306.h</FilePath>
             </File>
             <File>
-              <FileName>i2c_sw.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\i2c\i2c_sw.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_sw.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\i2c\i2c_sw.h</FilePath>
-            </File>
-            <File>
               <FileName>oled_font_ascii8x16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.c</FilePath>
@@ -441,14 +441,54 @@
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.h</FilePath>
             </File>
             <File>
-              <FileName>ds3231.c</FileName>
+              <FileName>i2c_sw.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\sensors\ds3231.c</FilePath>
+              <FilePath>..\..\..\Drivers\i2c\i2c_sw.c</FilePath>
             </File>
             <File>
-              <FileName>ds3231.h</FileName>
+              <FileName>i2c_sw.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\sensors\ds3231.h</FilePath>
+              <FilePath>..\..\..\Drivers\i2c\i2c_sw.h</FilePath>
+            </File>
+            <File>
+              <FileName>TIM2_TimeBase.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>
+            </File>
+            <File>
+              <FileName>TIM2_TimeBase.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\uart\uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\uart\uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>spi_hw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\spi\spi_hw.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi_hw.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\spi\spi_hw.h</FilePath>
+            </File>
+            <File>
+              <FileName>w25q_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\flash\w25q_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>w25q_spi.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\flash\w25q_spi.h</FilePath>
             </File>
             <File>
               <FileName>timer_pwm.c</FileName>
@@ -461,14 +501,24 @@
               <FilePath>..\..\..\Drivers\timer\timer_pwm.h</FilePath>
             </File>
             <File>
-              <FileName>TIM2_TimeBase.c</FileName>
+              <FileName>exti.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.c</FilePath>
+              <FilePath>..\..\..\Drivers\peripheral\exti.c</FilePath>
             </File>
             <File>
-              <FileName>TIM2_TimeBase.h</FileName>
+              <FileName>exti.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
+              <FilePath>..\..\..\Drivers\peripheral\exti.h</FilePath>
+            </File>
+            <File>
+              <FileName>tb6612.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\motor\tb6612.c</FilePath>
+            </File>
+            <File>
+              <FileName>tb6612.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\motor\tb6612.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -479,6 +529,11 @@
               <FileName>error_code.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Common\error_code.h</FilePath>
+            </File>
+            <File>
+              <FileName>error_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Common\error_handler.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -535,16 +590,6 @@
               <FileType>5</FileType>
               <FilePath>..\..\..\System\system_init.h</FilePath>
             </File>
-            <File>
-              <FileName>clock_manager.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\System\clock_manager.c</FilePath>
-            </File>
-            <File>
-              <FileName>clock_manager.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\System\clock_manager.h</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -561,84 +606,14 @@
               <FilePath>..\..\..\Library\misc.h</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_adc.c</FileName>
+              <FileName>stm32f10x_gpio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_adc.c</FilePath>
+              <FilePath>..\..\..\Library\stm32f10x_gpio.c</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_adc.h</FileName>
+              <FileName>stm32f10x_gpio.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_adc.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_bkp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_bkp.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_bkp.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_bkp.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_can.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_can.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_can.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_can.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_cec.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_cec.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_cec.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_cec.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_crc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_crc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_crc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_crc.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dac.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dac.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dac.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dac.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dbgmcu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dbgmcu.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dbgmcu.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dbgmcu.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dma.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dma.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_dma.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_dma.h</FilePath>
+              <FilePath>..\..\..\Library\stm32f10x_gpio.h</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_exti.c</FileName>
@@ -651,56 +626,6 @@
               <FilePath>..\..\..\Library\stm32f10x_exti.h</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_flash.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_flash.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_flash.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_flash.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_fsmc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_fsmc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_fsmc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_fsmc.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_gpio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_gpio.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_gpio.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_i2c.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_i2c.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_i2c.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_i2c.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_pwr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_pwr.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_pwr.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_pwr.h</FilePath>
-            </File>
-            <File>
               <FileName>stm32f10x_rcc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Library\stm32f10x_rcc.c</FilePath>
@@ -709,36 +634,6 @@
               <FileName>stm32f10x_rcc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Library\stm32f10x_rcc.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_rtc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_rtc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_rtc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_rtc.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_sdio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_sdio.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_sdio.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_sdio.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_spi.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_spi.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_spi.h</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_tim.c</FileName>
@@ -761,14 +656,14 @@
               <FilePath>..\..\..\Library\stm32f10x_usart.h</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_wwdg.c</FileName>
+              <FileName>stm32f10x_spi.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_wwdg.c</FilePath>
+              <FilePath>..\..\..\Library\stm32f10x_spi.c</FilePath>
             </File>
             <File>
-              <FileName>stm32f10x_wwdg.h</FileName>
+              <FileName>stm32f10x_spi.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_wwdg.h</FilePath>
+              <FilePath>..\..\..\Library\stm32f10x_spi.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -829,6 +724,26 @@
               <FileName>debug.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Debug\debug.h</FilePath>
+            </File>
+            <File>
+              <FileName>log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Debug\log.c</FilePath>
+            </File>
+            <File>
+              <FileName>log.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Debug\log.h</FilePath>
+            </File>
+            <File>
+              <FileName>printf_wrapper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Debug\printf_wrapper.c</FilePath>
+            </File>
+            <File>
+              <FileName>printf_wrapper.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Debug\printf_wrapper.h</FilePath>
             </File>
           </Files>
         </Group>

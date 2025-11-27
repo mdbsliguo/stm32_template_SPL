@@ -171,6 +171,13 @@ typedef struct
     /* SPI1：PA5(SCK), PA6(MISO), PA7(MOSI), PA4(NSS)，主模式，全双工，8位，模式0，软件NSS，预分频8，MSB，启用 */ \
 }
 
+/* ==================== W25Q SPI Flash配置 ==================== */
+
+/* W25Q SPI实例配置 */
+#ifndef W25Q_SPI_INSTANCE
+#define W25Q_SPI_INSTANCE SPI_INSTANCE_1  /**< W25Q使用的SPI实例，默认SPI1 */
+#endif
+
 /* ==================== UART配置 ==================== */
 
 /* UART配置结构体 */

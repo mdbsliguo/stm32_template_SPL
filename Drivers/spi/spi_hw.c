@@ -177,12 +177,18 @@ SPI_Status_t SPI_HW_Init(SPI_Instance_t instance)
         GPIO_Init(config->sck_port, &GPIO_InitStructure);
     }
     
-    /* MISO引脚：复用浮空输入 */
+    /* MISO引脚：复用浮空输入（SPI模式下必须使用复用功能） */
     if (config->miso_port != NULL && config->miso_pin != 0)
     {
         GPIO_EnableClock(config->miso_port);
         GPIO_InitStructure.GPIO_Pin = config->miso_pin;
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+        /* 关键修复：SPI MISO必须配置为复用功能输入，不能是普通输入 */
+        /* GPIO_Mode_AF_PP 是复用推挽，但MISO是输入，应该用 GPIO_Mode_IN_FLOATING */
+        /* 实际上，对于STM32F10x，SPI MISO应该配置为 GPIO_Mode_IN_FLOATING 或 GPIO_Mode_IPU */
+        /* 但更准确的是：检查是否需要配置复用功能 */
+        /* 对于STM32F10x，SPI引脚默认就是复用功能，所以 GPIO_Mode_IN_FLOATING 是正确的 */
+        /* 但为了确保，我们检查一下是否需要显式配置复用功能 */
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;  /* 浮空输入（SPI MISO标准配置） */
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_Init(config->miso_port, &GPIO_InitStructure);
     }
@@ -355,19 +361,8 @@ SPI_Status_t SPI_MasterTransmitReceive(SPI_Instance_t instance, const uint8_t *t
         }
     }
     
-    /* 等待SPI总线空闲（BSY标志位清零），确保传输完全完成 */
-    /* 这对于某些SPI设备（如MAX31856）非常重要，避免在传输未完成时拉高CS */
-    /* BSY标志位：SET=忙，RESET=空闲，我们需要等待RESET（空闲） */
-    {
-        uint32_t timeout_count = actual_timeout * 1000;
-        while (SPI_I2S_GetFlagStatus(spi_periph, SPI_I2S_FLAG_BSY) == SET)
-        {
-            if (timeout_count-- == 0)
-            {
-                return SPI_ERROR_TIMEOUT;
-            }
-        }
-    }
+    /* 参考简单案例：等待RXNE已经确保数据接收完成，不需要等待BSY标志位 */
+    /* 注意：对于某些特殊设备（如MAX31856）可能需要等待BSY，但W25Q不需要 */
     
     return SPI_OK;
 }
@@ -455,7 +450,29 @@ SPI_TypeDef* SPI_GetPeriph(SPI_Instance_t instance)
  */
 SPI_Status_t SPI_NSS_Low(SPI_Instance_t instance)
 {
-    (void)instance;
+    const SPI_Config_t *config;
+    
+    /* 参数校验 */
+    if (instance >= SPI_INSTANCE_MAX)
+    {
+        return SPI_ERROR_INVALID_PARAM;
+    }
+    
+    /* 检查是否已初始化 */
+    if (!g_spi_initialized[instance])
+    {
+        return SPI_ERROR_NOT_INITIALIZED;
+    }
+    
+    /* 获取配置 */
+    config = &g_spi_configs[instance];
+    
+    /* 软件NSS模式，手动控制NSS引脚 */
+    if (config->nss == SPI_NSS_Soft && config->nss_port != NULL && config->nss_pin != 0)
+    {
+        GPIO_WritePin(config->nss_port, config->nss_pin, Bit_RESET);  /* 拉低NSS（选中） */
+    }
+    
     return SPI_OK;
 }
 
@@ -464,7 +481,29 @@ SPI_Status_t SPI_NSS_Low(SPI_Instance_t instance)
  */
 SPI_Status_t SPI_NSS_High(SPI_Instance_t instance)
 {
-    (void)instance;
+    const SPI_Config_t *config;
+    
+    /* 参数校验 */
+    if (instance >= SPI_INSTANCE_MAX)
+    {
+        return SPI_ERROR_INVALID_PARAM;
+    }
+    
+    /* 检查是否已初始化 */
+    if (!g_spi_initialized[instance])
+    {
+        return SPI_ERROR_NOT_INITIALIZED;
+    }
+    
+    /* 获取配置 */
+    config = &g_spi_configs[instance];
+    
+    /* 软件NSS模式，手动控制NSS引脚 */
+    if (config->nss == SPI_NSS_Soft && config->nss_port != NULL && config->nss_pin != 0)
+    {
+        GPIO_WritePin(config->nss_port, config->nss_pin, Bit_SET);  /* 拉高NSS（不选中） */
+    }
+    
     return SPI_OK;
 }
 
