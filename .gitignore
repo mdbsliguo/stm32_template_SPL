@@ -36,6 +36,7 @@ DebugConfig/
 *.dbgconf
 PROJECT_KEYWORDS.md
 项目深度分析报告.md
+AI/
 
 # ========== 下载器和调试器日志 ==========
 JLinkLog.txt

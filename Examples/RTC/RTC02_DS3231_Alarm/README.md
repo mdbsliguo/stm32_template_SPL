@@ -50,6 +50,81 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[RTC02案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        I2C_SW[I2C_SW]
+        DS3231[DS3231]
+        OLED[OLED]
+        LED[LED]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> I2C_SW
+    APP --> DS3231
+    APP --> OLED
+    APP --> LED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    DS3231 --> I2C_SW
+    I2C_SW --> GPIO
+    OLED --> I2C_SW
+    LED --> GPIO
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,I2C_SW,DS3231,OLED,LED driverLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `soft_i2c`：软件I2C驱动模块（DS3231和OLED使用软件I2C）
 - `ds3231`：DS3231实时时钟驱动模块（核心）
 - `gpio`：GPIO驱动模块（软件I2C依赖、按键输入）
@@ -113,9 +188,72 @@
 - **LED指示**：LED1开机闪烁3次，之后只有闹钟触发时才常亮
 - **按键清除**：检测到按键按下后，清除两个闹钟标志并关闭LED1
 
+### 数据流向图
+
+展示本案例的数据流向：DS3231设备 → I2C通信 → 应用逻辑 → 输出显示
+
+```mermaid
+graph LR
+    %% 输入设备
+    DS3231_DEV[DS3231实时时钟<br/>硬件设备<br/>PB10/11 I2C<br/>闹钟触发标志]
+    BUTTON[按键输入<br/>PA0<br/>GPIO输入]
+    
+    %% I2C通信
+    I2C_SW[软件I2C驱动<br/>i2c_sw<br/>PB10/11]
+    
+    %% DS3231驱动
+    DS3231_DRV[DS3231驱动<br/>ds3231]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 读取时间<br/>- 设置闹钟<br/>- 检测闹钟触发<br/>- 检测按键<br/>- 格式化显示]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>时间和闹钟信息]
+    LED_IND[LED指示<br/>PA1<br/>闹钟触发指示]
+    
+    %% 数据流
+    DS3231_DEV -->|I2C通信<br/>时间数据<br/>闹钟标志| I2C_SW
+    I2C_SW -->|I2C数据| DS3231_DRV
+    DS3231_DRV -->|时间结构体<br/>闹钟状态| APP_LOGIC
+    BUTTON -->|按键状态<br/>GPIO输入| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|GPIO控制<br/>状态指示| LED_IND
+    
+    %% 样式
+    classDef input fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef comm fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class DS3231_DEV,BUTTON input
+    class I2C_SW,DS3231_DRV comm
+    class APP_LOGIC process
+    class OLED_DISP,LED_IND output
+```
+
+**数据流说明**：
+
+1. **输入设备**：
+   - **DS3231实时时钟**：通过I2C接口（PB10/11）提供时间数据和闹钟触发标志
+   - **按键**：通过GPIO输入（PA0）提供按键状态
+
+2. **I2C通信**：
+   - **软件I2C驱动**：实现I2C通信协议，与DS3231进行数据交换
+   - **DS3231驱动**：封装DS3231的读写操作，提供时间读取、闹钟设置和状态检测接口
+
+3. **应用逻辑**：
+   - 主循环中读取DS3231时间和闹钟状态
+   - 检测按键按下事件
+   - 格式化数据用于显示
+   - 控制OLED和LED的更新
+
+4. **输出设备**：
+   - **OLED**：显示时间、闹钟设置值和触发状态（实时更新）
+   - **LED**：闹钟触发时常亮，按键清除后关闭
+
 ### 工作流程示意
 
-```text
+```mermaid
 系统初始化
     ↓
 LED和OLED初始化
@@ -269,17 +407,6 @@ LED1开机闪烁3次
 
 **详细函数实现和调用示例请参考**：`main_example.c` 中的代码
 
-## 🔗 相关文档
-
-- [DS3231驱动模块文档](../../Drivers/sensors/ds3231.h)
-- [软件I2C驱动模块文档](../../Drivers/i2c/i2c_sw.h)
-- [OLED驱动模块文档](../../Drivers/display/oled_ssd1306.h)
-- [GPIO驱动模块文档](../../Drivers/basic/gpio.h)
-- [LED驱动模块文档](../../Drivers/basic/led.h)
-- [主程序代码](main_example.c)
-- [硬件配置](board.h)
-- [模块配置](config.h)
-
 ## ⚠️ 注意事项与重点
 
 ### ⚠️ 重要提示
@@ -345,24 +472,36 @@ LED1开机闪烁3次
    - 需要添加消抖处理（本案例使用简单检测）
    - 实际应用中建议使用中断或硬件消抖
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改闹钟触发时间**：修改代码中的闹钟设置，尝试不同的触发时间（如每小时的第0分0秒）
-2. **改变匹配模式**：尝试使用秒匹配、分秒匹配、时分秒匹配等不同的匹配模式
-3. **添加蜂鸣器功能**：添加PWM驱动蜂鸣器，闹钟触发时发出声音提示
-4. **添加按键消抖**：实现硬件或软件消抖，提高按键检测的可靠性
-5. **实现闹钟设置界面**：通过按键和OLED实现交互式闹钟设置功能
-6. **添加闹钟状态显示**：在OLED上显示闹钟是否已设置、下次触发时间等信息
-7. **使用INT/SQW引脚**：连接DS3231的INT/SQW引脚到MCU的外部中断（EXTI），实现硬件中断方式检测闹钟触发
+### 循序渐进理解本案例
 
-## 📚 相关模块
+1. **修改闹钟触发时间**：修改代码中的闹钟设置，尝试不同的触发时间（如每小时的第0分0秒），理解闹钟时间的设置方法
+2. **改变匹配模式**：尝试使用秒匹配、分秒匹配、时分秒匹配等不同的匹配模式，理解不同匹配模式的应用场景
+3. **添加蜂鸣器功能**：添加PWM驱动蜂鸣器，闹钟触发时发出声音提示，理解闹钟触发后的响应处理
 
-- **DS3231驱动**：`Drivers/sensors/ds3231.c/h`
-- **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
-- **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
-- **GPIO驱动**：`Drivers/basic/gpio.c/h`
-- **LED驱动**：`Drivers/basic/led.c/h`
-- **延时功能**：`system/delay.c/h`
+### 实际场景中的常见坑点
+
+4. **闹钟触发检测延迟**：如果主循环执行时间较长，可能延迟检测到闹钟触发。如何确保及时检测闹钟触发？使用硬件中断（INT/SQW引脚）是否一定能解决这个问题？
+5. **闹钟状态同步**：如果系统断电后重新上电，闹钟状态可能丢失。如何保存和恢复闹钟状态？如何实现闹钟状态的持久化存储？
+6. **多闹钟管理**：如果同时使用Alarm1和Alarm2，如何协调管理？如何处理闹钟触发冲突？如何实现闹钟优先级管理？
+
+## 📖 相关文档
+
+- **模块文档**：
+  - **DS3231驱动**：`Drivers/sensors/ds3231.c/h`
+  - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
+  - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **LED驱动**：`Drivers/basic/led.c/h`
+  - **延时功能**：`system/delay.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **系统初始化**：`system/system_init.c/h`
 - **硬件配置**：案例目录下的 `board.h`
 

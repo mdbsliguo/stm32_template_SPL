@@ -4,7 +4,7 @@
 
 ## 📚 重要文档
 
-**⚠️ 调试笔记**：请务必阅读 [`../MAX31856_02_Simple/DEBUG_NOTES.md`](../MAX31856_02_Simple/DEBUG_NOTES.md)，其中详细记录了所有调试过程中发现的问题、原因分析和解决方案。这是理解为什么代码能正常工作的关键文档。
+**⚠️ 调试笔记**：请务必阅读 [`DEBUG_NOTES.md`](DEBUG_NOTES.md)，其中详细记录了所有调试过程中发现的问题、原因分析和解决方案。这是理解为什么代码能正常工作的关键文档。
 
 **关键配置要点**：
 - ✅ SR寄存器地址：0x0F（故障状态记录寄存器）
@@ -146,16 +146,269 @@ status = MAX31856_SetThermocoupleType(MAX31856_TC_TYPE_K);  // K型（默认）
 
 ## 📦 模块依赖
 
-### 必需模块
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[MAX31856案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        SPI_HW[SPI_HW]
+        MAX31856[MAX31856]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+        LED[LED]
+        UART[UART]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> SPI_HW
+    APP --> MAX31856
+    APP --> OLED
+    APP --> LED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    MAX31856 --> SPI_HW
+    SPI_HW --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    LED --> GPIO
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,SPI_HW,MAX31856,I2C_SW,OLED,LED,UART driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
 
 - `spi`：硬件SPI驱动模块（MAX31856使用SPI2）
 - `max31856`：MAX31856热电偶温度传感器驱动模块（核心）
 - `gpio`：GPIO驱动模块（SPI依赖）
 - `led`：LED驱动模块（状态指示）
 - `oled`：OLED显示模块（温度显示）
+- `i2c_sw`：软件I2C驱动模块（OLED使用）
 - `delay`：延时模块
 - `error_handler`：错误处理模块
 - `log`：日志模块（调试输出）
+- `uart`：UART驱动模块（串口调试）
+- `debug`：Debug模块（printf重定向）
+- `system_init`：系统初始化模块
+
+## 🔄 实现流程
+
+### 整体逻辑
+
+本案例演示MAX31856热电偶温度传感器的完整使用流程，整体流程如下：
+
+1. **初始化阶段**
+   - 系统初始化（时钟、GPIO等）
+   - UART初始化（115200波特率）
+   - Debug和Log模块初始化
+   - LED和OLED初始化
+   - 软件I2C初始化（用于OLED）
+   - 硬件SPI2初始化（用于MAX31856）
+   - MAX31856初始化（配置热电偶类型、采样模式、转换模式）
+
+2. **MAX31856配置阶段**
+   - 设置热电偶类型（K型）
+   - 设置采样模式（16次平均）
+   - 设置转换模式（连续转换）
+   - 清除故障状态
+
+3. **主循环阶段**
+   - 每500ms读取一次温度
+   - 读取故障状态并显示
+   - 读取热电偶温度（TC）并显示
+   - 读取冷端温度（CJ）并显示
+   - LED闪烁指示系统运行
+
+### 关键方法
+
+- **标准初始化流程**：按照System_Init → UART → Debug → Log → ErrorHandler → 其他模块的顺序初始化
+- **错误处理集成**：通过ErrorHandler模块统一处理错误，并输出错误日志
+- **分级日志输出**：通过Log模块实现不同级别的日志输出，便于调试和监控
+- **实时温度读取**：使用非阻塞延时控制读取频率，每500ms读取一次
+- **故障检测和处理**：定期检查故障状态，及时发现并处理热电偶开路等问题
+
+### 数据流向图
+
+展示本案例的数据流向：MAX31856设备 → SPI通信 → 应用逻辑 → 输出显示
+
+```mermaid
+graph LR
+    %% 输入设备
+    THERMOCOUPLE[K型热电偶<br/>硬件设备<br/>温度传感器]
+    MAX31856_DEV[MAX31856芯片<br/>硬件设备<br/>PB12/13/14/15 SPI2]
+    
+    %% SPI通信
+    SPI_HW[硬件SPI驱动<br/>spi_hw<br/>SPI2]
+    
+    %% MAX31856驱动
+    MAX31856_DRV[MAX31856驱动<br/>max31856]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 读取温度<br/>- 检测故障<br/>- 格式化显示]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>温度显示]
+    LED_IND[LED指示<br/>PA1<br/>状态闪烁]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试<br/>详细日志]
+    
+    %% 数据流
+    THERMOCOUPLE -->|温度信号| MAX31856_DEV
+    MAX31856_DEV -->|SPI通信<br/>温度数据<br/>故障状态| SPI_HW
+    SPI_HW -->|SPI数据| MAX31856_DRV
+    MAX31856_DRV -->|温度值<br/>故障标志| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|GPIO控制<br/>状态指示| LED_IND
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef input fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef comm fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class THERMOCOUPLE,MAX31856_DEV input
+    class SPI_HW,MAX31856_DRV comm
+    class APP_LOGIC process
+    class OLED_DISP,LED_IND,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **输入设备**：
+   - **K型热电偶**：测量点温度传感器，产生温度信号
+   - **MAX31856芯片**：通过SPI接口（PB12/13/14/15）接收温度信号并转换为数字数据
+
+2. **SPI通信**：
+   - **硬件SPI驱动**：实现SPI通信协议，与MAX31856进行数据交换
+   - **MAX31856驱动**：封装MAX31856的读写操作，提供温度读取和故障检测接口
+
+3. **应用逻辑**：
+   - 主循环中读取MAX31856温度数据（热电偶温度、冷端温度）
+   - 检测故障状态并处理
+   - 格式化数据用于显示
+
+4. **输出设备**：
+   - **OLED**：显示热电偶温度（TC）、冷端温度（CJ）、故障状态（实时更新）
+   - **LED**：闪烁指示系统运行状态
+   - **UART**：输出详细日志信息（支持中文）
+
+### 工作流程示意
+
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> UART_INIT[UART初始化<br/>UART_Init<br/>115200]
+        UART_INIT --> DEBUG_INIT[Debug模块初始化<br/>Debug_Init]
+        DEBUG_INIT --> LOG_INIT[Log模块初始化<br/>Log_Init]
+        LOG_INIT --> LED_INIT[LED初始化<br/>LED_Init]
+        LED_INIT --> I2C_INIT[软件I2C初始化<br/>I2C_SW_Init]
+        I2C_INIT --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> SPI_INIT[硬件SPI2初始化<br/>SPI_HW_Init<br/>PB12/13/14/15]
+        SPI_INIT --> MAX31856_INIT[MAX31856初始化<br/>MAX31856_InitRoutine<br/>- 设置K型热电偶<br/>- 16次平均<br/>- 连续转换模式]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> CHECK_TIME{500ms到?}
+        CHECK_TIME -->|否| LED_BLINK[LED闪烁<br/>状态指示]
+        CHECK_TIME -->|是| READ_FAULT[读取故障状态<br/>MAX31856_ReadFault]
+        READ_FAULT --> DISPLAY_FAULT[显示故障状态<br/>OLED显示]
+        DISPLAY_FAULT --> CHECK_FAULT{有故障?}
+        CHECK_FAULT -->|是| CLEAR_FAULT[清除故障<br/>MAX31856_ClearFault]
+        CHECK_FAULT -->|否| READ_TC[读取热电偶温度<br/>MAX31856_ReadThermocoupleTemperature]
+        CLEAR_FAULT --> READ_TC
+        READ_TC --> DISPLAY_TC["显示热电偶温度<br/>TC: XX.XXC"]
+        DISPLAY_TC --> READ_CJ[读取冷端温度<br/>MAX31856_ReadColdJunctionTemperature]
+        READ_CJ --> DISPLAY_CJ["显示冷端温度<br/>CJ: XX.XXC"]
+        DISPLAY_CJ --> LED_BLINK
+        LED_BLINK --> DELAY[延时<br/>Delay_GetElapsed]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 连接
+    MAX31856_INIT --> MAIN_LOOP
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style MAX31856_INIT fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style READ_TC fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style READ_CJ fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style DISPLAY_TC fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DISPLAY_CJ fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
+```
 
 ## 🚀 使用步骤
 
@@ -486,11 +739,18 @@ MAX31856_01_ReadTemperature/
 └── README.md           # 本文档
 ```
 
-## 🔗 相关文档
+## 📖 相关文档
 
-- [MAX31856驱动模块文档](../../Drivers/sensors/README.md)
-- [SPI驱动模块文档](../../Drivers/spi/README.md)
-- [配置管理文档](../../System/config.h)
+- **模块文档**：
+  - **MAX31856驱动模块**：`../../Drivers/sensors/README.md`
+  - **SPI驱动模块**：`../../Drivers/spi/README.md`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 
 ## 📌 总结
 

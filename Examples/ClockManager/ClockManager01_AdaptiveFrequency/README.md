@@ -49,6 +49,103 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[ClockManager01案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        CLOCK_MGR[ClockManager]
+        CPU_LOAD[CPU_Load_Simulator]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        LED[LED]
+        UART[UART]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> CLOCK_MGR
+    APP --> CPU_LOAD
+    APP --> LED
+    APP --> OLED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    DELAY --> BASE_TIMER
+    CLOCK_MGR --> GPIO
+    
+    %% 驱动层内部依赖
+    LED --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,CLOCK_MGR,CPU_LOAD,BASE_TIMER sysLayer
+    class GPIO,LED,UART,I2C_SW,OLED driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `clock_manager`：时钟管理模块（核心功能）
 - `cpu_load_simulator`：CPU负载模拟模块（用于测试）
 - `oled`：OLED显示驱动模块（用于显示状态）
@@ -100,29 +197,119 @@
   - 检测到频率变化时，自动调用`UART_SetBaudRate()`重新配置UART波特率
   - 确保串口输出在频率变化后仍然正常
 
+### 数据流向图
+
+展示本案例的数据流向：CPU负载模拟 → 时钟管理 → 频率调整 → 输出显示
+
+```mermaid
+graph LR
+    %% CPU负载模拟
+    CPU_LOAD[CPU负载模拟<br/>CPU_Load_Simulator<br/>随机创造负载<br/>60-70%使用率]
+    
+    %% 时钟管理
+    CLOCK_MGR[时钟管理模块<br/>ClockManager<br/>自动调频<br/>8-72MHz]
+    
+    %% 系统时钟
+    SYS_CLK[系统时钟<br/>System Clock<br/>频率变化]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- CPU负载模拟<br/>- 自动调频任务<br/>- 频率变化检测<br/>- UART波特率调整<br/>- 更新显示]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>CPU使用率/频率/系数]
+    LED_OUT[LED输出<br/>PA1<br/>可视化反馈<br/>闪烁效果]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试<br/>详细日志]
+    
+    %% 数据流
+    APP_LOGIC -->|创建负载| CPU_LOAD
+    CPU_LOAD -->|CPU使用率| CLOCK_MGR
+    CLOCK_MGR -->|频率调整| SYS_CLK
+    SYS_CLK -->|频率变化| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|GPIO控制<br/>LED状态| LED_OUT
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef load fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef clock fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef sys fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef process fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class CPU_LOAD load
+    class CLOCK_MGR clock
+    class SYS_CLK sys
+    class APP_LOGIC process
+    class OLED_DISP,LED_OUT,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **CPU负载模拟**：
+   - **CPU_Load_Simulator模块**：随机创造CPU负载（60-70%使用率）
+   - 60秒周期内随机时间启动，每次运行1-5秒
+
+2. **时钟管理**：
+   - **ClockManager模块**：根据CPU使用率自动调整系统频率
+   - CPU使用率 > 50%：升频3档（最高72MHz）
+   - CPU使用率 < 30%：降频1档（最低8MHz）
+
+3. **系统时钟**：
+   - **系统时钟**：频率在8MHz-72MHz之间动态调整
+   - 频率变化时，UART波特率自动重新配置
+
+4. **应用逻辑**：
+   - 主循环中执行CPU负载模拟、自动调频任务
+   - 检测频率变化并调整UART波特率
+   - 更新OLED显示和LED状态
+
+5. **输出设备**：
+   - **OLED**：显示CPU使用率、当前频率、系数等信息
+   - **LED**：通过GPIO控制，可视化反馈（固定500ms闪烁）
+   - **UART**：输出详细日志信息（支持中文）
+
 ### 工作流程示意
 
-```
-系统初始化
-    ↓
-UART初始化（115200）
-    ↓
-Debug和Log模块初始化
-    ↓
-OLED初始化
-    ↓
-检测HSE是否可用
-    ↓
-时钟管理模块初始化
-    ↓
-设置为自动模式（最低8MHz）
-    ↓
-主循环：
-  - CPU负载模拟
-  - 自动调频任务
-  - 频率变化检测 → UART波特率重新配置
-  - 更新OLED显示
-  - 控制LED1闪烁
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> UART_INIT[UART初始化<br/>UART_Init<br/>115200]
+        UART_INIT --> DEBUG_INIT[Debug模块初始化<br/>Debug_Init]
+        DEBUG_INIT --> LOG_INIT[Log模块初始化<br/>Log_Init]
+        LOG_INIT --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> CHECK_HSE[检测HSE是否可用]
+        CHECK_HSE --> CLOCK_INIT[时钟管理模块初始化<br/>CLKM_Init]
+        CLOCK_INIT --> SET_AUTO[设置为自动模式<br/>最低8MHz<br/>CLKM_SetMode]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> CPU_SIM[CPU负载模拟<br/>CPU_Load_Simulator_Run<br/>随机创造负载]
+        CPU_SIM --> ADAPTIVE[自动调频任务<br/>CLKM_AdaptiveTask<br/>每50ms检测]
+        ADAPTIVE --> CHECK_FREQ{频率变化?}
+        CHECK_FREQ -->|是| UART_RECONFIG[UART波特率重新配置<br/>UART_SetBaudRate]
+        CHECK_FREQ -->|否| UPDATE_OLED[更新OLED显示<br/>CPU使用率/频率/系数]
+        UART_RECONFIG --> UPDATE_OLED
+        UPDATE_OLED --> LED_BLINK[LED1闪烁<br/>固定500ms]
+        LED_BLINK --> DELAY[延时<br/>Delay_ms]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 连接
+    SET_AUTO --> MAIN_LOOP
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style SET_AUTO fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style ADAPTIVE fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style UPDATE_OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
 ```
 
 ## 📚 关键函数说明
@@ -340,15 +527,6 @@ uart_periph->CR1 |= USART_CR1_UE;
 - `CPU_SimulateHighLoad50ms()` - CPU负载模拟函数（已实现）
 - `UART_SetBaudRate()` - UART波特率动态调整函数（已实现）
 
-## 🔗 相关文档
-
-- **主程序代码**：`main_example.c`
-- **硬件配置**：`board.h`
-- **模块配置**：`config.h`
-- **时钟管理模块文档**：`../../System/clock_manager.h`
-- **UART驱动模块文档**：`../../Drivers/uart/uart.h`
-- **CPU负载模拟模块文档**：`../../Common/cpu_load_simulator.h`
-
 ## ⚠️ 注意事项与重点
 
 ### ⚠️ 重要提示
@@ -427,26 +605,19 @@ uart_periph->CR1 |= USART_CR1_UE;
    - 检查`RCC_GetClocksFreq()`是否获取到正确的频率
    - 检查BRR计算是否正确
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改负载阈值**：
-   - 调整`CLKM_LOAD_THRESHOLD_HIGH`和`CLKM_LOAD_THRESHOLD_LOW`
-   - 观察调频行为的变化
+### 循序渐进理解本案例
 
-2. **修改切换间隔**：
-   - 调整`CLKM_SWITCH_INTERVAL_UP`和`CLKM_SWITCH_INTERVAL_DOWN`
-   - 观察调频响应速度的变化
+1. **修改负载阈值**：调整`CLKM_LOAD_THRESHOLD_HIGH`和`CLKM_LOAD_THRESHOLD_LOW`，观察调频行为的变化，理解负载阈值对调频策略的影响
+2. **修改切换间隔**：调整`CLKM_SWITCH_INTERVAL_UP`和`CLKM_SWITCH_INTERVAL_DOWN`，观察调频响应速度的变化，理解切换间隔对调频稳定性的影响
+3. **使用实际负载**：替换模拟负载为实际任务负载，观察实际应用场景下的调频行为，理解自适应调频的实际应用
 
-3. **修改切换策略**：
-   - 调整升频/降频的档位数
-   - 观察调频行为的变化
+### 实际场景中的常见坑点
 
-4. **使用实际负载**：
-   - 替换模拟负载为实际任务负载
-   - 观察实际应用场景下的调频行为
-
-5. **添加手动模式**：
-   - 允许手动切换频率档位
+4. **频率切换时的系统稳定性**：当系统频率切换时，可能影响定时器、延时函数等依赖系统时钟的功能。如何保证频率切换时系统的稳定性？如何处理频率切换对现有功能的影响？
+5. **负载检测的准确性**：负载检测的准确性直接影响调频策略的效果。如何提高负载检测的准确性？如何处理负载检测的噪声和抖动？
+6. **调频策略的优化**：不同的应用场景可能需要不同的调频策略。如何根据应用特点优化调频策略？如何实现调频策略的动态调整？如何平衡性能和功耗？
    - 对比手动模式和自动模式的效果
 
 6. **优化显示**：
@@ -457,13 +628,21 @@ uart_periph->CR1 |= USART_CR1_UE;
    - 修改`UART_DEFAULT_BAUDRATE`为其他值（如9600、57600等）
    - 观察频率变化时串口通信是否正常
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **时钟管理**：`../../System/clock_manager.c/h`
-- **UART驱动**：`../../Drivers/uart/uart.c/h`
-- **CPU负载模拟**：`../../Common/cpu_load_simulator.c/h`
-- **延时功能**：`../../System/delay.c/h`
-- **基时定时器**：`../../Drivers/timer/TIM2_TimeBase.c/h`
+- **模块文档**：
+  - **时钟管理**：`../../System/clock_manager.c/h`
+  - **UART驱动**：`../../Drivers/uart/uart.c/h`
+  - **CPU负载模拟**：`../../Common/cpu_load_simulator.c/h`
+  - **延时功能**：`../../System/delay.c/h`
+  - **基时定时器**：`../../Drivers/timer/TIM2_TimeBase.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
 - **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`
 - **软件I2C驱动**：`../../Drivers/i2c/i2c_sw.c/h`

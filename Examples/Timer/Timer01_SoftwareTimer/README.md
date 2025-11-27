@@ -75,6 +75,71 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+```mermaid
+graph TB
+    %% 应用层
+    subgraph APP[应用层]
+        MAIN[main_example.c<br/>主程序]
+    end
+    
+    %% 系统服务层
+    subgraph SYS[系统服务层]
+        TIM_SW[TIM_SW<br/>软件定时器模块]
+        TIM2_BASE[TIM2_TimeBase<br/>时间基准模块]
+        DELAY[delay<br/>延时模块]
+        SYS_INIT[system_init<br/>系统初始化]
+    end
+    
+    %% 驱动层
+    subgraph DRV[驱动层]
+        GPIO[gpio<br/>GPIO驱动]
+        OLED[oled_ssd1306<br/>OLED显示驱动]
+        I2C_SW[i2c_sw<br/>软件I2C驱动]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG[调试工具层]
+        DEBUG_MOD[debug<br/>Debug模块]
+        LOG[log<br/>日志模块]
+        ERROR[error_handler<br/>错误处理]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP[硬件抽象层]
+        BOARD[board.h<br/>硬件配置]
+    end
+    
+    %% 依赖关系
+    MAIN --> TIM_SW
+    MAIN --> OLED
+    MAIN --> GPIO
+    MAIN --> DELAY
+    MAIN --> SYS_INIT
+    
+    TIM_SW --> TIM2_BASE
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    
+    SYS_INIT --> TIM2_BASE
+    SYS_INIT --> DELAY
+    
+    TIM_SW -.-> BOARD
+    GPIO -.-> BOARD
+    OLED -.-> BOARD
+    I2C_SW -.-> BOARD
+    
+    %% 样式
+    style MAIN fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style TIM_SW fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style TIM2_BASE fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style OLED fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style BOARD fill:#fff3e0,stroke:#e65100,stroke-width:2px
+```
+
+### 模块列表
+
 - **TIM_SW模块**：软件定时器核心功能
 - **TIM2_TimeBase模块**：时间基准（TIM_SW依赖）
 - **GPIO模块**：用于配置按钮输入引脚
@@ -119,6 +184,101 @@
 4. **累计时间**：在定时器回调函数中累加时间，每1秒累加1秒（1000ms）
 5. **按钮边沿检测**：通过比较当前状态和上次状态，检测按钮按下事件
 6. **OLED实时显示**：在主循环中定期更新OLED显示，展示累计运行时间（时分秒格式）
+
+### 数据流向图
+
+```mermaid
+graph LR
+    %% 输入
+    BUTTON[按钮输入<br/>GPIO输入]
+    
+    %% 软件定时器
+    TIM_SW[软件定时器<br/>TIM_SW<br/>1秒周期]
+    
+    %% 应用逻辑
+    APP[应用逻辑<br/>main_example.c<br/>累计时间管理]
+    
+    %% 输出
+    OLED[OLED显示<br/>oled_ssd1306<br/>显示累计时间]
+    UART[串口输出<br/>debug/log]
+    
+    %% 数据流
+    BUTTON -->|按下事件| APP
+    TIM_SW -->|定时回调| APP
+    APP -->|累计时间| OLED
+    APP -->|日志输出| UART
+    
+    %% 样式
+    style BUTTON fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style TIM_SW fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style APP fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style UART fill:#ffccbc,stroke:#d84315,stroke-width:2px
+```
+
+### 工作流程示意图
+
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> TIM2_INIT[初始化TIM2_TimeBase<br/>时间基准]
+        TIM2_INIT --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> GPIO_CONFIG[配置按钮GPIO<br/>GPIO_Config<br/>上拉输入]
+    end
+    
+    %% 定时器创建阶段
+    subgraph CREATE[定时器创建阶段]
+        direction TB
+        CREATE_TIMER[创建定时器1<br/>TIM_SW_Create<br/>1秒周期]
+        CREATE_TIMER --> SET_CALLBACK[设置回调函数<br/>累计时间]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> START_TIMER[启动定时器<br/>TIM_SW_Start]
+        START_TIMER --> READ_BTN[读取按钮状态<br/>GPIO_ReadPin]
+        READ_BTN --> CHECK_BTN{按钮按下?}
+        CHECK_BTN -->|是| TOGGLE[切换暂停/恢复<br/>TIM_SW_Pause/Resume]
+        CHECK_BTN -->|否| UPDATE_OLED[更新OLED显示<br/>累计时间]
+        TOGGLE --> UPDATE_OLED
+        UPDATE_OLED --> DELAY[延时降低CPU占用]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 定时器回调阶段
+    subgraph CALLBACK[定时器回调阶段]
+        direction TB
+        TIMER_TRIGGER[定时器触发<br/>1秒周期]
+        TIMER_TRIGGER --> CALLBACK_FUNC[回调函数执行<br/>累计时间+1秒]
+    end
+    
+    %% 连接
+    GPIO_CONFIG --> CREATE_TIMER
+    SET_CALLBACK --> MAIN_LOOP
+    CALLBACK_FUNC -.->|异步事件| UPDATE_OLED
+    
+    %% 样式 - 初始化
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style GPIO_CONFIG fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    
+    %% 样式 - 定时器创建
+    style CREATE_TIMER fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    %% 样式 - 主循环
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style CHECK_BTN fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style UPDATE_OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    
+    %% 样式 - 定时器回调
+    style TIMER_TRIGGER fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style CALLBACK_FUNC fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+```
 
 ---
 
@@ -237,28 +397,39 @@
 
 ---
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **添加重置功能**：通过按钮长按重置累计时间
-2. **添加多个定时器**：创建多个定时器，实现不同的功能
-3. **添加定时器统计**：记录定时器触发次数、平均周期等
-4. **添加定时器链**：实现定时器链功能，一个定时器到期后自动启动下一个定时器
-5. **添加时间记录**：记录暂停/恢复的时间点，实现时间分段统计
+### 循序渐进理解本案例
+
+1. **添加重置功能**：通过按钮长按重置累计时间，理解定时器的生命周期管理
+2. **添加多个定时器**：创建多个定时器，实现不同的功能，理解多定时器的协调管理
+3. **添加定时器统计**：记录定时器触发次数、平均周期等，理解定时器性能监控
+
+### 实际场景中的常见坑点
+
+4. **定时器精度问题**：软件定时器依赖系统tick，如果系统tick精度不够或主循环阻塞，定时器精度会下降。如何提高定时器精度？如何处理主循环阻塞对定时器的影响？
+5. **定时器溢出处理**：当定时器周期很长时，累计时间可能溢出。如何检测和处理定时器溢出？如何实现长时间定时（如数小时、数天）？
+6. **多定时器资源竞争**：当有多个定时器同时运行时，如何避免资源竞争？如何实现定时器的优先级管理？如何处理定时器回调函数的执行时间过长的问题？
 
 ---
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **软件定时器模块**：`system/TIM_sw.c/h`
-- **时间基准模块**：`Drivers/timer/TIM2_TimeBase.c/h`
-- **GPIO驱动**：`Drivers/basic/gpio.c/h`
-- **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
-- **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
-- **延时功能**：`system/delay.c/h`
-- **系统初始化**：`system/system_init.c/h`
-- **硬件配置**：案例目录下的 `board.h`
-- **模块配置**：案例目录下的 `config.h`
-- **主程序**：案例目录下的 `main_example.c`
+- **模块文档**：
+  - **软件定时器模块**：`system/TIM_sw.c/h`
+  - **时间基准模块**：`Drivers/timer/TIM2_TimeBase.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
+  - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
+  - **延时功能**：`system/delay.c/h`
+  - **系统初始化**：`system/system_init.c/h`
+
+- **业务文档**：
+  - **主程序代码**：案例目录下的 `main_example.c`
+  - **硬件配置**：案例目录下的 `board.h`
+  - **模块配置**：案例目录下的 `config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 
 ---
 

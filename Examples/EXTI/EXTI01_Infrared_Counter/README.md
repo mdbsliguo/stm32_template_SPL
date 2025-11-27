@@ -6,7 +6,9 @@
 
 ## 📋 案例目的
 
-- **核心目标**：演示如何使用外部中断（EXTI）实现对射式红外传感器的计次功能
+- **核心目标**
+  - 演示如何使用外部中断（EXTI）实现对射式红外传感器的计次功能
+
 - **学习重点**：
   - EXTI外部中断的配置和使用方法
   - EXTI中断回调函数的编写
@@ -61,6 +63,75 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+```mermaid
+graph TB
+    %% 应用层
+    subgraph APP[应用层]
+        MAIN[main_example.c<br/>主程序]
+    end
+    
+    %% 系统服务层
+    subgraph SYS[系统服务层]
+        DELAY[delay<br/>延时模块]
+        SYS_INIT[system_init<br/>系统初始化]
+    end
+    
+    %% 驱动层
+    subgraph DRV[驱动层]
+        EXTI[exti<br/>外部中断模块]
+        GPIO[gpio<br/>GPIO驱动]
+        LED[led<br/>LED驱动]
+        OLED[oled_ssd1306<br/>OLED显示驱动]
+        I2C_SW[i2c_sw<br/>软件I2C驱动]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG[调试工具层]
+        DEBUG_MOD[debug<br/>Debug模块]
+        LOG[log<br/>日志模块]
+        ERROR[error_handler<br/>错误处理]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP[硬件抽象层]
+        BOARD[board.h<br/>硬件配置]
+    end
+    
+    %% 依赖关系
+    MAIN --> EXTI
+    MAIN --> LED
+    MAIN --> OLED
+    MAIN --> DELAY
+    MAIN --> SYS_INIT
+    
+    EXTI --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    LED --> GPIO
+    
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    SYS_INIT --> DELAY
+    
+    EXTI -.-> BOARD
+    GPIO -.-> BOARD
+    LED -.-> BOARD
+    OLED -.-> BOARD
+    I2C_SW -.-> BOARD
+    
+    %% 样式
+    style MAIN fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style EXTI fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style GPIO fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style LED fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style OLED fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style BOARD fill:#fff3e0,stroke:#e65100,stroke-width:2px
+```
+
+### 模块列表
+
 - `exti`：外部中断模块（核心功能）
 - `gpio`：GPIO模块（EXTI依赖）
 - `led`：LED驱动模块（状态指示）
@@ -96,6 +167,40 @@
    - EXTI模块调用用户回调函数 `InfraredSensor_Callback()`
    - 回调函数中只做简单操作：计数器递增
 
+### 数据流向图
+
+```mermaid
+graph LR
+    %% 输入
+    SENSOR[对射式红外传感器<br/>PA0 EXTI0]
+    
+    %% 中断处理
+    EXTI_INT[EXTI中断处理<br/>EXTI0_IRQHandler]
+    
+    %% 应用逻辑
+    APP[应用逻辑<br/>main_example.c]
+    
+    %% 输出
+    OLED[OLED显示<br/>oled_ssd1306]
+    LED[LED指示<br/>led]
+    UART[串口输出<br/>debug/log]
+    
+    %% 数据流
+    SENSOR -->|边沿触发| EXTI_INT
+    EXTI_INT -->|计数事件| APP
+    APP -->|显示计数| OLED
+    APP -->|状态指示| LED
+    APP -->|日志输出| UART
+    
+    %% 样式
+    style SENSOR fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style EXTI_INT fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style APP fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style LED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style UART fill:#ffccbc,stroke:#d84315,stroke-width:2px
+```
+
 ### 关键方法
 
 1. **EXTI初始化**：使用 `EXTI_HW_Init()` 初始化EXTI线
@@ -108,26 +213,60 @@
 3. **EXTI使能**：使用 `EXTI_Enable()` 使能EXTI中断
    - 使能后，EXTI中断才会触发
 
-### 工作流程示意
+### 工作流程示意图
 
-```text
-系统初始化
-    ↓
-EXTI0初始化（PA0，双边沿触发）
-    ↓
-设置EXTI回调函数
-    ↓
-使能EXTI中断
-    ↓
-主循环（显示计数）
-    ↓
-物体通过 → 传感器输出下降沿 → EXTI0中断触发
-    ↓
-Core层ISR（EXTI0_IRQHandler）→ EXTI模块处理（EXTI_IRQHandler）
-    ↓
-用户回调函数（InfraredSensor_Callback）→ 计数器递增
-    ↓
-主循环检测到计数变化 → 更新显示
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> EXTI_INIT[EXTI0初始化<br/>EXTI_HW_Init<br/>PA0 双边沿触发]
+        EXTI_INIT --> SET_CALLBACK[设置EXTI回调函数<br/>EXTI_SetCallback]
+        SET_CALLBACK --> ENABLE_EXTI[使能EXTI中断<br/>EXTI_Enable]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> CHECK_COUNT{计数变化?}
+        CHECK_COUNT -->|是| UPDATE_OLED[更新OLED显示]
+        CHECK_COUNT -->|否| LED_BLINK[LED闪烁]
+        UPDATE_OLED --> LED_BLINK
+        LED_BLINK --> DELAY[延时降低CPU占用]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 中断处理阶段
+    subgraph INT[中断处理阶段]
+        direction TB
+        SENSOR_TRIGGER[物体通过<br/>传感器输出边沿变化]
+        SENSOR_TRIGGER --> EXTI0_ISR[EXTI0中断触发<br/>EXTI0_IRQHandler]
+        EXTI0_ISR --> EXTI_HANDLER[EXTI模块处理<br/>EXTI_IRQHandler]
+        EXTI_HANDLER --> CALLBACK[用户回调函数<br/>InfraredSensor_Callback]
+        CALLBACK --> COUNT_INC[计数器递增]
+    end
+    
+    %% 连接
+    ENABLE_EXTI --> MAIN_LOOP
+    COUNT_INC -.->|异步事件| CHECK_COUNT
+    
+    %% 样式 - 初始化
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style ENABLE_EXTI fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    
+    %% 样式 - 主循环
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style CHECK_COUNT fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style UPDATE_OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    
+    %% 样式 - 中断处理
+    style SENSOR_TRIGGER fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style CALLBACK fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style COUNT_INC fill:#bbdefb,stroke:#1565c0,stroke-width:2px
 ```
 
 ---
@@ -298,31 +437,33 @@ while(1)
 
 ---
 
-## 📝 扩展练习
+## 💡 扩展练习
 
-1. **修改触发模式**：
-   - 如果传感器输出逻辑已知，可以改为单边沿触发（`EXTI_TRIGGER_RISING` 或 `EXTI_TRIGGER_FALLING`）
-   - 当前使用双边沿触发（`EXTI_TRIGGER_RISING_FALLING`），适用于各种传感器输出逻辑
+### 循序渐进理解本案例
 
-2. **使用其他EXTI线**：
-   - 尝试使用PA1（EXTI Line 1）
-   - 尝试使用PB0（EXTI Line 0，但不同端口）
+1. **修改触发模式**：如果传感器输出逻辑已知，可以改为单边沿触发（`EXTI_TRIGGER_RISING` 或 `EXTI_TRIGGER_FALLING`），理解不同触发模式的应用场景
+2. **使用其他EXTI线**：尝试使用PA1（EXTI Line 1）或PB0（EXTI Line 0，但不同端口），理解EXTI线号与GPIO引脚的对应关系
+3. **添加消抖功能**：在主循环中添加软件消抖逻辑，或使用定时器实现硬件消抖，理解消抖的必要性和实现方法
 
-3. **添加消抖功能**：
-   - 在主循环中添加软件消抖逻辑
-   - 使用定时器实现硬件消抖
+### 实际场景中的常见坑点
 
-4. **多传感器计数**：
-   - 使用多个EXTI线连接多个传感器
-   - 实现多通道计数
+4. **快速计数丢失**：当物体快速通过传感器时，如果中断处理时间较长，可能丢失计数。如何确保不丢失快速计数？如何处理中断嵌套和优先级问题？
+5. **传感器信号干扰**：在实际应用中，传感器信号可能受到电磁干扰，导致误触发。如何提高抗干扰能力？如何区分真实触发和干扰信号？
+6. **多传感器冲突**：如果使用多个EXTI线连接多个传感器，当它们同时触发时，如何处理中断冲突和资源竞争？如何实现多传感器的协调管理？
 
 ---
 
 ## 📖 相关文档
 
-- **EXTI模块文档**：`Drivers/peripheral/exti/README.md`
-- **案例参考**：`Examples/README.md`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **模块文档**：
+  - **EXTI模块文档**：`Drivers/peripheral/exti/README.md`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 
 ---
 

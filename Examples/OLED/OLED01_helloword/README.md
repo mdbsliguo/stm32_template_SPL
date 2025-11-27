@@ -66,6 +66,74 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[OLED01案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> I2C_SW
+    APP --> OLED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,I2C_SW,OLED driverLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `oled`：OLED显示驱动模块（核心功能）
 - `i2c_sw`：软件I2C驱动模块（OLED使用）
 - `gpio`：GPIO驱动模块（I2C依赖）
@@ -103,26 +171,100 @@
 - **位置控制**：通过行列参数控制显示位置
 - **格式控制**：通过长度参数控制显示格式
 
+### 数据流向图
+
+展示本案例的数据流向：应用逻辑 → OLED驱动 → I2C通信 → OLED显示
+
+```mermaid
+graph LR
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 调用显示函数<br/>- 格式化数据<br/>- 控制显示位置]
+    
+    %% OLED驱动
+    OLED_DRV[OLED驱动<br/>oled_ssd1306<br/>显示控制]
+    
+    %% I2C通信
+    I2C_SW[软件I2C驱动<br/>i2c_sw<br/>PB8/PB9]
+    
+    %% OLED硬件
+    OLED_HW[OLED显示屏<br/>SSD1306<br/>硬件设备]
+    
+    %% 数据流
+    APP_LOGIC -->|显示数据<br/>行列位置| OLED_DRV
+    OLED_DRV -->|I2C命令和数据<br/>显示缓冲区| I2C_SW
+    I2C_SW -->|I2C通信<br/>SCL/SDA| OLED_HW
+    
+    %% 样式
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef driver fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef comm fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class APP_LOGIC process
+    class OLED_DRV driver
+    class I2C_SW comm
+    class OLED_HW output
+```
+
+**数据流说明**：
+
+1. **应用逻辑**：
+   - 主循环中调用OLED显示函数（OLED_ShowChar、OLED_ShowString等）
+   - 格式化数据（字符、字符串、数字等）
+   - 控制显示位置（行列坐标）
+
+2. **OLED驱动**：
+   - **OLED驱动模块**：封装SSD1306的显示控制，管理显示缓冲区
+   - 将显示数据转换为I2C命令和数据包
+
+3. **I2C通信**：
+   - **软件I2C驱动**：实现I2C通信协议，通过GPIO模拟I2C时序
+   - 发送命令和数据到OLED硬件
+
+4. **输出设备**：
+   - **OLED显示屏**：SSD1306硬件，显示字符、字符串、数字等信息
+
 ### 工作流程示意
 
-```
-系统初始化
-    ↓
-OLED初始化
-    ↓
-测试1：显示字符
-    ↓
-测试2：显示字符串
-    ↓
-测试3：显示无符号十进制数
-    ↓
-测试4：显示有符号十进制数
-    ↓
-测试5：显示十六进制数
-    ↓
-测试6：显示二进制数
-    ↓
-主循环（保持显示）
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> OLED_INIT[OLED初始化<br/>OLED_Init]
+    end
+    
+    %% 测试阶段
+    subgraph TEST[测试阶段]
+        direction TB
+        TEST1[测试1<br/>显示字符'A'<br/>第1行第1列]
+        TEST1 --> TEST2[测试2<br/>显示字符串<br/>HelloWorld!<br/>第1行第3列]
+        TEST2 --> TEST3[测试3<br/>显示无符号十进制数<br/>12345<br/>第2行第1列]
+        TEST3 --> TEST4[测试4<br/>显示有符号十进制数<br/>-66<br/>第2行第7列]
+        TEST4 --> TEST5[测试5<br/>显示十六进制数<br/>0xAA55<br/>第3行第1列]
+        TEST5 --> TEST6[测试6<br/>显示二进制数<br/>0xAA55<br/>第4行第1列]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> DELAY[延时<br/>Delay_ms]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 连接
+    OLED_INIT --> TEST1
+    TEST6 --> MAIN_LOOP
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style OLED_INIT fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style TEST1 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style TEST6 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
 ```
 
 ## 📚 关键函数说明
@@ -175,15 +317,6 @@ OLED初始化
   - 自动初始化所有enabled=1的模块
 
 **详细函数实现和调用示例请参考**：`main_example.c` 中的代码
-
-## 🔗 相关文档
-
-- **主程序代码**：`main_example.c`
-- **硬件配置**：`board.h`
-- **模块配置**：`config.h`
-- **OLED模块文档**：`../../Drivers/display/oled_ssd1306.h`
-- **OLED字库文档**：`../../Drivers/display/oled_font_ascii8x16.h`
-- **软件I2C模块文档**：`../../Drivers/i2c/i2c_sw.h`
 
 ## ⚠️ 注意事项与重点
 
@@ -246,39 +379,40 @@ OLED初始化
    - 检查OLED模块是否正确连接
    - 使用示波器检查I2C信号
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改显示内容**：
-   - 尝试显示不同的字符、字符串、数字
-   - 观察显示效果的变化
+### 循序渐进理解本案例
 
-2. **修改显示位置**：
-   - 尝试在不同的位置显示内容
-   - 观察位置控制的效果
+1. **修改显示内容**：尝试显示不同的字符、字符串、数字，观察显示效果的变化，理解OLED显示的基本功能
+2. **修改显示位置**：尝试在不同的位置显示内容，观察位置控制的效果，理解OLED坐标系统
+3. **组合显示**：在同一行显示多个内容，实现更复杂的显示格式，理解OLED显示的组合使用
 
-3. **组合显示**：
-   - 在同一行显示多个内容
-   - 实现更复杂的显示格式
+### 实际场景中的常见坑点
 
-4. **动态显示**：
-   - 在主循环中动态更新显示内容
-   - 实现滚动显示、闪烁显示等效果
-
-5. **格式化显示**：
-   - 实现更复杂的格式化显示（如时间、日期等）
+4. **显示刷新频率问题**：如果频繁刷新OLED显示，可能导致I2C通信阻塞，影响程序实时性。如何优化显示刷新策略？如何实现局部刷新（只更新变化的部分）？
+5. **I2C通信失败处理**：如果OLED的I2C通信失败（如设备未连接、通信干扰等），可能导致程序卡死。如何检测和处理I2C通信失败？如何实现通信重试机制？
+6. **多行显示协调**：当需要同时更新多行显示时，如何保证显示的一致性？如何处理显示更新冲突？如何实现显示缓冲和批量更新？
    - 使用多个显示函数组合
 
 6. **多行显示**：
    - 在多个行显示不同的内容
    - 实现多行信息显示界面
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
-- **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`
-- **软件I2C驱动**：`../../Drivers/i2c/i2c_sw.c/h`
-- **GPIO驱动**：`../../Drivers/basic/gpio.c/h`
-- **延时功能**：`../../system/delay.c/h`
+- **模块文档**：
+  - **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
+  - **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`
+  - **软件I2C驱动**：`../../Drivers/i2c/i2c_sw.c/h`
+  - **GPIO驱动**：`../../Drivers/basic/gpio.c/h`
+  - **延时功能**：`../../system/delay.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **系统初始化**：`../../system/system_init.c/h`
 - **基时定时器**：`../../Drivers/timer/TIM2_TimeBase.c/h`
 - **硬件配置**：案例目录下的 `board.h`

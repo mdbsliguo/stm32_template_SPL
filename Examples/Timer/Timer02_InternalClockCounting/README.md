@@ -78,7 +78,99 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[Timer02案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        TIM3[TIM3硬件定时器]
+        UART[UART]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> TIM3
+    APP --> OLED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    TIM3 --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,TIM3,UART,I2C_SW,OLED driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - **TIM2_TimeBase模块**：时间基准（用于获取系统tick，控制显示更新频率）
+- **TIM3硬件定时器**：内部时钟计数（核心功能）
 - **GPIO模块**：用于配置UART和OLED的GPIO引脚
 - **UART模块**：用于串口日志输出
 - **Debug模块**：用于UART输出功能（printf重定向）
@@ -124,6 +216,61 @@
 4. **显示更新控制**：使用TIM2_TimeBase_GetTick()控制OLED和UART的更新频率
 5. **OLED实时显示**：在主循环中定期更新OLED显示，展示当前计数值
 6. **UART日志输出**：使用Log模块输出详细日志信息（中文，GB2312编码）
+
+### 数据流向图
+
+展示本案例的数据流向：内部时钟源 → TIM3计数 → 应用逻辑 → 输出显示
+
+```mermaid
+graph LR
+    %% 时钟源
+    SYS_CLK[系统时钟<br/>72MHz<br/>内部时钟源]
+    
+    %% 硬件定时器
+    TIM3[TIM3硬件定时器<br/>内部时钟计数<br/>PSC=71, ARR=999]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 读取CNT寄存器<br/>- 格式化数据<br/>- 控制显示更新]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>计数值显示]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试<br/>详细日志]
+    
+    %% 数据流
+    SYS_CLK -->|时钟信号| TIM3
+    TIM3 -->|CNT寄存器值<br/>0-999循环| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef clock fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef timer fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class SYS_CLK clock
+    class TIM3 timer
+    class APP_LOGIC process
+    class OLED_DISP,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **时钟源**：
+   - **系统时钟**（72MHz）：STM32内部系统时钟，作为TIM3的时钟源
+
+2. **硬件定时器**：
+   - **TIM3**：配置为内部时钟源，PSC=71，ARR=999，实现约1ms计数周期
+   - CNT寄存器自动从0递增到999，然后循环
+
+3. **应用逻辑**：
+   - 主循环中读取TIM3->CNT寄存器值
+   - 格式化数据用于显示
+   - 控制OLED和UART的更新频率
+
+4. **输出设备**：
+   - **OLED**：显示TIM3计数值（实时更新）
+   - **UART**：输出详细日志信息（支持中文）
 
 ---
 
@@ -252,31 +399,42 @@
 
 ---
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改计数周期**：修改PSC和ARR值，实现不同的计数周期（如10ms、100ms等）
-2. **添加定时器中断**：配置TIM3更新中断，在中断中处理计数溢出事件
-3. **多定时器计数**：使用TIM3和TIM4同时计数，比较两个定时器的计数值
-4. **频率测量**：使用定时器计数功能测量外部信号频率
-5. **PWM输出**：在计数的基础上，配置TIM3的PWM输出功能
-6. **输入捕获**：配置TIM3的输入捕获功能，测量外部信号周期
+### 循序渐进理解本案例
+
+1. **修改计数周期**：修改PSC和ARR值，实现不同的计数周期（如10ms、100ms等），理解预分频器和自动重装载值的作用
+2. **添加定时器中断**：配置TIM3更新中断，在中断中处理计数溢出事件，理解定时器中断的使用
+3. **多定时器计数**：使用TIM3和TIM4同时计数，比较两个定时器的计数值，理解多定时器的协调使用
+
+### 实际场景中的常见坑点
+
+4. **计数溢出处理**：当计数周期很长时，如果中断处理不及时，可能丢失溢出事件。如何确保不丢失溢出事件？如何处理中断嵌套和优先级问题？
+5. **频率精度问题**：内部时钟频率受系统时钟影响，如果系统时钟不稳定，计数精度会下降。如何提高计数精度？如何处理系统时钟漂移？
+6. **定时器资源冲突**：STM32的定时器资源有限，如果多个功能都需要使用定时器，如何分配和管理定时器资源？如何实现定时器的动态分配和释放？
 
 ---
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **TIM2_TimeBase模块**：`Drivers/timer/TIM2_TimeBase.c/h` - 时间基准模块（用于获取系统tick）
-- **GPIO驱动**：`Drivers/basic/gpio.c/h` - GPIO配置
-- **UART驱动**：`Drivers/uart/uart.c/h` - UART通信
-- **Debug模块**：`Debug/debug.c/h` - Debug输出功能
-- **Log模块**：`Debug/log.c/h` - 分级日志系统
-- **ErrorHandler模块**：`Common/error_handler.c/h` - 错误处理框架
-- **OLED驱动**：`Drivers/display/oled_ssd1306.c/h` - OLED显示
-- **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h` - 软件I2C接口
-- **延时功能**：`System/delay.c/h` - 延时服务
-- **系统初始化**：`System/system_init.c/h` - 系统初始化框架
-- **硬件配置**：案例目录下的 `board.h`
-- **模块配置**：案例目录下的 `config.h`
+- **模块文档**：
+  - **TIM2_TimeBase模块**：`Drivers/timer/TIM2_TimeBase.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **UART驱动**：`Drivers/uart/uart.c/h`
+  - **Debug模块**：`Debug/debug.c/h`
+  - **Log模块**：`Debug/log.c/h`
+  - **ErrorHandler模块**：`Common/error_handler.c/h`
+  - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
+  - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
+  - **延时功能**：`System/delay.c/h`
+  - **系统初始化**：`System/system_init.c/h`
+
+- **业务文档**：
+  - **主程序代码**：案例目录下的 `main_example.c`
+  - **硬件配置**：案例目录下的 `board.h`
+  - **模块配置**：案例目录下的 `config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **主程序**：案例目录下的 `main_example.c`
 
 ---

@@ -106,6 +106,100 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[PWM01案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        TIMER[TIMER]
+        PWM[PWM]
+        BUZZER[Buzzer]
+        UART[UART]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> BUZZER
+    APP --> OLED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    BUZZER --> PWM
+    BUZZER --> GPIO
+    PWM --> TIMER
+    TIMER --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,TIMER,PWM,BUZZER,UART,I2C_SW,OLED driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
 本案例使用以下模块：
 
 - `buzzer`：Buzzer驱动模块（核心功能，PWM模式）
@@ -182,36 +276,116 @@
 - **分级日志输出**：通过Log模块实现不同级别的日志输出，便于调试和监控
 - **串口与OLED输出分工**：串口输出详细日志（中文），OLED输出简要状态（英文）
 
+### 数据流向图
+
+展示本案例的数据流向：应用逻辑 → PWM控制 → 蜂鸣器输出
+
+```mermaid
+graph LR
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 设置PWM频率<br/>- 控制蜂鸣器开关<br/>- 播放音调/旋律]
+    
+    %% Buzzer驱动
+    BUZZER_DRV[Buzzer驱动<br/>buzzer<br/>PWM模式控制]
+    
+    %% PWM驱动
+    PWM_DRV[PWM驱动<br/>pwm<br/>频率和占空比控制]
+    
+    %% 定时器
+    TIMER_DRV[定时器驱动<br/>timer<br/>TIM3硬件定时器]
+    
+    %% 输出设备
+    BUZZER_HW[无源蜂鸣器<br/>硬件设备<br/>PA6 TIM3 CH1<br/>PWM信号输出]
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>状态显示]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试<br/>详细日志]
+    
+    %% 数据流
+    APP_LOGIC -->|频率/开关控制| BUZZER_DRV
+    BUZZER_DRV -->|PWM配置| PWM_DRV
+    PWM_DRV -->|定时器配置| TIMER_DRV
+    TIMER_DRV -->|PWM信号<br/>GPIO输出| BUZZER_HW
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef driver fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef timer fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class APP_LOGIC process
+    class BUZZER_DRV,PWM_DRV driver
+    class TIMER_DRV timer
+    class BUZZER_HW,OLED_DISP,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **应用逻辑**：
+   - 主循环中设置PWM频率（Buzzer_SetFrequency）
+   - 控制蜂鸣器开关（Buzzer_On/Off）
+   - 播放音调、旋律等
+
+2. **Buzzer驱动**：
+   - **Buzzer驱动模块**：封装PWM模式控制，提供频率设置和开关接口
+   - 调用PWM驱动进行配置
+
+3. **PWM驱动**：
+   - **PWM驱动模块**：配置定时器产生PWM信号
+   - 设置频率、占空比等参数
+
+4. **定时器驱动**：
+   - **定时器驱动**：TIM3硬件定时器，产生PWM波形
+   - 通过GPIO输出PWM信号
+
+5. **输出设备**：
+   - **无源蜂鸣器**：接收PWM信号，根据频率产生不同音调
+   - **OLED**：显示当前频率、音调、播放状态等信息
+   - **UART**：输出详细日志信息（支持中文）
+
 ### 工作流程示意
 
-```
-系统初始化（System_Init）
-    ↓
-UART初始化（UART_Init）
-    ↓
-Debug模块初始化（Debug_Init，UART模式）
-    ↓
-Log模块初始化（Log_Init）
-    ↓
-ErrorHandler模块自动初始化
-    ↓
-Buzzer初始化（Buzzer_Init）
-    ↓
-软件I2C初始化（I2C_SW_Init）
-    ↓
-OLED初始化（OLED_Init）
-    ↓
-示例1：频率控制演示
-    ↓
-示例2：音调播放演示
-    ↓
-示例3：旋律播放演示
-    ↓
-示例4：频率扫描演示
-    ↓
-示例5：持续播放演示
-    ↓
-循环执行
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> UART_INIT[UART初始化<br/>UART_Init]
+        UART_INIT --> DEBUG_INIT[Debug模块初始化<br/>Debug_Init<br/>UART模式]
+        DEBUG_INIT --> LOG_INIT[Log模块初始化<br/>Log_Init]
+        LOG_INIT --> ERROR_INIT[ErrorHandler自动初始化]
+        ERROR_INIT --> BUZZER_INIT[Buzzer初始化<br/>Buzzer_Init]
+        BUZZER_INIT --> I2C_INIT[软件I2C初始化<br/>I2C_SW_Init]
+        I2C_INIT --> OLED_INIT[OLED初始化<br/>OLED_Init]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> EX1[示例1-频率控制演示]
+        EX1 --> EX2[示例2-音调播放演示]
+        EX2 --> EX3[示例3-旋律播放演示]
+        EX3 --> EX4[示例4-频率扫描演示]
+        EX4 --> EX5[示例5-持续播放演示]
+        EX5 --> MAIN_LOOP
+    end
+    
+    %% 连接
+    OLED_INIT --> MAIN_LOOP
+    
+    %% 样式 - 初始化
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style OLED_INIT fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    
+    %% 样式 - 主循环
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style EX1 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style EX2 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style EX3 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style EX4 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style EX5 fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
 ```
 
 ---
@@ -347,14 +521,19 @@ BUZZER1_Stop();  // 手动停止
 
 ---
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改频率范围**：修改频率扫描的起始和结束频率
-2. **播放完整旋律**：实现完整的小星星或其他歌曲
-3. **添加更多音调**：扩展音调范围（需要修改buzzer.c中的音调频率表）
-4. **实现节拍控制**：添加节拍功能，实现更复杂的音乐播放
-5. **音量控制**：通过调整PWM占空比实现音量控制（需要修改buzzer.c）
-6. **多Buzzer和声**：配置多个Buzzer，实现和声效果
+### 循序渐进理解本案例
+
+1. **修改频率范围**：修改频率扫描的起始和结束频率，理解PWM频率控制的范围和限制
+2. **播放完整旋律**：实现完整的小星星或其他歌曲，理解音符序列与音乐旋律的对应关系
+3. **添加更多音调**：扩展音调范围（需要修改buzzer.c中的音调频率表），理解音符频率的计算方法
+
+### 实际场景中的常见坑点
+
+4. **频率切换延迟**：当快速切换PWM频率时，如果频率设置函数执行时间较长，可能导致音调不准确或播放不完整。如何处理这种情况，确保每个音调都能准确播放？
+5. **节拍精度问题**：使用 `Delay_ms()` 实现的节拍控制精度有限，当TEMPO较高时，误差会累积。如何提高节拍精度，或者如何处理节拍误差的累积？
+6. **多Buzzer同步**：如果使用多个Buzzer实现和声，如何保证它们同步播放？如何处理不同Buzzer的频率设置时间差异？
 
 ---
 
@@ -454,31 +633,16 @@ BUZZER1_Stop();  // 手动停止
 
 ---
 
-## 🔗 相关文档
+## 📖 相关文档
 
-- **主程序代码**：`Examples/PWM/PWM01_pwm_Buzzer/main_example.c`
-- **硬件配置**：`Examples/PWM/PWM01_pwm_Buzzer/board.h`
-- **模块配置**：`Examples/PWM/PWM01_pwm_Buzzer/config.h`
-- **Buzzer驱动模块文档**：`Drivers/basic/buzzer.c/h`
-- **PWM驱动模块文档**：`Drivers/timer/timer_pwm.c/h`
-- **UART驱动模块文档**：`Drivers/uart/uart.c/h`
-- **Log模块文档**：`Debug/log.c/h`
-- **ErrorHandler模块文档**：`Common/error_handler.c/h`
-- **OLED驱动模块文档**：`Drivers/display/oled_ssd1306.c/h`
-- **项目规范文档**：`PROJECT_KEYWORDS.md`
-- **案例参考**：`Examples/README.md`
-
----
-
-## 📚 相关模块
-
-- **Buzzer驱动**：`Drivers/basic/buzzer.c/h`
-- **PWM驱动**：`Drivers/timer/timer_pwm.c/h`
-- **GPIO驱动**：`Drivers/basic/gpio.c/h`
-- **UART驱动**：`Drivers/uart/uart.c/h`
-- **Debug模块**：`Debug/debug.c/h`
-- **Log模块**：`Debug/log.c/h`
-- **ErrorHandler模块**：`Common/error_handler.c/h`
+- **模块文档**：
+  - **Buzzer驱动**：`Drivers/basic/buzzer.c/h`
+  - **PWM驱动**：`Drivers/timer/timer_pwm.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **UART驱动**：`Drivers/uart/uart.c/h`
+  - **Debug模块**：`Debug/debug.c/h`
+  - **Log模块**：`Debug/log.c/h`
+  - **ErrorHandler模块**：`Common/error_handler.c/h`
 - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
 - **OLED字库**：`Drivers/display/oled_font_ascii8x16.c/h`
 - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`

@@ -271,7 +271,102 @@ TIM1计数器（CNT寄存器自动计数）
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[Timer04案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        TIM1[TIM1硬件定时器]
+        DS3231[DS3231]
+        I2C_SW[I2C_SW]
+        UART[UART]
+        OLED[OLED]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> DS3231
+    APP --> TIM1
+    APP --> OLED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    DS3231 --> I2C_SW
+    I2C_SW --> GPIO
+    TIM1 --> GPIO
+    OLED --> I2C_SW
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,TIM1,DS3231,I2C_SW,UART,OLED driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - **DS3231模块**：DS3231实时时钟驱动（32kHz输出使能）
+- **TIM1硬件定时器**：外部时钟计数（核心功能）
 - **软件I2C模块**：DS3231和OLED使用软件I2C接口
 - **TIM2_TimeBase模块**：时间基准（用于获取系统tick，控制显示更新频率）
   - **⚠️ 注意**：TIM2已被此模块占用，不能用于外部时钟
@@ -327,6 +422,62 @@ TIM1计数器（CNT寄存器自动计数）
 4. **计数效果**：TIM1每接收到一个上升沿，CNT寄存器加1，每31.25ms完成一次0-999计数循环
 5. **溢出检测**：通过比较当前值和上次值，检测溢出事件（从999回到0）
 6. **溢出时间**：ARR=999时，每31.25ms溢出一次（0→1→2→...→999→0，共1000个上升沿）
+
+### 数据流向图
+
+展示本案例的数据流向：外部时钟源 → TIM1计数 → 应用逻辑 → 输出显示
+
+```mermaid
+graph LR
+    %% 外部时钟源
+    DS3231_32K[DS3231 32K输出<br/>32kHz时钟<br/>PA12]
+    
+    %% 硬件定时器
+    TIM1[TIM1硬件定时器<br/>外部时钟计数<br/>ETR模式<br/>PA12]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 读取CNT寄存器<br/>- 检测溢出事件<br/>- 格式化数据<br/>- 控制显示更新]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>计数值和溢出次数]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试<br/>详细日志]
+    
+    %% 数据流
+    DS3231_32K -->|32kHz时钟信号<br/>外部时钟| TIM1
+    TIM1 -->|CNT寄存器值<br/>0-999循环<br/>溢出事件| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef clock fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef timer fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class DS3231_32K clock
+    class TIM1 timer
+    class APP_LOGIC process
+    class OLED_DISP,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **外部时钟源**：
+   - **DS3231 32K输出**（32kHz时钟）：DS3231的32K引脚输出32kHz时钟信号，连接到TIM1的ETR引脚（PA12）
+
+2. **硬件定时器**：
+   - **TIM1**：配置为外部时钟模式2（ETR时钟模式），使用PA12作为外部时钟输入
+   - CNT寄存器根据外部时钟信号自动递增，从0到ARR（999）循环计数
+
+3. **应用逻辑**：
+   - 主循环中读取TIM1->CNT寄存器值
+   - 检测溢出事件（从999回到0）
+   - 格式化数据用于显示
+   - 控制OLED和UART的更新频率
+
+4. **输出设备**：
+   - **OLED**：显示TIM1计数值和溢出次数（实时更新）
+   - **UART**：输出详细日志信息（支持中文）
 
 ### TIM1定时器的作用说明
 
@@ -486,32 +637,43 @@ TIM1计数器（CNT寄存器自动计数）
 
 ---
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **对比不同时钟源**：同时运行Timer02（内部时钟）、Timer03（1Hz方波）、Timer04（32kHz），对比计数速度差异
-2. **频率测量**：使用外部时钟测量其他信号的频率
-3. **时间同步**：使用DS3231的精确时钟同步系统时间
-4. **多定时器外部时钟**：使用DS3231的32kHz输出驱动多个定时器
-5. **预分频器实验**：尝试使用TIM1的预分频器（PSC）降低计数速度
+### 循序渐进理解本案例
+
+1. **对比不同时钟源**：同时运行Timer02（内部时钟）、Timer03（1Hz方波）、Timer04（32kHz），对比计数速度差异，理解不同时钟源的特点
+2. **频率测量**：使用外部时钟测量其他信号的频率，理解外部时钟在频率测量中的应用
+3. **预分频器实验**：尝试使用TIM1的预分频器（PSC）降低计数速度，理解预分频器的作用
+
+### 实际场景中的常见坑点
+
+4. **外部时钟信号稳定性**：32kHz外部时钟信号可能受到干扰，导致计数不准确。如何提高抗干扰能力？如何检测和处理信号异常？
+5. **时钟精度与功耗平衡**：外部时钟精度高但功耗也高，内部时钟功耗低但精度较低。如何根据应用场景选择合适的时钟源？如何实现动态切换？
+6. **多定时器时钟共享**：如果多个定时器都需要使用外部时钟，如何实现时钟共享？如何处理时钟分配冲突？如何避免时钟信号负载过重？
 
 ---
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **DS3231模块**：`Drivers/sensors/ds3231.c/h` - DS3231实时时钟驱动
-- **TIM2_TimeBase模块**：`Drivers/timer/TIM2_TimeBase.c/h` - 时间基准模块
-- **GPIO驱动**：`Drivers/basic/gpio.c/h` - GPIO配置
-- **UART驱动**：`Drivers/uart/uart.c/h` - UART通信
-- **Debug模块**：`Debug/debug.c/h` - Debug输出功能
-- **Log模块**：`Debug/log.c/h` - 分级日志系统
-- **ErrorHandler模块**：`Common/error_handler.c/h` - 错误处理框架
-- **OLED驱动**：`Drivers/display/oled_ssd1306.c/h` - OLED显示
-- **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h` - 软件I2C接口
-- **延时功能**：`System/delay.c/h` - 延时服务
-- **系统初始化**：`System/system_init.c/h` - 系统初始化框架
-- **硬件配置**：案例目录下的 `board.h`
-- **模块配置**：案例目录下的 `config.h`
-- **主程序**：案例目录下的 `main_example.c`
+- **模块文档**：
+  - **DS3231模块**：`Drivers/sensors/ds3231.c/h`
+  - **TIM2_TimeBase模块**：`Drivers/timer/TIM2_TimeBase.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **UART驱动**：`Drivers/uart/uart.c/h`
+  - **Debug模块**：`Debug/debug.c/h`
+  - **Log模块**：`Debug/log.c/h`
+  - **ErrorHandler模块**：`Common/error_handler.c/h`
+  - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
+  - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
+  - **延时功能**：`System/delay.c/h`
+  - **系统初始化**：`System/system_init.c/h`
+
+- **业务文档**：
+  - **主程序代码**：案例目录下的 `main_example.c`
+  - **硬件配置**：案例目录下的 `board.h`
+  - **模块配置**：案例目录下的 `config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 
 ---
 

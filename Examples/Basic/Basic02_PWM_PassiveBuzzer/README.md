@@ -2,7 +2,15 @@
 
 ## 📋 案例目的
 
-- **核心目标**：演示如何使用无源蜂鸣器播放一首完整的音乐
+- **核心目标**
+  - 演示如何使用无源蜂鸣器播放一首完整的音乐
+
+- **核心功能**：
+- 完整音乐播放（播放《小星星》完整版，6段歌词）
+- 音符频率控制（支持C3-C6音域的音符播放）
+- 节拍控制（支持全音符、二分音符、四分音符、八分音符、十六分音符）
+- 循环播放（播放完成后自动重复）
+
 - **学习重点**：
   - 理解无源蜂鸣器PWM模式的工作原理
   - 掌握音符频率与PWM频率的对应关系
@@ -12,31 +20,31 @@
 
 ---
 
-## 📋 功能说明
-
-- **完整音乐播放**：播放《小星星》完整版（6段歌词）
-- **音符频率控制**：支持C3-C6音域的音符播放
-- **节拍控制**：支持全音符、二分音符、四分音符、八分音符、十六分音符
-- **循环播放**：播放完成后自动重复
-
----
-
 ## 🔧 硬件要求
 
-### 必需硬件
-- STM32F103C8T6开发板
-- Buzzer（**无源蜂鸣器**，必须使用无源蜂鸣器）
+### 必需外设
+
+- **无源蜂鸣器**：
+  - 正极：`PA6`（TIM3 CH1，PWM输出）
+  - 负极：`GND`
+  - **⚠️ 重要提示**：
+    - **必须使用无源蜂鸣器**：无源蜂鸣器需要外部驱动信号，通过改变PWM频率控制音调
+    - 有源蜂鸣器无法通过PWM控制频率，无法播放音乐
+    - 如果使用有源蜂鸣器，请使用Basic01案例（GPIO模式）
 
 ### 硬件连接
 
-**Buzzer（无源蜂鸣器）**：
-- Buzzer正极连接到PA6（TIM3 CH1）
-- Buzzer负极连接到GND
+| STM32F103C8T6 | 外设 | 说明 |
+|--------------|------|------|
+| PA6 | 无源蜂鸣器正极 | TIM3 CH1，PWM输出 |
+| GND | 无源蜂鸣器负极 | 公共地 |
+| 3.3V | VCC | 电源 |
+| GND | GND | 地线 |
 
-**⚠️ 重要说明**：
-- **必须使用无源蜂鸣器**：无源蜂鸣器需要外部驱动信号，通过改变PWM频率控制音调
-- 有源蜂鸣器无法通过PWM控制频率，无法播放音乐
-- 如果使用有源蜂鸣器，请使用Basic01案例（GPIO模式）
+**⚠️ 重要提示**：
+
+- 案例是独立工程，硬件配置在案例目录下的 `board.h` 中
+- 如果硬件引脚不同，直接修改 `Examples/Basic/Basic02_PWM_PassiveBuzzer/board.h` 中的配置即可
 
 ### 硬件配置
 
@@ -74,21 +82,129 @@
 
 ---
 
-## 🚀 使用方法
+## 📦 模块依赖
 
-### 快速开始
-1. **打开案例工程**：双击 `Examples/Basic/Basic02_PWM_PassiveBuzzer/Examples.uvprojx` 打开Keil工程
-2. **检查硬件配置**：确认案例目录下的 `board.h` 中Buzzer配置正确（TIM3 CH1，PA6）
-3. **编译下载**：在Keil中编译（F7）并下载到开发板（F8）
-4. **观察效果**：
-   - 无源蜂鸣器播放《小星星》完整版音乐
-   - 播放完成后等待3秒自动重复
+### 模块依赖关系图
 
-### 详细操作流程
+展示本案例使用的模块及其依赖关系：
 
-**通用操作步骤请参考**：[Examples/README.md](../README.md#-通用操作流程)
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[Basic02案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        BUZZER[Buzzer]
+        TIMER[TIMER]
+        PWM[PWM]
+        UART[UART]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        DEBUG --- LOG
+        LOG --- ERROR
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> BUZZER
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    BUZZER --> PWM
+    BUZZER --> GPIO
+    PWM --> TIMER
+    TIMER --> GPIO
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,BUZZER,TIMER,PWM,UART driverLayer
+    class DEBUG,LOG,ERROR debugLayer
+    class BSP bspLayer
+```
 
-**注意**：本案例是独立工程，无需复制文件，直接打开工程文件即可编译运行。
+### 模块列表
+
+本案例使用以下模块：
+
+- **驱动层**：
+  - `buzzer`：Buzzer驱动模块（核心功能，PWM模式）
+  - `timer_pwm`：PWM驱动模块（Buzzer依赖）
+  - `gpio`：GPIO驱动模块（PWM、UART依赖）
+  - `uart`：UART驱动模块（串口调试，新项目必须）
+
+- **系统服务层**：
+  - `delay`：延时模块（用于实现时间间隔）
+  - `system_init`：系统初始化模块
+
+- **调试工具层**：
+  - `debug`：Debug模块（printf重定向，新项目必须）
+  - `log`：日志模块（分级日志系统，新项目必须）
+  - `error_handler`：错误处理模块（统一错误处理，新项目必须）
+
+### 模块使用说明
+
+| 模块分类 | 模块名称 | 用途 | 依赖关系 |
+|---------|---------|------|----------|
+| **系统服务** | System_Init | 系统初始化 | 依赖GPIO、Delay |
+| **系统服务** | Delay | 延时功能 | 依赖TIM2_TimeBase |
+| **系统服务** | TIM2_TimeBase | 时间基准 | 无依赖 |
+| **基础驱动** | GPIO | GPIO操作 | 依赖BSP配置 |
+| **定时器驱动** | TIMER | 定时器基础 | 依赖GPIO |
+| **定时器驱动** | PWM | PWM输出 | 依赖TIMER |
+| **基础驱动** | Buzzer | 蜂鸣器控制 | 依赖PWM、GPIO |
+| **通信驱动** | UART | 串口调试 | 依赖GPIO |
+| **调试工具** | Debug | 调试输出 | 依赖UART |
+| **调试工具** | Log | 日志系统 | 依赖ErrorHandler、TIM2_TimeBase |
+| **调试工具** | ErrorHandler | 错误处理 | 无依赖 |
 
 ---
 
@@ -104,6 +220,62 @@
 4. **音乐播放**：按照乐谱顺序播放每个音符
 5. **循环播放**：播放完成后等待3秒，自动重复
 
+### 数据流向图
+
+展示本案例的数据流向：乐谱数据 → 初始化 → 主循环 → 输出设备
+
+```mermaid
+graph LR
+    %% 乐谱数据
+    MUSIC_DATA[乐谱数据<br/>音符序列<br/>频率+时长]
+    
+    %% 初始化阶段
+    INIT[系统初始化<br/>System_Init<br/>UART/Debug/Log<br/>Buzzer初始化]
+    
+    %% 主循环逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 音符播放<br/>- 节拍控制<br/>- 循环播放]
+    
+    %% 输出设备
+    BUZZER_OUT[无源蜂鸣器<br/>PA6<br/>TIM3 CH1<br/>PWM输出]
+    UART_OUT[UART输出<br/>PA9/PA10<br/>串口调试]
+    
+    %% 数据流
+    MUSIC_DATA -->|音符序列| APP_LOGIC
+    INIT -->|初始化完成| APP_LOGIC
+    APP_LOGIC -->|PWM频率控制<br/>音符频率| BUZZER_OUT
+    APP_LOGIC -->|串口输出<br/>日志信息| UART_OUT
+    
+    %% 样式
+    classDef config fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef process fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class MUSIC_DATA config
+    class INIT,APP_LOGIC process
+    class BUZZER_OUT,UART_OUT output
+```
+
+**数据流说明**：
+
+1. **乐谱数据**：
+   - 音符序列：定义每个音符的频率和时长
+   - 节拍定义：TEMPO定义每分钟拍数，计算各种音符的时长
+
+2. **初始化阶段**：
+   - 系统初始化：初始化GPIO、延时等基础功能
+   - UART/Debug/Log初始化：建立串口调试通道
+   - Buzzer初始化：初始化PWM模式Buzzer驱动
+
+3. **应用逻辑**：
+   - 主循环中按顺序播放每个音符
+   - 根据音符频率设置PWM频率
+   - 根据音符时长控制播放时间
+   - 播放完成后等待3秒，循环播放
+
+4. **输出设备**：
+   - **无源蜂鸣器**：PWM控制，通过频率变化产生不同音调
+   - **UART**：输出详细日志信息
+
 ### 关键方法
 
 - **音符频率映射**：将音符（C3-C6）映射到对应的频率（Hz）
@@ -113,70 +285,53 @@
 
 ### 工作流程示意
 
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> UART_INIT[UART初始化<br/>UART_Init]
+        UART_INIT --> DEBUG_INIT[Debug模块初始化<br/>Debug_Init]
+        DEBUG_INIT --> LOG_INIT[Log模块初始化<br/>Log_Init]
+        LOG_INIT --> BUZZER_INIT[Buzzer初始化<br/>Buzzer_Init<br/>PWM模式]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> PLAY_MUSIC[播放音乐<br/>PlaySong_TwinkleTwinkleLittleStar]
+        PLAY_MUSIC --> PLAY_NOTE[播放音符<br/>PlayNote]
+        PLAY_NOTE --> SET_FREQ[设置频率<br/>Buzzer_SetFrequency]
+        SET_FREQ --> BUZZER_ON[开启Buzzer<br/>BUZZER1_On]
+        BUZZER_ON --> DELAY_NOTE[延时音符时长]
+        DELAY_NOTE --> BUZZER_OFF[关闭Buzzer<br/>BUZZER1_Off]
+        BUZZER_OFF --> DELAY_GAP[延时间隔20ms]
+        DELAY_GAP --> CHECK_NEXT{还有音符?}
+        CHECK_NEXT -->|有| PLAY_NOTE
+        CHECK_NEXT -->|无| WAIT_3S[等待3秒]
+        WAIT_3S --> MAIN_LOOP
+    end
+    
+    %% 连接
+    BUZZER_INIT --> MAIN_LOOP
+    
+    %% 样式 - 初始化
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style BUZZER_INIT fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    
+    %% 样式 - 主循环
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style PLAY_MUSIC fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style CHECK_NEXT fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style SET_FREQ fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style BUZZER_ON fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style BUZZER_OFF fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style DELAY_NOTE fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    style DELAY_GAP fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    style WAIT_3S fill:#f5f5f5,stroke:#757575,stroke-width:1px
 ```
-系统初始化（System_Init）
-    ↓
-UART初始化（UART_Init）
-    ↓
-Debug模块初始化（Debug_Init）
-    ↓
-Log模块初始化（Log_Init）
-    ↓
-Buzzer初始化（Buzzer_Init）
-    ↓
-播放音乐（PlaySong_TwinkleTwinkleLittleStar）
-    ↓
-等待3秒
-    ↓
-循环播放
-```
-
----
-
-## 📝 代码说明
-
-### 关键代码
-
-```c
-/* 音符频率定义 */
-#define NOTE_C4  262
-#define NOTE_D4  294
-#define NOTE_E4  330
-/* ... 更多音符 ... */
-
-/* 节拍时长定义 */
-#define TEMPO 120  /* 每分钟120拍 */
-#define QUARTER_NOTE   (60000 / TEMPO)        /* 四分音符 */
-#define HALF_NOTE      (60000 / TEMPO * 2)    /* 二分音符 */
-
-/* 播放单个音符 */
-static void PlayNote(uint32_t frequency, uint32_t duration)
-{
-    if (frequency == 0) {
-        /* 休止符 */
-        BUZZER1_Off();
-        Delay_ms(duration);
-    } else {
-        /* 播放音符 */
-        Buzzer_SetFrequency(BUZZER_1, frequency);
-        BUZZER1_On();
-        Delay_ms(duration);
-        BUZZER1_Off();
-        Delay_ms(20);  /* 音符间隔 */
-    }
-}
-
-/* 播放音乐 */
-PlaySong_TwinkleTwinkleLittleStar();
-```
-
-### 完整流程
-
-1. **系统初始化**：`System_Init()` 初始化SysTick和延时模块
-2. **Buzzer初始化**：`Buzzer_Init()` 初始化Buzzer驱动（PWM模式）
-3. **音符播放**：使用 `PlayNote()` 播放每个音符，通过频率和时长控制
-4. **音乐播放**：按照乐谱顺序调用 `PlayNote()` 播放所有音符
-5. **循环播放**：播放完成后等待3秒，自动重复
 
 ---
 
@@ -208,24 +363,7 @@ PlaySong_TwinkleTwinkleLittleStar();
   - 按照乐谱顺序调用 `PlayNote()` 播放所有音符
   - 包含6段歌词的完整旋律
 
----
-
-## 🎯 预期效果
-
-- **音乐播放**：无源蜂鸣器播放《小星星》完整版（6段歌词）
-- **循环播放**：播放完成后等待3秒，自动重复播放
-- **串口日志**：输出播放开始和完成的日志信息
-
----
-
-## 🔍 扩展练习
-
-1. **修改音乐**：将 `PlaySong_TwinkleTwinkleLittleStar()` 函数中的音符序列替换为其他歌曲
-2. **调整节拍**：修改 `TEMPO` 宏定义，改变播放速度
-3. **添加更多音符**：扩展音符频率表，支持更多音域（如低音、高音）
-4. **实现和声**：配置多个Buzzer，实现多声部效果
-5. **音量控制**：通过调整PWM占空比实现音量控制
-6. **节拍变化**：实现渐快、渐慢等节拍变化效果
+**详细函数实现和调用示例请参考**：`main_example.c` 中的代码
 
 ---
 
@@ -279,76 +417,104 @@ PlaySong_TwinkleTwinkleLittleStar();
 
 ---
 
-## ⚠️ 常见问题
+## 🔍 常见问题排查
 
 ### 蜂鸣器不响
-- **检查蜂鸣器类型**：必须使用**无源蜂鸣器**，有源蜂鸣器无法通过PWM控制频率
-- 检查案例目录下的 `board.h` 中的Buzzer配置是否正确
-- 检查PWM实例和通道配置（`pwm_instance`、`pwm_channel`）
-- 检查PWM配置（`PWM_CONFIGS`）中的引脚是否正确（PA6）
-- 检查Buzzer的 `enabled` 标志是否为1
-- 检查定时器模块是否已启用（`CONFIG_MODULE_TIMER_ENABLED = 1`）
+
+- **可能原因**：
+  - 使用了有源蜂鸣器（必须使用无源蜂鸣器）
+  - Buzzer配置错误（PWM实例或通道配置错误）
+  - PWM配置错误（引脚配置错误）
+  - 模块未启用
+
+- **解决方法**：
+  - 确认使用无源蜂鸣器（需要外部驱动信号，可通过PWM控制频率）
+  - 检查案例目录下的 `board.h` 中的Buzzer配置是否正确
+  - 检查PWM实例和通道配置（`pwm_instance`、`pwm_channel`）
+  - 检查PWM配置（`PWM_CONFIGS`）中的引脚是否正确（PA6）
+  - 检查Buzzer的 `enabled` 标志是否为1
+  - 检查定时器模块是否已启用（`CONFIG_MODULE_TIMER_ENABLED = 1`）
 
 ### 音调不正确
-- 检查音符频率定义是否正确
-- 检查系统时钟配置是否正确
-- 检查PWM频率设置是否在有效范围内（1Hz ~ 72MHz）
+
+- **可能原因**：
+  - 音符频率定义错误
+  - 系统时钟配置错误
+  - PWM频率设置超出有效范围
+
+- **解决方法**：
+  - 检查音符频率定义是否正确（C4=262Hz，A4=440Hz）
+  - 检查系统时钟配置是否正确
+  - 检查PWM频率设置是否在有效范围内（1Hz ~ 72MHz）
 
 ### 节拍不准确
-- 检查TEMPO定义是否正确
-- 检查延时函数是否正常工作
-- 检查音符间隔是否合适
+
+- **可能原因**：
+  - TEMPO定义错误
+  - 延时函数不准确
+  - 音符间隔不合适
+
+- **解决方法**：
+  - 检查TEMPO定义是否正确（每分钟拍数）
+  - 检查延时函数是否正常工作
+  - 检查音符间隔是否合适（建议20ms）
 
 ### 编译错误
-- 确保已包含必要的头文件
-- 确保 `System_Init()` 和 `Buzzer_Init()` 已正确调用
-- 确保Buzzer模块已启用（`CONFIG_MODULE_BUZZER_ENABLED = 1`）
-- 确保定时器模块已启用（`CONFIG_MODULE_TIMER_ENABLED = 1`）
+
+- **可能原因**：
+  - 缺少必要的头文件
+  - 模块未启用
+  - 函数调用错误
+
+- **解决方法**：
+  - 确保已包含必要的头文件
+  - 确保 `System_Init()` 和 `Buzzer_Init()` 已正确调用
+  - 确保Buzzer模块已启用（`CONFIG_MODULE_BUZZER_ENABLED = 1`）
+  - 确保定时器模块已启用（`CONFIG_MODULE_TIMER_ENABLED = 1`）
 
 ---
 
-## 🔗 相关文档
+## 💡 扩展练习
 
-- **主程序代码**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/main_example.c`
-- **硬件配置**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/board.h`
-- **模块配置**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/config.h`
-- **Buzzer驱动模块文档**：`Drivers/basic/buzzer.c/h`
-- **PWM驱动模块文档**：`Drivers/timer/timer_pwm.c/h`
-- **UART驱动模块文档**：`Drivers/uart/uart.c/h`
-- **Log模块文档**：`Debug/log.c/h`
-- **ErrorHandler模块文档**：`Common/error_handler.c/h`
-- **项目规范文档**：`PROJECT_KEYWORDS.md`
-- **案例参考**：`Examples/README.md`
+### 循序渐进理解本案例
 
----
+1. **修改音乐**：将 `PlaySong_TwinkleTwinkleLittleStar()` 函数中的音符序列替换为其他简单的歌曲，理解音符序列与音乐旋律的对应关系
+2. **调整节拍**：修改 `TEMPO` 宏定义，改变播放速度，观察不同节拍对音乐效果的影响
+3. **添加更多音符**：扩展音符频率表，支持更多音域（如低音、高音），理解音符频率的计算方法
 
-## 📚 相关模块
+### 实际场景中的常见坑点
 
-- **Buzzer驱动**：`Drivers/basic/buzzer.c/h`
-- **PWM驱动**：`Drivers/timer/timer_pwm.c/h`
-- **GPIO驱动**：`Drivers/basic/gpio.c/h`
-- **UART驱动**：`Drivers/uart/uart.c/h`
-- **Debug模块**：`Debug/debug.c/h`
-- **Log模块**：`Debug/log.c/h`
-- **ErrorHandler模块**：`Common/error_handler.c/h`
-- **延时功能**：`System/delay.c/h`
-- **系统初始化**：`System/system_init.c/h`
-- **硬件配置**：案例目录下的 `board.h`
+4. **音符间隔处理**：当快速切换音符频率时，如果PWM频率设置函数执行时间较长，可能导致音符播放不完整。如何处理这种情况，确保每个音符都能完整播放？
+5. **节拍精度问题**：使用 `Delay_ms()` 实现的节拍控制精度有限，当TEMPO较高时，误差会累积。如何提高节拍精度，或者如何处理节拍误差的累积？
+6. **内存占用优化**：如果播放更长的音乐，音符序列会占用大量内存。如何优化内存占用，比如使用压缩算法或者从外部存储读取乐谱？
 
 ---
 
-## 🔄 与Basic01的区别
+## 📖 相关文档
 
-| 特性 | Basic01_ActiveBuzzer | Basic02_PWM_PassiveBuzzer |
-|------|---------------------|---------------------------|
-| 驱动模式 | GPIO模式 | PWM模式 |
-| 蜂鸣器类型 | 有源蜂鸣器 | 无源蜂鸣器 |
-| 频率控制 | ❌ 不支持 | ✅ 支持 |
-| 音调播放 | ❌ 不支持 | ✅ 支持 |
-| 音乐播放 | ❌ 不支持 | ✅ 支持（完整音乐） |
-| 引脚配置 | 直接GPIO引脚（PA3） | PWM引脚（PA6，TIM3 CH1） |
-| 功能 | 简单开关、鸣响 | 频率控制、音调播放、完整音乐 |
+- **模块文档**：
+  - **Buzzer驱动**：`Drivers/basic/buzzer.c/h`
+  - **PWM驱动**：`Drivers/timer/timer_pwm.c/h`
+  - **GPIO驱动**：`Drivers/basic/gpio.c/h`
+  - **UART驱动**：`Drivers/uart/uart.c/h`
+  - **Debug模块**：`Debug/debug.c/h`
+  - **Log模块**：`Debug/log.c/h`
+  - **ErrorHandler模块**：`Common/error_handler.c/h`
+  - **延时功能**：`System/delay.c/h`
+  - **系统初始化**：`System/system_init.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/main_example.c`
+  - **硬件配置**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/board.h`
+  - **模块配置**：`Examples/Basic/Basic02_PWM_PassiveBuzzer/config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 
 ---
 
-**最后更新**：2024-01-01
+## 📝 更新日志
+
+- **2024-01-01**：
+  - 初始版本，包含PWM模式Buzzer音乐播放示例
+  - 演示完整音乐播放、音符频率控制、节拍控制
+  - 集成UART、Debug、Log、ErrorHandler等基础模块

@@ -41,6 +41,81 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[RTC01案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        I2C_SW[I2C_SW]
+        DS3231[DS3231]
+        OLED[OLED]
+        LED[LED]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> I2C_SW
+    APP --> DS3231
+    APP --> OLED
+    APP --> LED
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    DS3231 --> I2C_SW
+    I2C_SW --> GPIO
+    OLED --> I2C_SW
+    LED --> GPIO
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,I2C_SW,DS3231,OLED,LED driverLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `soft_i2c`：软件I2C驱动模块（DS3231使用软件I2C）
 - `ds3231`：DS3231实时时钟驱动模块（核心）
 - `gpio`：GPIO驱动模块（软件I2C依赖）
@@ -86,26 +161,122 @@
 - **错误处理**：每个关键操作都检查返回值，失败时显示错误信息并停止运行
 - **实时显示**：使用延时模块的tick功能实现每秒更新，避免阻塞主循环
 
+### 数据流向图
+
+展示本案例的数据流向：DS3231设备 → I2C通信 → 应用逻辑 → 输出显示
+
+```mermaid
+graph LR
+    %% 输入设备
+    DS3231_DEV[DS3231实时时钟<br/>硬件设备<br/>PB10/11 I2C]
+    
+    %% I2C通信
+    I2C_SW[软件I2C驱动<br/>i2c_sw<br/>PB10/11]
+    
+    %% DS3231驱动
+    DS3231_DRV[DS3231驱动<br/>ds3231]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 读取时间<br/>- 写入时间<br/>- 格式化显示]
+    
+    %% 输出设备
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>时间显示]
+    LED_IND[LED指示<br/>PA1<br/>状态闪烁]
+    
+    %% 数据流
+    DS3231_DEV -->|I2C通信<br/>时间数据| I2C_SW
+    I2C_SW -->|I2C数据| DS3231_DRV
+    DS3231_DRV -->|时间结构体| APP_LOGIC
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    APP_LOGIC -->|GPIO控制<br/>状态指示| LED_IND
+    
+    %% 样式
+    classDef input fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef comm fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class DS3231_DEV input
+    class I2C_SW,DS3231_DRV comm
+    class APP_LOGIC process
+    class OLED_DISP,LED_IND output
+```
+
+**数据流说明**：
+
+1. **输入设备**：
+   - **DS3231实时时钟**：通过I2C接口（PB10/11）提供时间数据
+
+2. **I2C通信**：
+   - **软件I2C驱动**：实现I2C通信协议，与DS3231进行数据交换
+   - **DS3231驱动**：封装DS3231的读写操作，提供时间读取和设置接口
+
+3. **应用逻辑**：
+   - 主循环中读取DS3231时间
+   - 格式化时间数据用于显示
+   - 控制OLED和LED的更新
+
+4. **输出设备**：
+   - **OLED**：显示日期和时间（实时更新）
+   - **LED**：闪烁指示系统运行状态
+
 ### 工作流程示意
 
-```text
-系统初始化
-    ↓
-LED和OLED初始化
-    ↓
-软件I2C2初始化（PB10/11）
-    ↓
-DS3231初始化
-    ↓
-检查并清除OSF标志
-    ↓
-启动DS3231振荡器
-    ↓
-读取当前时间并显示
-    ↓
-写入新时间（2024-01-01 12:00:00）
-    ↓
-主循环：每秒读取并显示时间
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> LED_INIT[LED初始化<br/>LED_Init]
+        LED_INIT --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> I2C_INIT[软件I2C2初始化<br/>I2C_SW_Init<br/>PB10/11]
+        I2C_INIT --> DS3231_INIT[DS3231初始化<br/>DS3231_Init]
+        DS3231_INIT --> CHECK_OSF[检查OSF标志<br/>DS3231_CheckOSF]
+        CHECK_OSF --> CLEAR_OSF[清除OSF标志<br/>DS3231_ClearOSF]
+        CLEAR_OSF --> START_OSC[启动振荡器<br/>DS3231_Start]
+    end
+    
+    %% 读取阶段
+    subgraph READ[读取当前时间]
+        direction TB
+        READ_TIME[读取时间<br/>DS3231_ReadTime]
+        READ_TIME --> DISPLAY_TIME[OLED显示时间<br/>停留2秒]
+    end
+    
+    %% 写入阶段
+    subgraph WRITE[写入新时间]
+        direction TB
+        SET_TIME[设置时间结构体<br/>2024-01-01 12:00:00]
+        SET_TIME --> WRITE_TIME[写入时间<br/>DS3231_SetTime]
+        WRITE_TIME --> SHOW_SUCCESS[显示写入成功]
+    end
+    
+    %% 主循环阶段
+    subgraph LOOP[主循环阶段]
+        direction TB
+        MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> READ_LOOP[读取时间<br/>DS3231_ReadTime]
+        READ_LOOP --> UPDATE_OLED[更新OLED显示<br/>日期和时间]
+        UPDATE_OLED --> LED_BLINK[LED闪烁<br/>状态指示]
+        LED_BLINK --> DELAY[延时1秒<br/>Delay_GetElapsed]
+        DELAY --> MAIN_LOOP
+    end
+    
+    %% 连接
+    START_OSC --> READ_TIME
+    DISPLAY_TIME --> SET_TIME
+    SHOW_SUCCESS --> MAIN_LOOP
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style START_OSC fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style READ_TIME fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style WRITE_TIME fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    style UPDATE_OLED fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style LED_BLINK fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
 ```
 
 ## 📚 关键函数说明
@@ -159,15 +330,6 @@ DS3231初始化
 
 **详细函数实现和调用示例请参考**：`main_example.c` 中的代码
 
-## 🔗 相关文档
-
-- [DS3231驱动模块文档](../../Drivers/sensors/ds3231.h)
-- [软件I2C驱动模块文档](../../Drivers/i2c/i2c_sw.h)
-- [OLED驱动模块文档](../../Drivers/display/oled_ssd1306.h)
-- [主程序代码](main_example.c)
-- [硬件配置](board.h)
-- [模块配置](config.h)
-
 ## ⚠️ 注意事项与重点
 
 ### ⚠️ 重要提示
@@ -215,23 +377,36 @@ DS3231初始化
    - 失败时显示错误信息并停止运行
    - 便于快速定位问题
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **修改写入时间**：修改代码中的时间设置，尝试写入不同的日期和时间
-2. **添加温度显示**：使用 `DS3231_ReadTemperature()` 函数读取并显示温度
-3. **实现时间校准**：通过按键或其他方式实现时间的手动校准功能
-4. **添加闹钟功能**：使用 `DS3231_SetAlarm1()` 配置闹钟，实现定时提醒
-5. **格式化显示优化**：优化OLED显示格式，添加更多信息（如温度、星期全称等）
-6. **时间同步**：实现从外部源（如串口）接收时间并同步到DS3231
+### 循序渐进理解本案例
 
-## 📚 相关模块
+1. **修改写入时间**：修改代码中的时间设置，尝试写入不同的日期和时间，理解DS3231时间写入的方法
+2. **添加温度显示**：使用 `DS3231_ReadTemperature()` 函数读取并显示温度，理解DS3231温度读取功能
+3. **格式化显示优化**：优化OLED显示格式，添加更多信息（如温度、星期全称等），理解时间数据的格式化显示
 
-- **DS3231驱动**：`Drivers/sensors/ds3231.c/h`
-- **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
-- **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
-- **LED驱动**：`Drivers/basic/led.c/h`
-- **延时功能**：`system/delay.c/h`
-- **系统初始化**：`system/system_init.c/h`
+### 实际场景中的常见坑点
+
+4. **I2C通信失败处理**：当I2C通信失败时（如设备未连接、通信干扰等），如何检测和处理？如何实现通信重试机制？如何避免程序因通信失败而卡死？
+5. **时间同步问题**：如果系统断电后重新上电，DS3231的时间可能已经更新，但系统时间可能不同步。如何检测和处理时间不同步的情况？如何实现时间同步机制？
+6. **时间写入原子性**：当写入时间时，如果写入过程中断电，可能导致时间数据不完整。如何保证时间写入的原子性？如何处理时间数据损坏的情况？
+
+## 📖 相关文档
+
+- **模块文档**：
+  - **DS3231驱动**：`Drivers/sensors/ds3231.c/h`
+  - **软件I2C驱动**：`Drivers/i2c/i2c_sw.c/h`
+  - **OLED驱动**：`Drivers/display/oled_ssd1306.c/h`
+  - **LED驱动**：`Drivers/basic/led.c/h`
+  - **延时功能**：`system/delay.c/h`
+  - **系统初始化**：`system/system_init.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **硬件配置**：案例目录下的 `board.h`
 
 ---

@@ -48,6 +48,80 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[Delay02案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        CLOCK_MGR[ClockManager]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        LED[LED]
+        I2C_SW[I2C_SW]
+        OLED[OLED]
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DELAY
+    APP --> CLOCK_MGR
+    APP --> LED
+    APP --> OLED
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    SYS_INIT --> LED
+    DELAY --> BASE_TIMER
+    CLOCK_MGR --> GPIO
+    
+    %% 驱动层内部依赖
+    LED --> GPIO
+    OLED --> I2C_SW
+    I2C_SW --> GPIO
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,CLOCK_MGR,BASE_TIMER sysLayer
+    class GPIO,LED,I2C_SW,OLED driverLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `delay`：延时模块（核心功能）
 - `clock_manager`：时钟管理模块（用于手动调频）
 - `TIM2_TimeBase`：TIM2时间基准模块（delay依赖，提供非阻塞延时）
@@ -82,27 +156,121 @@
 - **非阻塞式延时测试**：使用Delay_ms_nonblock()测试非阻塞式延时的准确性
 - **可视化反馈**：使用LED闪烁和OLED显示，直观观察延时效果
 
+### 数据流向图
+
+展示本案例的数据流向：时钟管理 → 延时控制 → LED/OLED输出
+
+```mermaid
+graph LR
+    %% 时钟管理
+    CLOCK_MGR[时钟管理模块<br/>ClockManager<br/>频率切换<br/>8-72MHz]
+    
+    %% 延时模块
+    DELAY_MOD[延时模块<br/>Delay<br/>- Delay_ms阻塞式<br/>- Delay_ms_nonblock非阻塞式]
+    
+    %% 时间基准
+    TIMER_BASE[TIM2_TimeBase<br/>时间基准<br/>系统tick<br/>频率自适应]
+    
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 切换频率<br/>- 调用延时<br/>- 控制LED<br/>- 更新OLED]
+    
+    %% 输出设备
+    LED_OUT[LED输出<br/>PA1/PA2<br/>可视化反馈<br/>闪烁效果]
+    OLED_DISP[OLED显示<br/>PB8/PB9<br/>I2C通信<br/>频率和状态显示]
+    
+    %% 数据流
+    CLOCK_MGR -->|频率变化| TIMER_BASE
+    APP_LOGIC -->|延时请求| DELAY_MOD
+    DELAY_MOD -->|获取tick| TIMER_BASE
+    APP_LOGIC -->|频率切换| CLOCK_MGR
+    APP_LOGIC -->|GPIO控制<br/>LED状态| LED_OUT
+    APP_LOGIC -->|I2C通信<br/>显示数据| OLED_DISP
+    
+    %% 样式
+    classDef clock fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef delay fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef timer fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef process fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef output fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    
+    class CLOCK_MGR clock
+    class DELAY_MOD delay
+    class TIMER_BASE timer
+    class APP_LOGIC process
+    class LED_OUT,OLED_DISP output
+```
+
+**数据流说明**：
+
+1. **时钟管理**：
+   - **ClockManager模块**：手动切换系统频率（8MHz-72MHz，9个档位）
+   - 频率变化时，TIM2_TimeBase自动适配系数
+
+2. **延时模块**：
+   - **Delay模块**：提供阻塞式和非阻塞式延时功能
+   - 基于TIM2_TimeBase获取系统tick，频率切换时自动适配
+
+3. **时间基准**：
+   - **TIM2_TimeBase**：提供系统时间基准，频率切换时自动调整系数
+   - 确保延时时间在不同频率下保持一致
+
+4. **应用逻辑**：
+   - 主循环中切换频率、调用延时函数、控制LED闪烁、更新OLED显示
+
+5. **输出设备**：
+   - **LED**：通过GPIO控制，可视化延时效果（LED1固定1秒，LED2根据系数）
+   - **OLED**：通过I2C通信，显示当前频率、系数、倒计时等信息
+
 ### 工作流程示意
 
-```
-系统初始化
-    ↓
-OLED初始化
-    ↓
-时钟管理模块初始化
-    ↓
-设置为手动模式（72MHz）
-    ↓
-测试1：不同频率下的阻塞式延时
-  - 依次切换9个频率档位
-  - 每个频率测试10秒
-    ↓
-测试2：频率切换时的非阻塞式延时
-  - LED1：1秒闪烁一次
-  - LED2：根据系数闪烁
-  - 每10秒切换一次频率
-    ↓
-循环执行
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> OLED_INIT[OLED初始化<br/>OLED_Init]
+        OLED_INIT --> CLOCK_INIT[时钟管理模块初始化<br/>CLKM_Init]
+        CLOCK_INIT --> SET_MANUAL[设置为手动模式<br/>72MHz<br/>CLKM_SetMode]
+    end
+    
+    %% 测试1阶段
+    subgraph TEST1[测试1：不同频率下的阻塞式延时]
+        direction TB
+        TEST1_START[测试1开始]
+        TEST1_START --> FREQ_LOOP[频率循环<br/>9个档位]
+        FREQ_LOOP --> SWITCH_FREQ[切换频率<br/>CLKM_SetFixedLevel]
+        SWITCH_FREQ --> TEST_DELAY[测试1秒延时<br/>Delay_ms 1000ms<br/>LED1闪烁]
+        TEST_DELAY --> COUNTDOWN[倒计时显示<br/>10秒]
+        COUNTDOWN --> CHECK_FREQ{还有频率?}
+        CHECK_FREQ -->|是| SWITCH_FREQ
+        CHECK_FREQ -->|否| TEST1_END[测试1结束]
+    end
+    
+    %% 测试2阶段
+    subgraph TEST2[测试2：频率切换时的非阻塞式延时]
+        direction TB
+        TEST2_START[测试2开始]
+        TEST2_START --> MAIN_LOOP[主循环开始]
+        MAIN_LOOP --> LED1_BLINK[LED1闪烁<br/>1秒一次<br/>Delay_ms_nonblock]
+        MAIN_LOOP --> LED2_BLINK[LED2闪烁<br/>根据系数<br/>Delay_ms_nonblock]
+        MAIN_LOOP --> CHECK_10S{10秒到?}
+        CHECK_10S -->|是| SWITCH_FREQ2[切换频率<br/>下一个档位]
+        CHECK_10S -->|否| UPDATE_OLED[更新OLED显示<br/>频率、系数、倒计时]
+        SWITCH_FREQ2 --> UPDATE_OLED
+        UPDATE_OLED --> MAIN_LOOP
+    end
+    
+    %% 连接
+    SET_MANUAL --> TEST1_START
+    TEST1_END --> TEST2_START
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style SET_MANUAL fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style TEST1_START fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style TEST2_START fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style MAIN_LOOP fill:#fff3e0,stroke:#e65100,stroke-width:3px
 ```
 
 ## 📚 关键函数说明
@@ -170,15 +338,6 @@ OLED初始化
 
 **详细函数实现和调用示例请参考**：`main_example.c` 中的代码
 
-## 🔗 相关文档
-
-- **主程序代码**：`main_example.c`
-- **硬件配置**：`board.h`
-- **模块配置**：`config.h`
-- **延时模块文档**：`../../System/delay.h`
-- **时钟管理模块文档**：`../../System/clock_manager.h`
-- **TIM2时间基准模块文档**：`../../Drivers/timer/TIM2_TimeBase.h`
-
 ## ⚠️ 注意事项与重点
 
 ### ⚠️ 重要提示
@@ -231,39 +390,40 @@ OLED初始化
    - 检查延时函数是否被正确调用
    - 使用示波器测量LED引脚的实际延时时间
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **测试更多频率档位**：
-   - 修改测试频率列表，测试所有9个档位
-   - 观察不同频率下的延时准确性
+### 循序渐进理解本案例
 
-2. **测试微秒级延时**：
-   - 添加微秒级延时测试（Delay_us）
-   - 观察微秒级延时在不同频率下的准确性
+1. **测试更多频率档位**：修改测试频率列表，测试所有9个档位，观察不同频率下的延时准确性，理解系统频率对延时精度的影响
+2. **测试微秒级延时**：添加微秒级延时测试（Delay_us），观察微秒级延时在不同频率下的准确性，理解微秒级延时的实现和精度
+3. **优化显示**：改进OLED显示格式，添加更多信息显示（如延时误差、频率切换次数等），理解延时性能监控
 
-3. **测试长时间延时**：
-   - 测试更长的延时时间（如5秒、10秒）
-   - 验证长时间延时的准确性
+### 实际场景中的常见坑点
 
-4. **优化显示**：
-   - 改进OLED显示格式
-   - 添加更多信息显示（如延时误差、频率切换次数等）
-
-5. **添加自动模式测试**：
-   - 结合ClockManager01案例，测试自动调频模式下的延时准确性
+4. **频率切换时的延时误差**：当系统频率切换时，延时函数可能需要重新校准，否则会产生误差。如何检测频率切换？如何实现延时函数的自动校准？
+5. **延时精度与功耗平衡**：高频率下延时精度高但功耗也高，低频率下功耗低但精度较低。如何根据应用需求选择合适的频率？如何实现动态调频？
+6. **多频率环境下的延时一致性**：如果程序需要在不同频率下运行，如何保证延时的一致性？如何实现延时时间的标准化（如无论频率如何，延时时间都准确）？
    - 对比手动模式和自动模式的效果
 
 6. **性能测试**：
    - 测试频率切换对系统性能的影响
    - 测试延时精度在不同负载下的表现
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **延时功能**：`../../System/delay.c/h`
-- **时钟管理**：`../../System/clock_manager.c/h`
-- **TIM2时间基准**：`../../Drivers/timer/TIM2_TimeBase.c/h`
-- **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
-- **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`
+- **模块文档**：
+  - **延时功能**：`../../System/delay.c/h`
+  - **时钟管理**：`../../System/clock_manager.c/h`
+  - **TIM2时间基准**：`../../Drivers/timer/TIM2_TimeBase.c/h`
+  - **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
+  - **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **软件I2C驱动**：`../../Drivers/i2c/i2c_sw.c/h`
 - **LED驱动**：`../../Drivers/basic/led.c/h`
 - **GPIO驱动**：`../../Drivers/basic/gpio.c/h`

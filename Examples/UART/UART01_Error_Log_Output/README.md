@@ -38,6 +38,92 @@
 
 ## 📦 模块依赖
 
+### 模块依赖关系图
+
+展示本案例使用的模块及其依赖关系：
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'basis'}}}%%
+flowchart TB
+    %% 应用层
+    subgraph APP_LAYER[应用层]
+        APP[UART01案例<br/>main_example.c]
+    end
+    
+    %% 系统服务层
+    subgraph SYS_LAYER[系统服务层]
+        direction LR
+        SYS_INIT[System_Init]
+        DELAY[Delay]
+        BASE_TIMER[TIM2_TimeBase]
+        SYS_INIT --- DELAY
+        DELAY --- BASE_TIMER
+    end
+    
+    %% 驱动层
+    subgraph DRV_LAYER[驱动层]
+        direction LR
+        GPIO[GPIO]
+        UART[UART]
+    end
+    
+    %% 调试工具层
+    subgraph DEBUG_LAYER[调试工具层]
+        direction LR
+        DEBUG[Debug]
+        LOG[Log]
+        ERROR[ErrorHandler]
+        ERROR_CODE[ErrorCode]
+        DEBUG --- LOG
+        LOG --- ERROR
+        ERROR --- ERROR_CODE
+    end
+    
+    %% 硬件抽象层
+    subgraph BSP_LAYER[硬件抽象层]
+        BSP[board.h<br/>硬件配置]
+    end
+    
+    %% 应用层依赖
+    APP --> SYS_INIT
+    APP --> DEBUG
+    APP --> LOG
+    APP --> ERROR
+    APP --> DELAY
+    
+    %% 系统服务层依赖
+    SYS_INIT --> GPIO
+    DELAY --> BASE_TIMER
+    
+    %% 驱动层内部依赖
+    UART --> GPIO
+    
+    %% 调试工具层依赖
+    DEBUG --> UART
+    LOG --> BASE_TIMER
+    ERROR --> UART
+    
+    %% BSP配置依赖（统一表示）
+    DRV_LAYER -.->|配置依赖| BSP
+    
+    %% 样式
+    classDef appLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef sysLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef bspLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class APP appLayer
+    class SYS_INIT,DELAY,BASE_TIMER sysLayer
+    class GPIO,UART driverLayer
+    class DEBUG,LOG,ERROR,ERROR_CODE debugLayer
+    class BSP bspLayer
+```
+
+### 模块列表
+
+本案例使用以下模块：
+
 - `uart`：UART驱动模块（核心功能）
 - `debug`：Debug模块（UART输出功能已集成到Debug模块）
 - `log`：日志模块（分级日志输出）
@@ -95,34 +181,107 @@
 - **分级日志输出**：通过Log模块实现不同级别的日志输出，便于调试和监控
 - **错误处理集成**：通过ErrorHandler模块统一处理错误，并输出错误日志
 
+### 数据流向图
+
+展示本案例的数据流向：应用逻辑 → 日志/错误处理 → UART输出
+
+```mermaid
+graph LR
+    %% 应用逻辑
+    APP_LOGIC[应用逻辑<br/>主循环控制<br/>- 调用日志函数<br/>- 触发错误处理<br/>- 测试各种场景]
+    
+    %% 日志处理
+    LOG_MOD[Log模块<br/>分级日志系统<br/>DEBUG/INFO/WARN/ERROR]
+    
+    %% 错误处理
+    ERROR_MOD[ErrorHandler模块<br/>统一错误处理<br/>错误统计]
+    
+    %% Debug模块
+    DEBUG_MOD[Debug模块<br/>UART输出封装<br/>字符输出]
+    
+    %% UART驱动
+    UART_DRV[UART驱动<br/>uart<br/>PA9/PA10]
+    
+    %% 输出设备
+    UART_OUT[串口输出<br/>USB转串口模块<br/>串口助手显示]
+    
+    %% 数据流
+    APP_LOGIC -->|日志调用| LOG_MOD
+    APP_LOGIC -->|错误处理| ERROR_MOD
+    LOG_MOD -->|格式化日志| DEBUG_MOD
+    ERROR_MOD -->|错误日志| DEBUG_MOD
+    DEBUG_MOD -->|字符输出| UART_DRV
+    UART_DRV -->|串口数据| UART_OUT
+    
+    %% 样式
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef log fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef error fill:#ffccbc,stroke:#d84315,stroke-width:2px
+    classDef uart fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef output fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    
+    class APP_LOGIC process
+    class LOG_MOD log
+    class ERROR_MOD error
+    class DEBUG_MOD,UART_DRV uart
+    class UART_OUT output
+```
+
+**数据流说明**：
+
+1. **应用逻辑**：
+   - 主循环中调用日志函数（LOG_DEBUG、LOG_INFO等）
+   - 触发错误处理（ErrorHandler_Handle）
+   - 测试各种错误场景
+
+2. **日志处理**：
+   - **Log模块**：分级日志系统，格式化日志字符串
+   - **ErrorHandler模块**：统一错误处理，生成错误日志
+
+3. **输出处理**：
+   - **Debug模块**：封装UART输出，逐字符发送
+   - **UART驱动**：底层UART通信，发送数据到串口
+
+4. **输出设备**：
+   - **串口输出**：通过USB转串口模块输出到串口助手，显示日志和错误信息
+
 ### 工作流程示意
 
-```
-系统初始化
-    ↓
-UART1初始化
-    ↓
-Debug模块初始化（UART模式）
-    ↓
-Log模块初始化
-    ↓
-ErrorHandler模块初始化
-    ↓
-测试阶段1：系统初始化信息
-    ↓
-测试阶段2：各种级别的日志输出
-    ↓
-测试阶段3：UART模块错误处理
-    ↓
-测试阶段4：参数错误处理
-    ↓
-测试阶段5：自定义错误码
-    ↓
-测试阶段6：错误统计功能
-    ↓
-测试阶段7：实时日志输出循环
-    ↓
-循环执行
+```mermaid
+flowchart TD
+    %% 初始化阶段
+    subgraph INIT[初始化阶段]
+        direction TB
+        START[系统初始化<br/>System_Init]
+        START --> UART_INIT[UART1初始化<br/>UART_Init]
+        UART_INIT --> DEBUG_INIT[Debug模块初始化<br/>Debug_Init<br/>UART模式]
+        DEBUG_INIT --> LOG_INIT[Log模块初始化<br/>Log_Init]
+        LOG_INIT --> ERROR_INIT[ErrorHandler模块初始化<br/>自动初始化]
+    end
+    
+    %% 测试阶段
+    subgraph TEST[测试阶段循环]
+        direction TB
+        TEST1[测试阶段1<br/>系统初始化信息]
+        TEST1 --> TEST2[测试阶段2<br/>各种级别日志输出]
+        TEST2 --> TEST3[测试阶段3<br/>UART模块错误处理]
+        TEST3 --> TEST4[测试阶段4<br/>参数错误处理]
+        TEST4 --> TEST5[测试阶段5<br/>自定义错误码]
+        TEST5 --> TEST6[测试阶段6<br/>错误统计功能]
+        TEST6 --> TEST7[测试阶段7<br/>实时日志输出循环]
+        TEST7 --> DELAY[延时2秒<br/>Delay_ms]
+        DELAY --> TEST1
+    end
+    
+    %% 连接
+    ERROR_INIT --> TEST1
+    
+    %% 样式
+    style START fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style ERROR_INIT fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style TEST1 fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style TEST7 fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style DELAY fill:#f5f5f5,stroke:#757575,stroke-width:1px
 ```
 
 ## 📚 关键函数说明
@@ -186,17 +345,6 @@ ErrorHandler模块初始化
   - 返回值：模块错误数
 
 **详细函数实现和调用示例请参考**：`main_example.c` 中的代码
-
-## 🔗 相关文档
-
-- **主程序代码**：`main_example.c`
-- **Debug模块**：`../../Debug/debug.c/h`（UART输出功能已集成）
-- **硬件配置**：`board.h`
-- **模块配置**：`config.h`
-- **UART驱动模块文档**：`../../Drivers/uart/uart.h`
-- **日志模块文档**：`../../Debug/log.h`
-- **错误处理模块文档**：`../../Common/error_handler.h`
-- **错误码定义文档**：`../../Common/error_code.h`
 
 ## ⚠️ 注意事项与重点
 
@@ -271,25 +419,19 @@ ErrorHandler模块初始化
    - 检查串口助手波特率配置是否正确（115200）
    - 检查数据格式配置是否正确（8N1）
 
-## 🔍 扩展练习
+## 💡 扩展练习
 
-1. **添加更多错误测试**：
-   - 测试UART接收错误（如帧错误、溢出错误等）
-   - 测试超时错误
-   - 测试其他模块的错误处理
+### 循序渐进理解本案例
 
-2. **优化日志输出**：
-   - 启用时间戳功能（`CONFIG_LOG_TIMESTAMP_EN = 1`）
-   - 启用颜色输出功能（`CONFIG_LOG_COLOR_EN = 1`，需要终端支持）
-   - 自定义日志格式
+1. **添加更多错误测试**：测试UART接收错误（如帧错误、溢出错误等）、超时错误、其他模块的错误处理，理解错误处理机制的完整性
+2. **优化日志输出**：启用时间戳功能（`CONFIG_LOG_TIMESTAMP_EN = 1`）、启用颜色输出功能（`CONFIG_LOG_COLOR_EN = 1`）、自定义日志格式，理解日志系统的配置和优化
+3. **实现日志过滤**：根据模块名称过滤日志，根据日志级别动态调整过滤规则，理解日志过滤的实现和应用
 
-3. **实现日志过滤**：
-   - 根据模块名称过滤日志
-   - 根据日志级别动态调整过滤规则
+### 实际场景中的常见坑点
 
-4. **添加日志存储**：
-   - 将日志保存到Flash或SD卡
-   - 实现日志循环缓冲区
+4. **日志输出阻塞问题**：当日志输出量很大时，UART发送可能阻塞主循环，影响程序实时性。如何实现非阻塞日志输出？如何实现日志缓冲和队列机制？
+5. **日志存储空间管理**：如果日志保存到Flash或SD卡，存储空间有限，如何实现日志循环覆盖？如何实现日志压缩和归档？如何处理存储空间不足的情况？
+6. **多模块日志冲突**：当多个模块同时输出日志时，可能导致日志混乱或丢失。如何实现日志的线程安全？如何实现日志的优先级管理？如何处理日志输出的竞争条件？
 
 5. **实现远程日志**：
    - 通过网络模块发送日志到远程服务器
@@ -300,14 +442,22 @@ ErrorHandler模块初始化
    - 实现错误重试功能
    - 添加错误报警功能
 
-## 📚 相关模块
+## 📖 相关文档
 
-- **UART驱动模块**：`../../Drivers/uart/uart.c/h`
-- **Debug模块**：`../../Debug/debug.c/h`（UART输出功能已集成）
-- **日志模块**：`../../Debug/log.c/h`
-- **错误处理模块**：`../../Common/error_handler.c/h`
-- **错误码定义**：`../../Common/error_code.h`
-- **GPIO驱动**：`../../Drivers/basic/gpio.c/h`
+- **模块文档**：
+  - **UART驱动模块**：`../../Drivers/uart/uart.c/h`
+  - **Debug模块**：`../../Debug/debug.c/h`
+  - **日志模块**：`../../Debug/log.c/h`
+  - **错误处理模块**：`../../Common/error_handler.c/h`
+  - **错误码定义**：`../../Common/error_code.h`
+  - **GPIO驱动**：`../../Drivers/basic/gpio.c/h`
+
+- **业务文档**：
+  - **主程序代码**：`main_example.c`
+  - **硬件配置**：`board.h`
+  - **模块配置**：`config.h`
+  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **案例参考**：`Examples/README.md`
 - **延时功能**：`../../System/delay.c/h`
 - **基时定时器**：`../../Drivers/timer/TIM2_TimeBase.c/h`
 - **系统初始化**：`../../System/system_init.c/h`
