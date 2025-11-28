@@ -523,4 +523,12 @@
 | 传感器 | 实时时钟芯片 | DS3231 | DS3231_WriteControlRegister | 写入控制寄存器 |
 | 传感器 | 实时时钟芯片 | DS3231 | DS3231_ReadStatusRegister | 读取状态寄存器 |
 | 传感器 | 实时时钟芯片 | DS3231 | DS3231_WriteStatusRegister | 写入状态寄存器 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_Init | 初始化TF卡SPI驱动 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_Deinit | 反初始化TF卡SPI驱动 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_GetInfo | 获取TF卡设备信息 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_IsInitialized | 检查TF_SPI是否已初始化 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_ReadBlock | 读取单个扇区（512字节） |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_WriteBlock | 写入单个扇区（512字节） |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_ReadBlocks | 读取多个扇区 |
+| 存储驱动 | TF卡SPI驱动 | TF_SPI | TF_SPI_WriteBlocks | 写入多个扇区 |
 

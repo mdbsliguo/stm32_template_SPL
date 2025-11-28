@@ -1,0 +1,14 @@
+{
+  "files.encoding": "gb2312",
+  "files.autoGuessEncoding": true,
+  "[c]": {
+    "files.encoding": "gb2312"
+  },
+  "[h]": {
+    "files.encoding": "gb2312"
+  },
+  "[markdown]": {
+    "files.encoding": "utf8"
+  },
+  "C_Cpp.dimInactiveRegions": true
+}

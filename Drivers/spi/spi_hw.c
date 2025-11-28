@@ -204,11 +204,25 @@ SPI_Status_t SPI_HW_Init(SPI_Instance_t instance)
     }
     
     /* NSS引脚：如果使用硬件NSS，配置为复用推挽输出；否则由软件控制 */
-    if (config->nss == SPI_NSS_Hard && config->nss_port != NULL && config->nss_pin != 0)
+    /* NSS引脚配置 */
+    /* 注意：软件NSS模式也需要配置NSS引脚为GPIO输出，以便SPI_NSS_Low/High可以控制 */
+    if (config->nss_port != NULL && config->nss_pin != 0)
     {
         GPIO_EnableClock(config->nss_port);
         GPIO_InitStructure.GPIO_Pin = config->nss_pin;
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+        
+        if (config->nss == SPI_NSS_Hard)
+        {
+            /* 硬件NSS：配置为复用推挽输出 */
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+        }
+        else
+        {
+            /* 软件NSS：配置为普通推挽输出，初始状态为高（释放） */
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+            GPIO_WritePin(config->nss_port, config->nss_pin, Bit_SET);  /* 初始状态：CS高（释放） */
+        }
+        
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_Init(config->nss_port, &GPIO_InitStructure);
     }

@@ -69,6 +69,7 @@ typedef int32_t error_code_t;
 #define ERROR_BASE_BUZZER -3400            /**< Buzzer模块错误码基值 */
 #define ERROR_BASE_TB6612 -3500            /**< TB6612模块错误码基值 */
 #define ERROR_BASE_W25Q -3600              /**< W25Q模块错误码基值 */
+#define ERROR_BASE_TF_SPI -3700            /**< TF_SPI模块错误码基值 */
 /** @} */
 
 #endif /* ERROR_CODE_H */

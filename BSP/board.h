@@ -178,6 +178,13 @@ typedef struct
 #define W25Q_SPI_INSTANCE SPI_INSTANCE_1  /**< W25Q使用的SPI实例，默认SPI1 */
 #endif
 
+/* ==================== TF_SPI配置 ==================== */
+
+/* TF_SPI SPI实例配置 */
+#ifndef TF_SPI_SPI_INSTANCE
+#define TF_SPI_SPI_INSTANCE SPI_INSTANCE_1  /**< TF_SPI使用的SPI实例，默认SPI1 */
+#endif
+
 /* ==================== UART配置 ==================== */
 
 /* UART配置结构体 */

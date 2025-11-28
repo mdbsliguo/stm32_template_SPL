@@ -49,6 +49,7 @@
 #define CONFIG_MODULE_CEC_ENABLED     1   /**< CEC模块开关（消费电子控制协议，仅CL型号） */
 #define CONFIG_MODULE_TB6612_ENABLED  1   /**< TB6612模块开关（双路直流电机驱动） */
 #define CONFIG_MODULE_W25Q_ENABLED   1   /**< W25Q模块开关（SPI Flash驱动） */
+#define CONFIG_MODULE_TF_SPI_ENABLED 1   /**< TF_SPI模块开关（TF卡SPI驱动） */
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */

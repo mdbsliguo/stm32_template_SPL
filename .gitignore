@@ -54,7 +54,7 @@ JLinkLog.txt
 
 # ========== IDE无关文件 ==========
 .idea/
-.vscode/
+# .vscode/
 *.sublime-project
 *.sublime-workspace
 
