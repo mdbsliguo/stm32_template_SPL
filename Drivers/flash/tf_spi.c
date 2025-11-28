@@ -1658,6 +1658,129 @@ TF_SPI_Status_t TF_SPI_ReadOCR(uint32_t *ocr)
     return TF_SPI_OK;
 }
 
+/**
+ * @brief 手动初始化后设置设备信息和状态（底层接口）
+ */
+TF_SPI_Status_t TF_SPI_SetDeviceInfoFromCSD(const uint8_t *csd, uint32_t ocr)
+{
+    SPI_Instance_t spi_instance = TF_SPI_SPI_INSTANCE;
+    uint8_t response;
+    uint32_t c_size;
+    uint8_t csd_structure;
+    
+    /* ========== 参数校验 ========== */
+    
+    if (csd == NULL)
+    {
+        return TF_SPI_ERROR_NULL_PTR;
+    }
+    
+    /* 检查SPI模块是否已初始化 */
+    if (!SPI_IsInitialized(spi_instance))
+    {
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* ========== 解析CSD结构 ========== */
+    
+    csd_structure = (csd[0] >> 6) & 0x03;
+    
+    if (csd_structure == 0)  /* CSD版本1.0（SDSC） */
+    {
+        /* 计算容量：C_SIZE = (csd[6] & 0x03) << 10 | csd[7] << 2 | (csd[8] >> 6) & 0x03 */
+        c_size = ((uint32_t)(csd[6] & 0x03) << 10) | ((uint32_t)csd[7] << 2) | ((csd[8] >> 6) & 0x03);
+        
+        /* 容量 = (C_SIZE + 1) * 512 * 2^(C_SIZE_MULT + 2) 字节 */
+        /* C_SIZE_MULT = ((csd[9] & 0x03) << 1) | ((csd[10] >> 7) & 0x01) */
+        uint8_t c_size_mult = ((csd[9] & 0x03) << 1) | ((csd[10] >> 7) & 0x01);
+        uint32_t read_bl_len = csd[5] & 0x0F;  /* READ_BL_LEN */
+        
+        /* 使用64位运算防止溢出 */
+        uint64_t capacity_bytes_64 = ((uint64_t)(c_size + 1)) * (1ULL << (c_size_mult + 2)) * (1ULL << read_bl_len);
+        
+        /* 保存容量信息（使用64位计算，然后转换为32位） */
+        uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
+        uint64_t block_count_64 = capacity_bytes_64 / TF_SPI_BLOCK_SIZE;
+        
+        /* 检查是否超出32位范围 */
+        if (capacity_mb_64 > UINT32_MAX || block_count_64 > UINT32_MAX)
+        {
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+        
+        g_tf_spi_device.capacity_mb = (uint32_t)capacity_mb_64;
+        g_tf_spi_device.block_count = (uint32_t)block_count_64;
+        
+        g_tf_spi_device.card_type = TF_SPI_CARD_TYPE_SDSC;
+        g_tf_spi_device.is_sdhc = 0;
+    }
+    else if (csd_structure == 1)  /* CSD版本2.0（SDHC/SDXC） */
+    {
+        /* 计算容量：C_SIZE = (csd[7] & 0x3F) << 16 | csd[8] << 8 | csd[9] */
+        c_size = ((uint32_t)(csd[7] & 0x3F) << 16) | ((uint32_t)csd[8] << 8) | csd[9];
+        
+        /* 容量 = (C_SIZE + 1) * 512KB，使用64位运算防止溢出 */
+        uint64_t capacity_bytes_64 = ((uint64_t)(c_size + 1)) * 512ULL * 1024ULL;
+        
+        /* 根据容量判断卡类型（使用64位比较） */
+        if (capacity_bytes_64 >= 32ULL * 1024ULL * 1024ULL * 1024ULL)  /* >= 32GB */
+        {
+            g_tf_spi_device.card_type = TF_SPI_CARD_TYPE_SDXC;
+        }
+        else
+        {
+            g_tf_spi_device.card_type = TF_SPI_CARD_TYPE_SDHC;
+        }
+        g_tf_spi_device.is_sdhc = 1;
+        
+        /* 保存容量信息（使用64位计算，然后转换为32位） */
+        uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
+        uint64_t block_count_64 = capacity_bytes_64 / TF_SPI_BLOCK_SIZE;
+        
+        /* 检查是否超出32位范围，如果超出则限制 */
+        if (capacity_mb_64 > UINT32_MAX)
+        {
+            g_tf_spi_device.capacity_mb = UINT32_MAX;
+        }
+        else
+        {
+            g_tf_spi_device.capacity_mb = (uint32_t)capacity_mb_64;
+        }
+        
+        if (block_count_64 > UINT32_MAX)
+        {
+            g_tf_spi_device.block_count = UINT32_MAX;
+        }
+        else
+        {
+            g_tf_spi_device.block_count = (uint32_t)block_count_64;
+        }
+    }
+    else
+    {
+        return TF_SPI_ERROR_CMD_FAILED;
+    }
+    
+    /* 如果是SDSC，发送CMD16设置块长度为512字节 */
+    if (!g_tf_spi_device.is_sdhc)
+    {
+        tf_spi_cs_low(spi_instance);
+        response = tf_spi_send_cmd(spi_instance, TF_SPI_CMD_SET_BLOCKLEN, TF_SPI_BLOCK_SIZE);
+        tf_spi_cs_high(spi_instance);
+        tf_spi_send_dummy(spi_instance, 1);
+        
+        if (response != 0x00)
+        {
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+    }
+    
+    /* 标记为已初始化 */
+    g_tf_spi_device.state = TF_SPI_STATE_INITIALIZED;
+    
+    return TF_SPI_OK;
+}
+
 #endif /* CONFIG_MODULE_SPI_ENABLED */
 #endif /* CONFIG_MODULE_TF_SPI_ENABLED */
 

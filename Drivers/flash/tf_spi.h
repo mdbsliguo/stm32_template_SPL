@@ -203,6 +203,17 @@ TF_SPI_Status_t TF_SPI_ReadCID(uint8_t *cid);
  */
 TF_SPI_Status_t TF_SPI_ReadOCR(uint32_t *ocr);
 
+/**
+ * @brief 手动初始化后设置设备信息和状态（底层接口）
+ * @param[in] csd CSD寄存器数据（16字节）
+ * @param[in] ocr OCR寄存器值（用于判断CCS位）
+ * @return TF_SPI_Status_t 错误码
+ * @note 底层接口：主要用于教学示例中的手动初始化
+ * @note 实际应用应使用TF_SPI_Init()进行自动初始化
+ * @note 此函数会解析CSD并填充设备信息，然后设置状态为已初始化
+ */
+TF_SPI_Status_t TF_SPI_SetDeviceInfoFromCSD(const uint8_t *csd, uint32_t ocr);
+
 #endif /* CONFIG_MODULE_TF_SPI_ENABLED */
 #endif /* CONFIG_MODULE_TF_SPI_ENABLED */
 
