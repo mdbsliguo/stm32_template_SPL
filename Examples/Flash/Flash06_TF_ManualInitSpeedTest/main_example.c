@@ -1,7 +1,7 @@
 /**
  * @file main_example.c
- * @brief Flash05 - TF卡（MicroSD卡）读写测速示例
- * @details 演示TF卡高级API使用、不同分频下的1MB测速、增量写入（100KB）和插拔卡处理
+ * @brief Flash06 - TF卡（MicroSD卡）手动初始化读写测速示例
+ * @details 演示TF卡手动初始化、真正的CMD18/CMD25多块传输、不同分频下的1MB测速、增量写入和插拔卡处理
  * 
  * 硬件连接：
  * - TF卡（MicroSD卡）连接到SPI2
@@ -19,15 +19,16 @@
  *   - RX：PA10
  * 
  * 功能演示：
- * 1. 高级API函数演示（TF_SPI_Init、TF_SPI_GetInfo、TF_SPI_ReadBlock等）
- * 2. 不同SPI分频下的1MB读写速度测试（优化后使用32块批量传输）
- * 3. 增量写入功能（每分钟写入100KB，使用8分频，读取全部并校验）
- * 4. 插拔卡检测和自动重初始化
+ * 1. 手动初始化演示（CMD0、CMD8、ACMD41、CMD58、CMD9、CMD16）
+ * 2. 真正的CMD18/CMD25多块传输（不是循环调用单块读写）
+ * 3. 不同SPI分频下的1MB读写速度测试（使用CMD18/CMD25多块传输）
+ * 4. 增量写入功能（每5秒写入100KB，使用8分频，读取全部并校验）
+ * 5. 插拔卡检测和自动重初始化
  * 
- * @note 本示例使用TF_SPI模块的高级API
- * @note 测速测试：1MB测试数据，使用32块批量传输（约16KB）提高效率，便于调试
+ * @note 本示例使用手动初始化，不依赖TF_SPI_Init()
+ * @note 使用真正的CMD18/CMD25多块传输，提高传输效率
+ * @note 测速测试：1MB测试数据，使用32块批量传输（约16KB）提高效率
  * @note 增量写入：100KB数据，使用8分频（4.5MHz）标准速度
- * @note 测速测试已优化，预计每个分频耗时1-3秒
  */
 
 #include "stm32f10x.h"
@@ -49,6 +50,36 @@
 #include <stdio.h>
 #include <string.h>
 
+/* ==================== SD卡命令定义 ==================== */
+
+#define SD_CMD_GO_IDLE_STATE       0x00    /* CMD0：复位卡 */
+#define SD_CMD_SEND_IF_COND        0x08    /* CMD8：检查电压兼容性 */
+#define SD_CMD_SEND_CSD            0x09    /* CMD9：读取CSD寄存器 */
+#define SD_CMD_SEND_CID            0x0A    /* CMD10：读取CID寄存器 */
+#define SD_CMD_STOP_TRANSMISSION   0x0C    /* CMD12：停止传输 */
+#define SD_CMD_SEND_STATUS         0x0D    /* CMD13：发送状态 */
+#define SD_CMD_SET_BLOCKLEN        0x10    /* CMD16：设置块长度 */
+#define SD_CMD_READ_SINGLE_BLOCK   0x11    /* CMD17：读取单个块 */
+#define SD_CMD_READ_MULTIPLE_BLOCK 0x12    /* CMD18：读取多个块 */
+#define SD_CMD_WRITE_BLOCK         0x18    /* CMD24：写入单个块 */
+#define SD_CMD_WRITE_MULTIPLE_BLOCK 0x19   /* CMD25：写入多个块 */
+#define SD_CMD_APP_CMD             0x37    /* CMD55：应用命令前缀 */
+#define SD_CMD_READ_OCR            0x3A    /* CMD58：读取OCR寄存器 */
+#define SD_ACMD_SD_SEND_OP_COND    0x29    /* ACMD41：初始化SD卡 */
+
+/* SD卡响应格式 */
+#define SD_R1_IDLE_STATE           0x01    /* R1响应：空闲状态 */
+
+/* SD卡数据令牌 */
+#define SD_TOKEN_START_BLOCK       0xFE    /* 数据块开始令牌 */
+#define SD_TOKEN_STOP_TRANSMISSION 0xFD    /* 停止传输令牌 */
+#define SD_TOKEN_DATA_ACCEPTED     0x05    /* 数据接受令牌 */
+#define SD_TOKEN_DATA_CRC_ERROR    0x0B    /* 数据CRC错误 */
+#define SD_TOKEN_DATA_WRITE_ERROR  0x0D    /* 数据写入错误 */
+
+/* SD卡块大小 */
+#define SD_BLOCK_SIZE              512     /* SD卡块大小（字节） */
+
 /* ==================== 测试配置 ==================== */
 
 /* 测速测试数据大小：1MB（便于调试） */
@@ -68,8 +99,6 @@
 #define CARD_DETECT_INTERVAL_MS  5000  /* 每5秒检测一次 */
 
 /* SPI分频测试列表 */
-/* 注意：初始化时使用256分频（≤400kHz），初始化完成后可以切换到更高速度 */
-/* 从2分频开始测试，如果失败则自动跳过（已有测试写入验证机制） */
 #define PRESCALER_COUNT       8
 static const uint16_t g_prescalers[PRESCALER_COUNT] = {
     SPI_BaudRatePrescaler_2,      /* 分频2（18MHz，最高速度） */
@@ -84,6 +113,25 @@ static const uint16_t g_prescalers[PRESCALER_COUNT] = {
 
 /* 分频值对应的数值（用于显示） */
 static const uint16_t g_prescaler_values[PRESCALER_COUNT] = {2, 4, 8, 16, 32, 64, 128, 256};
+
+/* ==================== 设备信息结构体 ==================== */
+
+/* 设备信息结构体（自己管理，不依赖TF_SPI模块） */
+typedef struct {
+    uint32_t capacity_mb;      /**< 容量（MB） */
+    uint32_t block_size;       /**< 块大小（字节） */
+    uint32_t block_count;     /**< 块数量 */
+    uint8_t is_sdhc;          /**< 是否为SDHC/SDXC（1=是，0=SDSC） */
+    uint8_t is_initialized;   /**< 是否已初始化（1=是，0=否） */
+} ManualDeviceInfo_t;
+
+static ManualDeviceInfo_t g_device_info = {
+    .capacity_mb = 0,
+    .block_size = 512,
+    .block_count = 0,
+    .is_sdhc = 0,
+    .is_initialized = 0
+};
 
 /* ==================== 全局状态变量 ==================== */
 
@@ -123,7 +171,7 @@ static IncrementalWriteState_t g_incremental_write_state = {
 typedef struct {
     uint32_t last_detect_time_ms;  /**< 上次检测时间（毫秒） */
     uint8_t card_present;          /**< 卡是否存在（1=存在，0=不存在） */
-    uint8_t last_init_status;      /**< 上次初始化状态 */
+    uint8_t last_init_status;       /**< 上次初始化状态 */
 } CardDetectState_t;
 
 static CardDetectState_t g_card_detect_state = {
@@ -138,7 +186,6 @@ static CardDetectState_t g_card_detect_state = {
  * @brief 动态修改SPI分频
  * @param[in] prescaler SPI分频值（SPI_BaudRatePrescaler_2等）
  * @return SPI_Status_t 错误码
- * @note 直接操作SPI2的CR1寄存器修改BR位（bit 3-5）
  */
 static SPI_Status_t ChangeSPIPrescaler(uint16_t prescaler)
 {
@@ -150,26 +197,11 @@ static SPI_Status_t ChangeSPIPrescaler(uint16_t prescaler)
         return SPI_ERROR_INVALID_PERIPH;
     }
     
-    /* 等待SPI总线空闲 */
-    {
-        uint32_t timeout_count = 10000;
-        while (SPI_I2S_GetFlagStatus(spi_periph, SPI_I2S_FLAG_BSY) == SET)
-        {
-            if (timeout_count-- == 0)
-            {
-                return SPI_ERROR_TIMEOUT;
-            }
-        }
-    }
-    
-    /* 禁用SPI（修改配置前必须禁用） */
-    SPI_Cmd(spi_periph, DISABLE);
-    
     /* 读取CR1寄存器 */
     cr1_temp = spi_periph->CR1;
     
-    /* 清除BR位（bit 3-5），BR位掩码：0x38 (二进制 111000) */
-    cr1_temp &= ~(0x38);
+    /* 清除BR位（bit 3-5） */
+    cr1_temp &= ~(SPI_CR1_BR);
     
     /* 设置新的分频值 */
     cr1_temp |= prescaler;
@@ -177,18 +209,860 @@ static SPI_Status_t ChangeSPIPrescaler(uint16_t prescaler)
     /* 写回CR1寄存器 */
     spi_periph->CR1 = cr1_temp;
     
-    /* 重新使能SPI */
-    SPI_Cmd(spi_periph, ENABLE);
-    
     /* 等待SPI总线稳定 */
-    Delay_us(10);
+    Delay_ms(10);
     
     return SPI_OK;
 }
 
 /**
+ * @brief 等待SD卡响应（非0xFF）
+ * @param[in] instance SPI实例
+ * @param[in] timeout_ms 超时时间（毫秒）
+ * @return uint8_t 响应值，超时返回0xFF
+ */
+static uint8_t WaitResponse(SPI_Instance_t instance, uint32_t timeout_ms)
+{
+    uint8_t response = 0xFF;
+    uint32_t start_tick = Delay_GetTick();
+    uint8_t rx_data = 0xFF;
+    SPI_Status_t spi_status;
+    
+    while (Delay_GetElapsed(Delay_GetTick(), start_tick) < timeout_ms)
+    {
+        rx_data = 0xFF;
+        spi_status = SPI_MasterTransmitReceive(instance, &rx_data, &response, 1, 0);
+        
+        if (spi_status == SPI_OK && response != 0xFF)
+        {
+            return response;
+        }
+    }
+    
+    return 0xFF;  /* 超时 */
+}
+
+/**
+ * @brief 发送SD卡命令（不控制CS，用于CMD18/CMD25等多块传输）
+ * @param[in] instance SPI实例
+ * @param[in] cmd 命令字节（0x00-0x3F，不需要加0x40）
+ * @param[in] arg 命令参数（32位地址/参数）
+ * @param[out] response R1响应值
+ * @return TF_SPI_Status_t 错误码
+ * @note 此函数不控制CS，调用前必须已经拉低CS，调用后不要立即拉高CS
+ */
+static TF_SPI_Status_t SendCMDNoCS(SPI_Instance_t instance, uint8_t cmd, uint32_t arg, uint8_t *response)
+{
+    uint8_t cmd_buf[6];
+    uint8_t r1;
+    uint8_t crc;
+    SPI_Status_t spi_status;
+    
+    /* 构造命令包（6字节：命令+地址+CRC） */
+    cmd_buf[0] = cmd | 0x40;  /* 命令字节（bit 6=1） */
+    cmd_buf[1] = (uint8_t)(arg >> 24);
+    cmd_buf[2] = (uint8_t)(arg >> 16);
+    cmd_buf[3] = (uint8_t)(arg >> 8);
+    cmd_buf[4] = (uint8_t)(arg);
+    
+    /* CRC计算（简化：CMD0和CMD8使用固定CRC，其他使用0xFF） */
+    uint8_t cmd_index = cmd & 0x3F;
+    if (cmd_index == 0x00)  /* CMD0 */
+    {
+        crc = 0x95;
+    }
+    else if (cmd_index == 0x08)  /* CMD8 */
+    {
+        crc = 0x87;
+    }
+    else
+    {
+        crc = 0xFF;  /* 其他命令使用0xFF（SD卡SPI模式不检查CRC） */
+    }
+    cmd_buf[5] = crc;
+    
+    /* 发送命令 */
+    spi_status = SPI_MasterTransmit(instance, cmd_buf, 6, 1000);
+    if (spi_status != SPI_OK)
+    {
+        if (response != NULL)
+        {
+            *response = 0xFF;
+        }
+        return TF_SPI_ERROR_CMD_FAILED;
+    }
+    
+    /* 等待响应（最多8字节，超时100ms） */
+    r1 = WaitResponse(instance, 100);
+    
+    if (response != NULL)
+    {
+        *response = r1;
+    }
+    
+    if (r1 == 0xFF)
+    {
+        return TF_SPI_ERROR_TIMEOUT;
+    }
+    
+    return TF_SPI_OK;
+}
+
+/**
+ * @brief 等待SD卡数据令牌（0xFE）
+ * @param[in] instance SPI实例
+ * @param[in] timeout_ms 超时时间（毫秒，0表示无限等待）
+ * @return uint8_t 令牌值，超时返回0xFF
+ */
+static uint8_t WaitDataToken(SPI_Instance_t instance, uint32_t timeout_ms)
+{
+    uint8_t token = 0xFF;
+    uint32_t start_tick = Delay_GetTick();
+    uint8_t rx_data = 0xFF;
+    SPI_Status_t spi_status;
+    
+    while (1)
+    {
+        if (timeout_ms > 0)
+        {
+            if (Delay_GetElapsed(Delay_GetTick(), start_tick) >= timeout_ms)
+            {
+                return 0xFF;  /* 超时 */
+            }
+        }
+        
+        rx_data = 0xFF;
+        spi_status = SPI_MasterTransmitReceive(instance, &rx_data, &token, 1, 0);
+        
+        if (spi_status == SPI_OK && token != 0xFF)
+        {
+            return token;
+        }
+    }
+}
+
+/**
+ * @brief 等待SD卡忙（DO=0）
+ * @param[in] instance SPI实例
+ * @param[in] timeout_ms 超时时间（毫秒）
+ * @return uint8_t 1-成功（卡就绪），0-超时
+ */
+static uint8_t WaitCardReady(SPI_Instance_t instance, uint32_t timeout_ms)
+{
+    uint8_t response = 0x00;
+    uint32_t start_tick = Delay_GetTick();
+    uint8_t rx_data = 0xFF;
+    SPI_Status_t spi_status;
+    
+    while (Delay_GetElapsed(Delay_GetTick(), start_tick) < timeout_ms)
+    {
+        rx_data = 0xFF;
+        spi_status = SPI_MasterTransmitReceive(instance, &rx_data, &response, 1, 0);
+        
+        if (spi_status == SPI_OK && response == 0xFF)
+        {
+            return 1;  /* 卡就绪 */
+        }
+    }
+    
+    return 0;  /* 超时 */
+}
+
+/**
+ * @brief 发送应用命令（ACMD）
+ * @param[in] instance SPI实例
+ * @param[in] cmd 应用命令字节
+ * @param[in] arg 命令参数
+ * @param[out] response R1响应值
+ * @return TF_SPI_Status_t 错误码
+ */
+static TF_SPI_Status_t SendACMD(SPI_Instance_t instance, uint8_t cmd, uint32_t arg, uint8_t *response)
+{
+    TF_SPI_Status_t status;
+    uint8_t r1;
+    
+    /* 先发送CMD55（应用命令前缀） */
+    status = TF_SPI_SendCMD(SD_CMD_APP_CMD, 0, &r1);
+    if (status != TF_SPI_OK)
+    {
+        if (response != NULL)
+        {
+            *response = r1;
+        }
+        return status;
+    }
+    
+    /* CMD55可以返回0x00（正常）或0x01（IDLE状态），都是正常的 */
+    /* 在初始化过程中，CMD55返回0x01是正常的，表示卡还在IDLE状态 */
+    if (r1 != 0x00 && r1 != 0x01)
+    {
+        /* CMD55返回其他值（如0xFF超时、0x04 ILLEGAL_CMD等），表示错误 */
+        if (response != NULL)
+        {
+            *response = r1;
+        }
+        return TF_SPI_ERROR_CMD_FAILED;
+    }
+    
+    /* 再发送实际的应用命令 */
+    status = TF_SPI_SendCMD(cmd, arg, &r1);
+    if (response != NULL)
+    {
+        *response = r1;
+    }
+    
+    return status;
+}
+
+/**
+ * @brief 块地址转换（SDHC/SDXC使用块地址，SDSC使用字节地址）
+ * @param[in] block_addr 块地址
+ * @return uint32_t 转换后的地址
+ */
+static uint32_t BlockToAddr(uint32_t block_addr)
+{
+    if (g_device_info.is_sdhc)
+    {
+        /* SDHC/SDXC：直接使用块地址 */
+        return block_addr;
+    }
+    else
+    {
+        /* SDSC：使用字节地址 */
+        return block_addr * 512;
+    }
+}
+
+/**
+ * @brief 解析CSD寄存器（CSD版本1.0 - SDSC）
+ * @param[in] csd CSD寄存器数据（16字节）
+ * @param[out] capacity_mb 容量（MB）
+ * @param[out] block_size 块大小（字节）
+ * @param[out] block_count 块数量
+ * @return uint8_t 1-成功，0-失败
+ */
+static uint8_t ParseCSD_V1(const uint8_t *csd, uint32_t *capacity_mb, uint32_t *block_size, uint32_t *block_count)
+{
+    uint32_t c_size;
+    uint8_t c_size_mult;
+    uint32_t read_bl_len;
+    uint64_t capacity_bytes_64;
+    
+    if (csd == NULL || capacity_mb == NULL || block_size == NULL || block_count == NULL)
+    {
+        return 0;
+    }
+    
+    /* 计算C_SIZE */
+    c_size = ((uint32_t)(csd[6] & 0x03) << 10) | ((uint32_t)csd[7] << 2) | ((csd[8] >> 6) & 0x03);
+    
+    /* 计算C_SIZE_MULT */
+    c_size_mult = ((csd[9] & 0x03) << 1) | ((csd[10] >> 7) & 0x01);
+    
+    /* 计算READ_BL_LEN */
+    read_bl_len = csd[5] & 0x0F;
+    
+    /* 容量 = (C_SIZE + 1) * 512 * 2^(C_SIZE_MULT + 2) 字节 */
+    capacity_bytes_64 = ((uint64_t)(c_size + 1)) * (1ULL << (c_size_mult + 2)) * (1ULL << read_bl_len);
+    
+    /* 检查是否超出32位范围 */
+    if (capacity_bytes_64 > UINT32_MAX)
+    {
+        return 0;
+    }
+    
+    *capacity_mb = (uint32_t)(capacity_bytes_64 / (1024UL * 1024UL));
+    *block_size = 512;
+    *block_count = (uint32_t)(capacity_bytes_64 / 512);
+    
+    return 1;
+}
+
+/**
+ * @brief 解析CSD寄存器（CSD版本2.0 - SDHC/SDXC）
+ * @param[in] csd CSD寄存器数据（16字节）
+ * @param[out] capacity_mb 容量（MB）
+ * @param[out] block_size 块大小（字节）
+ * @param[out] block_count 块数量
+ * @return uint8_t 1-成功，0-失败
+ */
+static uint8_t ParseCSD_V2(const uint8_t *csd, uint32_t *capacity_mb, uint32_t *block_size, uint32_t *block_count)
+{
+    uint32_t c_size;
+    uint64_t capacity_bytes_64;
+    
+    if (csd == NULL || capacity_mb == NULL || block_size == NULL || block_count == NULL)
+    {
+        return 0;
+    }
+    
+    /* 计算C_SIZE */
+    c_size = ((uint32_t)(csd[7] & 0x3F) << 16) | ((uint32_t)csd[8] << 8) | csd[9];
+    
+    /* 容量 = (C_SIZE + 1) * 512KB */
+    capacity_bytes_64 = ((uint64_t)(c_size + 1)) * 512ULL * 1024ULL;
+    
+    /* 使用64位计算容量，然后转换为32位（如果超出32位范围则限制） */
+    uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
+    uint64_t block_count_64 = capacity_bytes_64 / 512ULL;
+    
+    /* 检查是否超出32位范围，如果超出则限制，但尽量显示正确值 */
+    if (capacity_mb_64 > UINT32_MAX)
+    {
+        *capacity_mb = UINT32_MAX;
+    }
+    else
+    {
+        *capacity_mb = (uint32_t)capacity_mb_64;
+    }
+    
+    if (block_count_64 > UINT32_MAX)
+    {
+        *block_count = UINT32_MAX;
+    }
+    else
+    {
+        *block_count = (uint32_t)block_count_64;
+    }
+    
+    *block_size = 512;
+    
+    return 1;
+}
+
+/* ==================== 手动初始化函数 ==================== */
+
+/**
+ * @brief 手动初始化TF卡
+ * @return TF_SPI_Status_t 错误码
+ * @note 实现完整的手动初始化流程：CMD0、CMD8、ACMD41、CMD58、CMD9、CMD16
+ */
+static TF_SPI_Status_t ManualInitTF(void)
+{
+    SPI_Instance_t spi_instance = TF_SPI_SPI_INSTANCE;
+    TF_SPI_Status_t status;
+    uint8_t response;
+    uint8_t cmd8_buf[6];
+    uint8_t r7[4];
+    uint32_t ocr;
+    uint8_t csd[16];
+    uint8_t csd_structure;
+    uint8_t is_sd_v2 = 0;
+    uint32_t retry_count;
+    uint8_t dummy = 0xFF;
+    SPI_Status_t spi_status;
+    
+    /* 清除设备信息 */
+    memset(&g_device_info, 0, sizeof(g_device_info));
+    g_device_info.block_size = 512;
+    
+    /* 检查SPI是否已初始化 */
+    if (!SPI_IsInitialized(spi_instance))
+    {
+        LOG_ERROR("MAIN", "SPI未初始化");
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* 1. 上电复位：CS拉高后发送至少8个时钟周期（10个0xFF） */
+    LOG_INFO("MAIN", "=== 手动初始化TF卡 ===");
+    LOG_INFO("MAIN", "步骤1: 上电复位（发送10个0xFF）");
+    
+    SPI_NSS_High(spi_instance);
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+    }
+    Delay_ms(10);
+    
+    /* 2. CMD0（复位卡） */
+    LOG_INFO("MAIN", "步骤2: 发送CMD0（复位卡）");
+    
+    /* 如果之前已经初始化过，可能需要多次发送CMD0才能让卡进入IDLE状态 */
+    for (uint8_t retry = 0; retry < 3; retry++)
+    {
+        status = TF_SPI_SendCMD(SD_CMD_GO_IDLE_STATE, 0, &response);
+        
+        if (status == TF_SPI_OK && response == SD_R1_IDLE_STATE)
+        {
+            LOG_INFO("MAIN", "CMD0成功: response=0x%02X (IDLE_STATE)", response);
+            break;
+        }
+        else if (retry < 2)
+        {
+            LOG_WARN("MAIN", "CMD0重试 %d: status=%d, response=0x%02X", retry + 1, status, response);
+            Delay_ms(10);
+        }
+        else
+        {
+            LOG_ERROR("MAIN", "CMD0失败: status=%d, response=0x%02X", status, response);
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
+    
+    LOG_INFO("MAIN", "CMD0成功: response=0x%02X (IDLE_STATE)", response);
+    Delay_ms(100);
+    
+    /* 3. CMD8（检查电压兼容性，SD V2.0+） */
+    LOG_INFO("MAIN", "步骤3: 发送CMD8（检查电压兼容性）");
+    
+    /* 构造CMD8命令包 */
+    cmd8_buf[0] = (SD_CMD_SEND_IF_COND | 0x40);
+    cmd8_buf[1] = 0x00;
+    cmd8_buf[2] = 0x00;
+    cmd8_buf[3] = 0x01;  /* 电压范围：2.7-3.6V */
+    cmd8_buf[4] = 0xAA;  /* 检查模式：0xAA */
+    cmd8_buf[5] = 0x87;  /* CMD8的CRC */
+    
+    SPI_NSS_Low(spi_instance);
+    dummy = 0xFF;
+    SPI_MasterTransmit(spi_instance, &dummy, 1, 100);  /* 同步 */
+    spi_status = SPI_MasterTransmit(spi_instance, cmd8_buf, 6, 1000);
+    
+    if (spi_status != SPI_OK)
+    {
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        LOG_ERROR("MAIN", "CMD8发送失败");
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* 等待R1响应 */
+    response = WaitResponse(spi_instance, 100);
+    
+    if (response == SD_R1_IDLE_STATE)
+    {
+        /* SD V2.0+，读取R7响应的剩余4字节 */
+        spi_status = SPI_MasterReceive(spi_instance, r7, 4, 1000);
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        
+        if (spi_status == SPI_OK)
+        {
+            is_sd_v2 = 1;
+            LOG_INFO("MAIN", "CMD8成功: SD V2.0+, 电压=0x%02X, 检查模式=0x%02X", r7[2], r7[3]);
+        }
+        else
+        {
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            LOG_ERROR("MAIN", "CMD8 R7读取失败");
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
+    else if (response == (SD_R1_IDLE_STATE | 0x04))  /* ILLEGAL_CMD */
+    {
+        /* SD V1.0，不支持CMD8 */
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        is_sd_v2 = 0;
+        LOG_INFO("MAIN", "CMD8返回ILLEGAL_CMD，检测到SD V1.0");
+    }
+    else
+    {
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        LOG_ERROR("MAIN", "CMD8失败: response=0x%02X", response);
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* 4. ACMD41（初始化SD卡） */
+    LOG_INFO("MAIN", "步骤4: 发送ACMD41（初始化SD卡）");
+    
+    retry_count = 0;
+    uint8_t init_success = 0;
+    ocr = 0;
+    
+    while (retry_count < 20)  /* 最多等待2秒（20次 * 100ms） */
+    {
+        /* 发送CMD55 + ACMD41 */
+        status = SendACMD(spi_instance, SD_ACMD_SD_SEND_OP_COND, is_sd_v2 ? 0x40000000 : 0, &response);
+        
+        if (status != TF_SPI_OK)
+        {
+            LOG_WARN("MAIN", "ACMD41发送失败: status=%d, retry=%lu", status, retry_count);
+            Delay_ms(100);
+            retry_count++;
+            continue;
+        }
+        
+        /* 记录响应值 */
+        if (retry_count == 0 || retry_count % 5 == 0)
+        {
+            LOG_INFO("MAIN", "ACMD41响应: 0x%02X (retry=%lu)", response, retry_count);
+        }
+        
+        /* 读取OCR检查bit31（卡就绪），无论ACMD41返回0x00还是0x01都检查 */
+        status = TF_SPI_ReadOCR(&ocr);
+        if (status == TF_SPI_OK)
+        {
+            if (ocr & 0x80000000)
+            {
+                /* OCR bit31置位，卡就绪 */
+                init_success = 1;
+                LOG_INFO("MAIN", "ACMD41成功: OCR=0x%08X, 卡就绪 (retry=%lu)", ocr, retry_count);
+                break;
+            }
+            else if (retry_count == 0 || retry_count % 5 == 0)
+            {
+                LOG_INFO("MAIN", "OCR=0x%08X, 卡未就绪，继续等待...", ocr);
+            }
+        }
+        else
+        {
+            LOG_WARN("MAIN", "读取OCR失败: status=%d", status);
+        }
+        
+        Delay_ms(100);
+        retry_count++;
+    }
+    
+    if (!init_success)
+    {
+        LOG_ERROR("MAIN", "ACMD41初始化失败: 已重试%lu次", retry_count);
+        if (ocr != 0)
+        {
+            LOG_ERROR("MAIN", "最后OCR值: 0x%08X (bit31=%d)", ocr, (ocr & 0x80000000) ? 1 : 0);
+        }
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* 5. CMD58（读取OCR，检查CCS位） */
+    LOG_INFO("MAIN", "步骤5: 读取OCR（CMD58）");
+    
+    if (ocr == 0)
+    {
+        status = TF_SPI_ReadOCR(&ocr);
+        if (status != TF_SPI_OK)
+        {
+            LOG_ERROR("MAIN", "CMD58失败");
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
+    
+    /* 检查CCS位（bit 30） */
+    if (ocr & 0x40000000)
+    {
+        g_device_info.is_sdhc = 1;
+        LOG_INFO("MAIN", "OCR: 0x%08X, CCS=1 (SDHC/SDXC)", ocr);
+    }
+    else
+    {
+        g_device_info.is_sdhc = 0;
+        LOG_INFO("MAIN", "OCR: 0x%08X, CCS=0 (SDSC)", ocr);
+    }
+    
+    /* 6. CMD9（读取CSD） */
+    LOG_INFO("MAIN", "步骤6: 读取CSD（CMD9）");
+    
+    status = TF_SPI_ReadCSD(csd);
+    if (status != TF_SPI_OK)
+    {
+        LOG_ERROR("MAIN", "CMD9失败");
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    /* 解析CSD */
+    csd_structure = (csd[0] >> 6) & 0x03;
+    
+    if (csd_structure == 0)
+    {
+        /* CSD版本1.0（SDSC） */
+        if (!ParseCSD_V1(csd, &g_device_info.capacity_mb, &g_device_info.block_size, &g_device_info.block_count))
+        {
+            LOG_ERROR("MAIN", "CSD V1解析失败");
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
+    else if (csd_structure == 1)
+    {
+        /* CSD版本2.0（SDHC/SDXC） */
+        if (!ParseCSD_V2(csd, &g_device_info.capacity_mb, &g_device_info.block_size, &g_device_info.block_count))
+        {
+            LOG_ERROR("MAIN", "CSD V2解析失败");
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
+    else
+    {
+        LOG_ERROR("MAIN", "不支持的CSD版本: %d", csd_structure);
+        return TF_SPI_ERROR_INIT_FAILED;
+    }
+    
+    LOG_INFO("MAIN", "CSD解析成功: 容量=%d MB, 块大小=%d, 块数量=%d", 
+             g_device_info.capacity_mb, g_device_info.block_size, g_device_info.block_count);
+    
+    /* 7. CMD16（设置块长度，仅SDSC） */
+    if (!g_device_info.is_sdhc)
+    {
+        LOG_INFO("MAIN", "步骤7: 发送CMD16（设置块长度为512字节，仅SDSC）");
+        status = TF_SPI_SendCMD(SD_CMD_SET_BLOCKLEN, 512, &response);
+        
+        if (status != TF_SPI_OK || response != 0x00)
+        {
+            LOG_ERROR("MAIN", "CMD16失败: status=%d, response=0x%02X", status, response);
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+        
+        LOG_INFO("MAIN", "CMD16成功");
+    }
+    
+    /* 设置初始化标志 */
+    g_device_info.is_initialized = 1;
+    
+    LOG_INFO("MAIN", "手动初始化成功: 容量=%d MB, 类型=%s", 
+             g_device_info.capacity_mb, g_device_info.is_sdhc ? "SDHC/SDXC" : "SDSC");
+    
+    return TF_SPI_OK;
+}
+
+/* ==================== CMD18多块读取函数 ==================== */
+
+/**
+ * @brief 使用CMD18进行多块读取（真正的多块传输）
+ * @param[in] block_addr 起始块地址
+ * @param[in] block_count 块数量
+ * @param[out] buf 数据缓冲区（block_count * 512字节）
+ * @return TF_SPI_Status_t 错误码
+ */
+static TF_SPI_Status_t ManualReadBlocks(uint32_t block_addr, uint32_t block_count, uint8_t *buf)
+{
+    SPI_Instance_t spi_instance = TF_SPI_SPI_INSTANCE;
+    TF_SPI_Status_t status;
+    uint8_t response;
+    uint32_t addr;
+    uint8_t token;
+    uint32_t i;
+    SPI_Status_t spi_status;
+    uint8_t dummy = 0xFF;
+    uint16_t crc[2];
+    
+    /* 参数校验 */
+    if (buf == NULL || block_count == 0)
+    {
+        return TF_SPI_ERROR_NULL_PTR;
+    }
+    
+    if (!g_device_info.is_initialized)
+    {
+        return TF_SPI_ERROR_NOT_INIT;
+    }
+    
+    if (block_addr + block_count > g_device_info.block_count)
+    {
+        return TF_SPI_ERROR_OUT_OF_BOUND;
+    }
+    
+    /* 地址转换 */
+    addr = BlockToAddr(block_addr);
+    
+    /* 1. CS拉低 */
+    SPI_NSS_Low(spi_instance);
+    dummy = 0xFF;
+    SPI_MasterTransmit(spi_instance, &dummy, 1, 100);  /* 同步 */
+    
+    /* 2. 发送CMD18 + 块地址 + CRC（不控制CS） */
+    status = SendCMDNoCS(spi_instance, SD_CMD_READ_MULTIPLE_BLOCK, addr, &response);
+    
+    if (status != TF_SPI_OK || response != 0x00)
+    {
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        return TF_SPI_ERROR_CMD_FAILED;
+    }
+    
+    /* 3. 循环读取多个块 */
+    for (i = 0; i < block_count; i++)
+    {
+        /* 4. 等待数据令牌0xFE（可无限等待） */
+        token = WaitDataToken(spi_instance, 0);  /* 0表示无限等待 */
+        
+        if (token != SD_TOKEN_START_BLOCK)
+        {
+            /* 发送CMD12停止传输（不控制CS，因为CS已经拉低） */
+            SendCMDNoCS(spi_instance, SD_CMD_STOP_TRANSMISSION, 0, &response);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+        
+        /* 5. 读取512字节数据 */
+        spi_status = SPI_MasterReceive(spi_instance, buf + i * SD_BLOCK_SIZE, SD_BLOCK_SIZE, 5000);
+        if (spi_status != SPI_OK)
+        {
+            /* 发送CMD12停止传输 */
+            TF_SPI_SendCMD(SD_CMD_STOP_TRANSMISSION, 0, &response);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+        
+        /* 6. 读取2字节CRC（丢弃） */
+        SPI_MasterReceive(spi_instance, (uint8_t *)crc, 2, 100);
+    }
+    
+    /* 7. 发送CMD12停止传输（不控制CS，因为CS已经拉低） */
+    status = SendCMDNoCS(spi_instance, SD_CMD_STOP_TRANSMISSION, 0, &response);
+    
+    /* 8. CS拉高 */
+    SPI_NSS_High(spi_instance);
+    SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+    
+    return TF_SPI_OK;
+}
+
+/* ==================== CMD25多块写入函数 ==================== */
+
+/**
+ * @brief 使用CMD25进行多块写入（真正的多块传输）
+ * @param[in] block_addr 起始块地址
+ * @param[in] block_count 块数量
+ * @param[in] buf 数据缓冲区（block_count * 512字节）
+ * @return TF_SPI_Status_t 错误码
+ */
+static TF_SPI_Status_t ManualWriteBlocks(uint32_t block_addr, uint32_t block_count, const uint8_t *buf)
+{
+    SPI_Instance_t spi_instance = TF_SPI_SPI_INSTANCE;
+    TF_SPI_Status_t status;
+    uint8_t response;
+    uint32_t addr;
+    uint8_t token;
+    uint32_t i;
+    SPI_Status_t spi_status;
+    uint8_t dummy = 0xFF;
+    
+    /* 参数校验 */
+    if (buf == NULL || block_count == 0)
+    {
+        return TF_SPI_ERROR_NULL_PTR;
+    }
+    
+    if (!g_device_info.is_initialized)
+    {
+        return TF_SPI_ERROR_NOT_INIT;
+    }
+    
+    if (block_addr + block_count > g_device_info.block_count)
+    {
+        return TF_SPI_ERROR_OUT_OF_BOUND;
+    }
+    
+    /* 地址转换 */
+    addr = BlockToAddr(block_addr);
+    
+    /* 1. CS拉低 */
+    SPI_NSS_Low(spi_instance);
+    dummy = 0xFF;
+    SPI_MasterTransmit(spi_instance, &dummy, 1, 100);  /* 同步 */
+    
+    /* 2. 发送CMD25 + 块地址 + CRC（不控制CS） */
+    status = SendCMDNoCS(spi_instance, SD_CMD_WRITE_MULTIPLE_BLOCK, addr, &response);
+    
+    if (status != TF_SPI_OK || response != 0x00)
+    {
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        return TF_SPI_ERROR_CMD_FAILED;
+    }
+    
+    /* 3. 循环写入多个块 */
+    for (i = 0; i < block_count; i++)
+    {
+        /* 4. 发送起始令牌0xFC */
+        token = 0xFC;
+        spi_status = SPI_MasterTransmit(spi_instance, &token, 1, 100);
+        if (spi_status != SPI_OK)
+        {
+            /* 发送停止令牌0xFD */
+            token = 0xFD;
+            SPI_MasterTransmit(spi_instance, &token, 1, 100);
+            WaitCardReady(spi_instance, 5000);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+        
+        /* 5. 写入512字节数据 */
+        spi_status = SPI_MasterTransmit(spi_instance, buf + i * SD_BLOCK_SIZE, SD_BLOCK_SIZE, 5000);
+        if (spi_status != SPI_OK)
+        {
+            /* 发送停止令牌0xFD */
+            token = 0xFD;
+            SPI_MasterTransmit(spi_instance, &token, 1, 100);
+            WaitCardReady(spi_instance, 5000);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            return TF_SPI_ERROR_CMD_FAILED;
+        }
+        
+        /* 6. 发送2字节CRC（可固定0x0000） */
+        dummy = 0x00;
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        
+        /* 7. 等待响应令牌（0x05=成功，0x0B=CRC错，0x0D=写入错） */
+        response = WaitResponse(spi_instance, 100);
+        
+        if ((response & 0x1F) != SD_TOKEN_DATA_ACCEPTED)
+        {
+            /* 发送停止令牌0xFD */
+            token = 0xFD;
+            SPI_MasterTransmit(spi_instance, &token, 1, 100);
+            WaitCardReady(spi_instance, 5000);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            
+            if ((response & 0x1F) == SD_TOKEN_DATA_CRC_ERROR)
+            {
+                return TF_SPI_ERROR_CRC;
+            }
+            else if ((response & 0x1F) == SD_TOKEN_DATA_WRITE_ERROR)
+            {
+                return TF_SPI_ERROR_WRITE_PROTECT;
+            }
+            else
+            {
+                return TF_SPI_ERROR_CMD_FAILED;
+            }
+        }
+        
+        /* 8. 等待SD卡忙（DO=0） */
+        if (!WaitCardReady(spi_instance, 5000))
+        {
+            /* 发送停止令牌0xFD */
+            token = 0xFD;
+            SPI_MasterTransmit(spi_instance, &token, 1, 100);
+            WaitCardReady(spi_instance, 5000);
+            SPI_NSS_High(spi_instance);
+            SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+            return TF_SPI_ERROR_TIMEOUT;
+        }
+    }
+    
+    /* 9. 发送停止令牌0xFD */
+    dummy = 0xFF;
+    token = 0xFD;
+    spi_status = SPI_MasterTransmit(spi_instance, &token, 1, 100);
+    
+    /* 10. 等待SD卡忙 */
+    if (!WaitCardReady(spi_instance, 5000))
+    {
+        SPI_NSS_High(spi_instance);
+        SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+        return TF_SPI_ERROR_TIMEOUT;
+    }
+    
+    /* 11. CS拉高 */
+    SPI_NSS_High(spi_instance);
+    SPI_MasterTransmit(spi_instance, &dummy, 1, 100);
+    
+    return TF_SPI_OK;
+}
+
+/* ==================== 辅助函数 ==================== */
+
+/**
  * @brief 获取分频值对应的数值
- * @param[in] prescaler SPI分频宏定义值
+ * @param[in] prescaler SPI分频值（SPI_BaudRatePrescaler_2等）
  * @return uint16_t 分频数值（2, 4, 8...）
  */
 static uint16_t GetPrescalerValue(uint16_t prescaler)
@@ -220,88 +1094,6 @@ static float CalculateSpeed(uint32_t size_bytes, uint32_t time_ms)
     /* 速度 = 数据大小(KB) / 耗时(秒) = (size_bytes / 1024) / (time_ms / 1000) */
     return ((float)size_bytes / 1024.0f) / ((float)time_ms / 1000.0f);
 }
-
-/* ==================== 演示1：高级API函数演示 ==================== */
-
-/**
- * @brief 演示高级API函数列表和用法
- */
-static void DemoHighLevelAPI(void)
-{
-    const tf_spi_dev_t *dev_info;
-    
-    LOG_INFO("MAIN", "=== 演示1：TF_SPI高级API函数列表 ===");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "1. TF_SPI_Init()");
-    LOG_INFO("MAIN", "   功能：自动初始化TF卡，检测卡类型并配置");
-    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t（TF_SPI_OK表示成功）");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "2. TF_SPI_GetInfo()");
-    LOG_INFO("MAIN", "   功能：获取设备信息（容量、块大小、块数量、卡类型）");
-    LOG_INFO("MAIN", "   返回：const tf_spi_dev_t*（NULL表示未初始化）");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "3. TF_SPI_IsInitialized()");
-    LOG_INFO("MAIN", "   功能：检查TF卡是否已初始化");
-    LOG_INFO("MAIN", "   返回：uint8_t（1=已初始化，0=未初始化）");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "4. TF_SPI_ReadBlock(block_addr, buf)");
-    LOG_INFO("MAIN", "   功能：读取单个块（512字节）");
-    LOG_INFO("MAIN", "   参数：block_addr（块地址），buf（512字节缓冲区）");
-    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "5. TF_SPI_WriteBlock(block_addr, buf)");
-    LOG_INFO("MAIN", "   功能：写入单个块（512字节）");
-    LOG_INFO("MAIN", "   参数：block_addr（块地址），buf（512字节数据）");
-    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "6. TF_SPI_ReadBlocks(block_addr, block_count, buf)");
-    LOG_INFO("MAIN", "   功能：读取多个块");
-    LOG_INFO("MAIN", "   参数：block_addr（起始块地址），block_count（块数量），buf（缓冲区）");
-    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "7. TF_SPI_WriteBlocks(block_addr, block_count, buf)");
-    LOG_INFO("MAIN", "   功能：写入多个块");
-    LOG_INFO("MAIN", "   参数：block_addr（起始块地址），block_count（块数量），buf（数据）");
-    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
-    LOG_INFO("MAIN", "");
-    LOG_INFO("MAIN", "=== 当前设备信息 ===");
-    
-    dev_info = TF_SPI_GetInfo();
-    if (dev_info != NULL)
-    {
-        LOG_INFO("MAIN", "容量: %d MB", dev_info->capacity_mb);
-        LOG_INFO("MAIN", "块大小: %d 字节", dev_info->block_size);
-        LOG_INFO("MAIN", "块数量: %d", dev_info->block_count);
-        LOG_INFO("MAIN", "卡类型: %s", 
-                 dev_info->card_type == TF_SPI_CARD_TYPE_SDSC ? "SDSC" :
-                 dev_info->card_type == TF_SPI_CARD_TYPE_SDHC ? "SDHC" :
-                 dev_info->card_type == TF_SPI_CARD_TYPE_SDXC ? "SDXC" : "Unknown");
-    }
-    else
-    {
-        LOG_WARN("MAIN", "设备未初始化，无法获取信息");
-    }
-    
-    /* OLED显示 */
-    OLED_Clear();
-    OLED_ShowString(1, 1, "API Demo");
-    OLED_ShowString(2, 1, "7 Functions");
-    if (dev_info != NULL)
-    {
-        char buf[17];
-        snprintf(buf, sizeof(buf), "Cap: %d MB", dev_info->capacity_mb);
-        OLED_ShowString(3, 1, buf);
-        OLED_ShowString(4, 1, "See UART Log");
-    }
-    else
-    {
-        OLED_ShowString(3, 1, "Not Init");
-    }
-    
-    Delay_ms(3000);
-}
-
-/* ==================== 演示2：测速功能 ==================== */
 
 /**
  * @brief 在OLED上显示当前测试状态
@@ -338,20 +1130,77 @@ static void PrepareTestData(uint8_t *buffer, uint32_t size)
     }
 }
 
+/* ==================== 演示1：手动初始化演示 ==================== */
+
+/**
+ * @brief 演示手动初始化函数列表和用法
+ */
+static void DemoManualInit(void)
+{
+    LOG_INFO("MAIN", "=== 演示1：手动初始化函数列表 ===");
+    LOG_INFO("MAIN", "");
+    LOG_INFO("MAIN", "1. ManualInitTF()");
+    LOG_INFO("MAIN", "   功能：手动初始化TF卡，实现完整的SD协议初始化流程");
+    LOG_INFO("MAIN", "   流程：CMD0 -> CMD8 -> ACMD41 -> CMD58 -> CMD9 -> CMD16");
+    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t（TF_SPI_OK表示成功）");
+    LOG_INFO("MAIN", "");
+    LOG_INFO("MAIN", "2. ManualReadBlocks(block_addr, block_count, buf)");
+    LOG_INFO("MAIN", "   功能：使用CMD18进行真正的多块读取（不是循环调用单块读取）");
+    LOG_INFO("MAIN", "   参数：block_addr（起始块地址），block_count（块数量），buf（缓冲区）");
+    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
+    LOG_INFO("MAIN", "");
+    LOG_INFO("MAIN", "3. ManualWriteBlocks(block_addr, block_count, buf)");
+    LOG_INFO("MAIN", "   功能：使用CMD25进行真正的多块写入（不是循环调用单块写入）");
+    LOG_INFO("MAIN", "   参数：block_addr（起始块地址），block_count（块数量），buf（数据）");
+    LOG_INFO("MAIN", "   返回：TF_SPI_Status_t");
+    LOG_INFO("MAIN", "");
+    LOG_INFO("MAIN", "=== 当前设备信息 ===");
+    
+    if (g_device_info.is_initialized)
+    {
+        LOG_INFO("MAIN", "容量: %d MB", g_device_info.capacity_mb);
+        LOG_INFO("MAIN", "块大小: %d 字节", g_device_info.block_size);
+        LOG_INFO("MAIN", "块数量: %d", g_device_info.block_count);
+        LOG_INFO("MAIN", "卡类型: %s", g_device_info.is_sdhc ? "SDHC/SDXC" : "SDSC");
+    }
+    else
+    {
+        LOG_WARN("MAIN", "设备未初始化，无法获取信息");
+    }
+    
+    /* OLED显示 */
+    OLED_Clear();
+    OLED_ShowString(1, 1, "Manual Init");
+    OLED_ShowString(2, 1, "CMD18/CMD25");
+    if (g_device_info.is_initialized)
+    {
+        char buf[17];
+        snprintf(buf, sizeof(buf), "Cap: %d MB", g_device_info.capacity_mb);
+        OLED_ShowString(3, 1, buf);
+        OLED_ShowString(4, 1, "See UART Log");
+    }
+    else
+    {
+        OLED_ShowString(3, 1, "Not Init");
+    }
+    
+    Delay_ms(3000);
+}
+
+/* ==================== 演示2：测速测试 ==================== */
+
 /**
  * @brief 执行测速测试
  * @return uint8_t 1-成功，0-失败
  */
 static uint8_t PerformSpeedTest(void)
 {
-    TF_SPI_Status_t tf_status;
     SPI_Status_t spi_status;
     uint8_t test_index;
     uint32_t start_time, end_time;
     uint32_t test_start_block = 1000;  /* 测试起始块地址 */
     uint8_t *test_buffer;
     uint32_t buffer_size;
-    const tf_spi_dev_t *dev_info;
     
     LOG_INFO("MAIN", "=== 演示2：不同分频下的1MB测速测试 ===");
     LOG_INFO("MAIN", "测试数据大小: %d MB (%d 块)", SPEED_TEST_SIZE_MB, SPEED_TEST_BLOCK_COUNT);
@@ -361,36 +1210,26 @@ static uint8_t PerformSpeedTest(void)
     LOG_INFO("MAIN", "");
     
     /* 检查设备信息 */
-    dev_info = TF_SPI_GetInfo();
-    if (dev_info == NULL)
+    if (!g_device_info.is_initialized)
     {
         LOG_WARN("MAIN", "设备未初始化，尝试重新初始化...");
         /* 先恢复到初始化速度 */
         ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
         Delay_ms(10);
         
-        TF_SPI_Status_t reinit_status = TF_SPI_Init();
-        if (reinit_status != TF_SPI_OK)
+        if (ManualInitTF() != 0)
         {
-            LOG_ERROR("MAIN", "SD卡重新初始化失败: %d，无法执行测速测试", reinit_status);
-            return 0;
-        }
-        
-        /* 重新获取设备信息 */
-        dev_info = TF_SPI_GetInfo();
-        if (dev_info == NULL)
-        {
-            LOG_ERROR("MAIN", "重新初始化后仍无法获取设备信息");
+            LOG_ERROR("MAIN", "SD卡重新初始化失败，无法执行测速测试");
             return 0;
         }
     }
     
     /* 检查容量是否足够 */
-    if (test_start_block + SPEED_TEST_BLOCK_COUNT > dev_info->block_count)
+    if (test_start_block + SPEED_TEST_BLOCK_COUNT > g_device_info.block_count)
     {
         LOG_ERROR("MAIN", "SD卡容量不足，无法执行1MB测试");
         LOG_ERROR("MAIN", "需要: %d 块，可用: %d 块", 
-                 test_start_block + SPEED_TEST_BLOCK_COUNT, dev_info->block_count);
+                 test_start_block + SPEED_TEST_BLOCK_COUNT, g_device_info.block_count);
         return 0;
     }
     
@@ -412,17 +1251,16 @@ static uint8_t PerformSpeedTest(void)
         LOG_INFO("MAIN", "--- 测试分频 %d (%d/%d) ---", prescaler_value, test_index + 1, PRESCALER_COUNT);
         
         /* 检查SD卡状态，如果未初始化则尝试重新初始化 */
-        if (!TF_SPI_IsInitialized())
+        if (!g_device_info.is_initialized)
         {
             LOG_WARN("MAIN", "SD卡未初始化，尝试重新初始化...");
             /* 先恢复到初始化速度 */
             ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
             Delay_ms(10);
             
-            TF_SPI_Status_t reinit_status = TF_SPI_Init();
-            if (reinit_status != TF_SPI_OK)
+            if (ManualInitTF() != 0)
             {
-                LOG_WARN("MAIN", "SD卡重新初始化失败: %d，跳过此分频测试", reinit_status);
+                LOG_WARN("MAIN", "SD卡重新初始化失败，跳过此分频测试");
                 g_speed_test_results[test_index].write_time_ms = 0;
                 g_speed_test_results[test_index].read_time_ms = 0;
                 g_speed_test_results[test_index].write_speed_kbps = 0.0f;
@@ -449,10 +1287,9 @@ static uint8_t PerformSpeedTest(void)
         /* 先测试写入1块数据，验证写入功能是否正常 */
         LOG_INFO("MAIN", "测试写入1块数据验证功能...");
         PrepareTestData(test_buffer, 512);
-        tf_status = TF_SPI_WriteBlock(test_start_block, test_buffer);
-        if (tf_status != TF_SPI_OK)
+        if (ManualWriteBlocks(test_start_block, 1, test_buffer) != 0)
         {
-            LOG_ERROR("MAIN", "测试写入失败，块地址: %lu, 状态: %d", test_start_block, tf_status);
+            LOG_ERROR("MAIN", "测试写入失败，块地址: %lu", test_start_block);
             LOG_ERROR("MAIN", "分频 %d 可能太快，跳过此分频", prescaler_value);
             g_speed_test_results[test_index].write_time_ms = 0;
             g_speed_test_results[test_index].read_time_ms = 0;
@@ -482,9 +1319,8 @@ static uint8_t PerformSpeedTest(void)
             /* 更新测试数据（包含块索引信息） */
             PrepareTestData(test_buffer, blocks_to_write * 512);
             
-            /* 执行写入 */
             /* 写入前检查SD卡状态 */
-            if (!TF_SPI_IsInitialized())
+            if (!g_device_info.is_initialized)
             {
                 LOG_WARN("MAIN", "写入过程中检测到SD卡拔出，跳过此分频测试");
                 g_speed_test_results[test_index].write_time_ms = 0;
@@ -494,10 +1330,9 @@ static uint8_t PerformSpeedTest(void)
                 break;  /* 跳出写入循环，继续下一个分频 */
             }
             
-            tf_status = TF_SPI_WriteBlocks(current_block, blocks_to_write, test_buffer);
-            if (tf_status != TF_SPI_OK)
+            if (ManualWriteBlocks(current_block, blocks_to_write, test_buffer) != 0)
             {
-                LOG_ERROR("MAIN", "写入失败，块地址: %lu, 状态: %d", current_block, tf_status);
+                LOG_ERROR("MAIN", "写入失败，块地址: %lu", current_block);
                 LOG_WARN("MAIN", "跳过此分频的写入测试，继续下一个分频");
                 g_speed_test_results[test_index].write_time_ms = 0;
                 g_speed_test_results[test_index].read_time_ms = 0;
@@ -561,7 +1396,7 @@ static uint8_t PerformSpeedTest(void)
             uint32_t current_block = test_start_block + block_idx;
             
             /* 读取前检查SD卡状态 */
-            if (!TF_SPI_IsInitialized())
+            if (!g_device_info.is_initialized)
             {
                 LOG_WARN("MAIN", "读取过程中检测到SD卡拔出，跳过此分频测试");
                 g_speed_test_results[test_index].read_time_ms = 0;
@@ -569,10 +1404,9 @@ static uint8_t PerformSpeedTest(void)
                 break;  /* 跳出读取循环，继续下一个分频 */
             }
             
-            tf_status = TF_SPI_ReadBlocks(current_block, blocks_to_read, test_buffer);
-            if (tf_status != TF_SPI_OK)
+            if (ManualReadBlocks(current_block, blocks_to_read, test_buffer) != 0)
             {
-                LOG_ERROR("MAIN", "读取失败，块地址: %lu, 状态: %d", current_block, tf_status);
+                LOG_ERROR("MAIN", "读取失败，块地址: %lu", current_block);
                 LOG_WARN("MAIN", "跳过该分频的读取测试，继续下一个分频");
                 /* 标记读取失败，但不退出整个测试 */
                 g_speed_test_results[test_index].read_time_ms = 0;
@@ -690,15 +1524,14 @@ static uint8_t PerformSpeedTest(void)
     }
     
     /* 检查SD卡状态，如果异常则尝试重新初始化 */
-    if (!TF_SPI_IsInitialized())
+    if (!g_device_info.is_initialized)
     {
         LOG_WARN("MAIN", "测速测试后SD卡状态异常，尝试重新初始化...");
         /* 先恢复到初始化速度 */
         ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
         Delay_ms(10);
         
-        tf_status = TF_SPI_Init();
-        if (tf_status == TF_SPI_OK)
+        if (ManualInitTF() == 0)
         {
             LOG_INFO("MAIN", "SD卡重新初始化成功");
             /* 恢复回8分频 */
@@ -707,7 +1540,7 @@ static uint8_t PerformSpeedTest(void)
         }
         else
         {
-            LOG_WARN("MAIN", "SD卡重新初始化失败: %d", tf_status);
+            LOG_WARN("MAIN", "SD卡重新初始化失败");
         }
     }
     
@@ -728,25 +1561,23 @@ static uint8_t PerformSpeedTest(void)
  */
 static uint8_t PerformIncrementalWrite(void)
 {
-    TF_SPI_Status_t tf_status;
     SPI_Status_t spi_status;
     uint32_t i;
-    uint8_t write_buffer[512];
+    uint8_t *write_buffer = g_speed_test_buffer;  /* 使用全局缓冲区 */
+    uint32_t buffer_size_blocks = sizeof(g_speed_test_buffer) / 512;  /* 约10块 */
     uint32_t start_time, end_time;
-    const tf_spi_dev_t *dev_info;
     
     /* 检查初始化状态 */
-    if (!TF_SPI_IsInitialized())
+    if (!g_device_info.is_initialized)
     {
         LOG_WARN("MAIN", "TF卡未初始化，尝试重新初始化...");
         
         /* 先恢复到初始化速度 */
-        SPI_Status_t spi_status = ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
+        spi_status = ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
         if (spi_status == SPI_OK)
         {
             Delay_ms(10);
-            TF_SPI_Status_t tf_status = TF_SPI_Init();
-            if (tf_status == TF_SPI_OK)
+            if (ManualInitTF() == 0)
             {
                 LOG_INFO("MAIN", "TF卡重新初始化成功");
                 /* 恢复回8分频 */
@@ -755,7 +1586,7 @@ static uint8_t PerformIncrementalWrite(void)
             }
             else
             {
-                LOG_WARN("MAIN", "TF卡重新初始化失败: %d", tf_status);
+                LOG_WARN("MAIN", "TF卡重新初始化失败");
                 return 0;
             }
         }
@@ -764,13 +1595,6 @@ static uint8_t PerformIncrementalWrite(void)
             LOG_WARN("MAIN", "恢复SPI分频失败: %d", spi_status);
             return 0;
         }
-    }
-    
-    dev_info = TF_SPI_GetInfo();
-    if (dev_info == NULL)
-    {
-        LOG_WARN("MAIN", "无法获取设备信息，跳过增量写入");
-        return 0;
     }
     
     /* 检查是否达到最大写入次数 */
@@ -783,7 +1607,7 @@ static uint8_t PerformIncrementalWrite(void)
     }
     
     /* 检查容量是否足够 */
-    if (g_incremental_write_state.current_block + INCREMENTAL_WRITE_BLOCK_COUNT > dev_info->block_count)
+    if (g_incremental_write_state.current_block + INCREMENTAL_WRITE_BLOCK_COUNT > g_device_info.block_count)
     {
         LOG_WARN("MAIN", "SD卡容量不足，增量写入已满");
         return 0;
@@ -807,60 +1631,62 @@ static uint8_t PerformIncrementalWrite(void)
     
     start_time = Delay_GetTick();
     
-    /* 写入100KB数据（200块） */
+    /* 写入100KB数据（200块），使用多块写入 */
     uint8_t last_log_percent = 0;
     uint8_t last_oled_percent = 0;
     
-    for (i = 0; i < INCREMENTAL_WRITE_BLOCK_COUNT; i++)
+    /* 使用多块写入（每次写入最多buffer_size_blocks块，提高效率） */
+    for (i = 0; i < INCREMENTAL_WRITE_BLOCK_COUNT; i += buffer_size_blocks)
     {
+        uint32_t blocks_to_write = (INCREMENTAL_WRITE_BLOCK_COUNT - i > buffer_size_blocks) ? 
+                                    buffer_size_blocks : (INCREMENTAL_WRITE_BLOCK_COUNT - i);
         uint32_t current_block = g_incremental_write_state.current_block + i;
         
         /* 准备数据：包含块序号、时间戳、递增序列 */
-        memset(write_buffer, 0, sizeof(write_buffer));
-        *((uint32_t*)&write_buffer[0]) = g_incremental_write_state.write_count;  /* 写入次数 */
-        *((uint32_t*)&write_buffer[4]) = Delay_GetTick();  /* 时间戳 */
-        *((uint32_t*)&write_buffer[8]) = current_block;  /* 块地址 */
-        *((uint32_t*)&write_buffer[12]) = i;  /* 块内序号 */
-        
-        /* 填充递增序列 */
+        memset(write_buffer, 0, blocks_to_write * 512);
+        for (uint32_t j = 0; j < blocks_to_write; j++)
         {
-            uint32_t j;
-            for (j = 16; j < 512; j++)
+            uint32_t block_idx = i + j;
+            uint8_t *block_buf = write_buffer + (j * 512);
+            
+            *((uint32_t*)&block_buf[0]) = g_incremental_write_state.write_count;  /* 写入次数 */
+            *((uint32_t*)&block_buf[4]) = Delay_GetTick();  /* 时间戳 */
+            *((uint32_t*)&block_buf[8]) = current_block + j;  /* 块地址 */
+            *((uint32_t*)&block_buf[12]) = block_idx;  /* 块内序号 */
+            
+            /* 填充递增序列 */
+            for (uint32_t k = 16; k < 512; k++)
             {
-                write_buffer[j] = (uint8_t)((current_block + j) & 0xFF);
+                block_buf[k] = (uint8_t)((current_block + j + k) & 0xFF);
             }
         }
         
-        /* 写入块 */
-        tf_status = TF_SPI_WriteBlock(current_block, write_buffer);
-        if (tf_status != TF_SPI_OK)
+        /* 执行多块写入 */
+        if (ManualWriteBlocks(current_block, blocks_to_write, write_buffer) != 0)
         {
-            LOG_ERROR("MAIN", "写入失败，块地址: %lu, 状态: %d", current_block, tf_status);
+            LOG_ERROR("MAIN", "写入失败，块地址: %lu", current_block);
             
             /* 写入失败可能是SD卡状态异常，尝试重新初始化 */
-            if (tf_status == TF_SPI_ERROR_CMD_FAILED || tf_status == TF_SPI_ERROR_TIMEOUT)
+            LOG_WARN("MAIN", "检测到SD卡通信异常，尝试清除状态并重新初始化...");
+            
+            /* 先清除初始化状态，避免状态不一致 */
+            g_device_info.is_initialized = 0;
+            memset(&g_device_info, 0, sizeof(g_device_info));
+            
+            /* 先恢复到初始化速度 */
+            ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
+            Delay_ms(10);
+            
+            if (ManualInitTF() == 0)
             {
-                LOG_WARN("MAIN", "检测到SD卡通信异常（状态: %d），尝试清除状态并重新初始化...", tf_status);
-                
-                /* 先清除初始化状态，避免状态不一致 */
-                TF_SPI_Deinit();
-                
-                /* 先恢复到初始化速度 */
-                ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
+                LOG_INFO("MAIN", "SD卡重新初始化成功，但本次写入已失败");
+                /* 恢复回8分频 */
+                ChangeSPIPrescaler(INCREMENTAL_WRITE_PRESCALER);
                 Delay_ms(10);
-                
-                TF_SPI_Status_t reinit_status = TF_SPI_Init();
-                if (reinit_status == TF_SPI_OK)
-                {
-                    LOG_INFO("MAIN", "SD卡重新初始化成功，但本次写入已失败");
-                    /* 恢复回8分频 */
-                    ChangeSPIPrescaler(INCREMENTAL_WRITE_PRESCALER);
-                    Delay_ms(10);
-                }
-                else
-                {
-                    LOG_WARN("MAIN", "SD卡重新初始化失败: %d，可能卡已拔出", reinit_status);
-                }
+            }
+            else
+            {
+                LOG_WARN("MAIN", "SD卡重新初始化失败，可能卡已拔出");
             }
             
             return 0;
@@ -868,18 +1694,19 @@ static uint8_t PerformIncrementalWrite(void)
         
         /* 进度显示：每10%输出一次串口日志，每20%更新一次OLED */
         {
-            uint8_t current_percent = ((i + 1) * 100) / INCREMENTAL_WRITE_BLOCK_COUNT;
+            uint32_t blocks_written = i + blocks_to_write;
+            uint8_t current_percent = (blocks_written * 100) / INCREMENTAL_WRITE_BLOCK_COUNT;
             
             /* 串口日志：每10%输出一次 */
-            if (current_percent >= last_log_percent + 10 || i + 1 >= INCREMENTAL_WRITE_BLOCK_COUNT)
+            if (current_percent >= last_log_percent + 10 || blocks_written >= INCREMENTAL_WRITE_BLOCK_COUNT)
             {
                 LOG_INFO("MAIN", "写入进度: %lu/%lu 块 (%d%%)",
-                         i + 1, INCREMENTAL_WRITE_BLOCK_COUNT, current_percent);
+                         blocks_written, INCREMENTAL_WRITE_BLOCK_COUNT, current_percent);
                 last_log_percent = (current_percent / 10) * 10;  /* 向下取整到10的倍数 */
             }
             
             /* OLED显示：每20%更新一次 */
-            if (current_percent >= last_oled_percent + 20 || i + 1 >= INCREMENTAL_WRITE_BLOCK_COUNT)
+            if (current_percent >= last_oled_percent + 20 || blocks_written >= INCREMENTAL_WRITE_BLOCK_COUNT)
             {
                 char buf[17];
                 snprintf(buf, sizeof(buf), "Write: %d%%", current_percent);
@@ -926,15 +1753,15 @@ static uint8_t PerformIncrementalWrite(void)
  */
 static uint8_t VerifyIncrementalData(void)
 {
-    TF_SPI_Status_t tf_status;
     SPI_Status_t spi_status;
-    uint8_t read_buffer[512];
+    uint8_t *read_buffer = g_speed_test_buffer;  /* 使用全局缓冲区 */
+    uint32_t buffer_size_blocks = sizeof(g_speed_test_buffer) / 512;  /* 约10块 */
     uint32_t total_blocks;
     uint32_t i;
     uint32_t error_count = 0;
     uint32_t start_time, end_time;
     
-    if (!TF_SPI_IsInitialized())
+    if (!g_device_info.is_initialized)
     {
         LOG_WARN("MAIN", "TF卡未初始化，跳过数据校验");
         return 0;
@@ -967,84 +1794,85 @@ static uint8_t VerifyIncrementalData(void)
     uint8_t last_log_percent = 0;
     uint8_t last_oled_percent = 0;
     
-    /* 读取所有块并校验 */
-    for (i = 0; i < total_blocks; i++)
+    /* 读取所有块并校验（使用多块读取提高效率） */
+    for (i = 0; i < total_blocks; i += buffer_size_blocks)
     {
+        uint32_t blocks_to_read = (total_blocks - i > buffer_size_blocks) ? 
+                                  buffer_size_blocks : (total_blocks - i);
         uint32_t current_block = INCREMENTAL_WRITE_START_BLOCK + i;
-        uint32_t expected_block_addr;
-        uint32_t expected_block_idx;
         
         /* 读取块 */
-        tf_status = TF_SPI_ReadBlock(current_block, read_buffer);
-        if (tf_status != TF_SPI_OK)
+        if (ManualReadBlocks(current_block, blocks_to_read, read_buffer) != 0)
         {
-            LOG_ERROR("MAIN", "读取失败，块地址: %lu, 状态: %d", current_block, tf_status);
+            LOG_ERROR("MAIN", "读取失败，块地址: %lu", current_block);
             
             /* 读取失败可能是SD卡状态异常，尝试重新初始化 */
-            if (tf_status == TF_SPI_ERROR_CMD_FAILED || tf_status == TF_SPI_ERROR_TIMEOUT)
+            LOG_WARN("MAIN", "检测到SD卡通信异常，尝试重新初始化...");
+            
+            /* 先恢复到初始化速度 */
+            ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
+            Delay_ms(10);
+            
+            if (ManualInitTF() == 0)
             {
-                LOG_WARN("MAIN", "检测到SD卡通信异常，尝试重新初始化...");
-                
-                /* 先恢复到初始化速度 */
-                ChangeSPIPrescaler(SPI_BaudRatePrescaler_256);
+                LOG_INFO("MAIN", "SD卡重新初始化成功，但本次校验已失败");
+                /* 恢复回8分频 */
+                ChangeSPIPrescaler(INCREMENTAL_WRITE_PRESCALER);
                 Delay_ms(10);
-                
-                TF_SPI_Status_t reinit_status = TF_SPI_Init();
-                if (reinit_status == TF_SPI_OK)
-                {
-                    LOG_INFO("MAIN", "SD卡重新初始化成功，但本次校验已失败");
-                    /* 恢复回8分频 */
-                    ChangeSPIPrescaler(INCREMENTAL_WRITE_PRESCALER);
-                    Delay_ms(10);
-                }
-                else
-                {
-                    LOG_WARN("MAIN", "SD卡重新初始化失败: %d", reinit_status);
-                }
+            }
+            else
+            {
+                LOG_WARN("MAIN", "SD卡重新初始化失败");
             }
             
-            error_count++;
+            error_count += blocks_to_read;
             continue;
         }
         
-        /* 解析数据头 */
-        expected_block_addr = *((uint32_t*)&read_buffer[8]);
-        expected_block_idx = *((uint32_t*)&read_buffer[12]);
-        
-        /* 校验块地址 */
-        if (expected_block_addr != current_block)
+        /* 校验每个块的数据 */
+        for (uint32_t j = 0; j < blocks_to_read; j++)
         {
-            if (error_count < 5)  /* 只记录前5个错误 */
+            uint32_t block_idx = i + j;
+            uint8_t *block_buf = read_buffer + (j * 512);
+            uint32_t expected_block_addr;
+            uint32_t expected_block_idx;
+            
+            /* 解析数据头 */
+            expected_block_addr = *((uint32_t*)&block_buf[8]);
+            expected_block_idx = *((uint32_t*)&block_buf[12]);
+            
+            /* 校验块地址 */
+            if (expected_block_addr != (current_block + j))
             {
-                LOG_ERROR("MAIN", "块地址不匹配，块 %lu: 期望=%lu, 读取=%lu", 
-                         i, current_block, expected_block_addr);
+                if (error_count < 5)  /* 只记录前5个错误 */
+                {
+                    LOG_ERROR("MAIN", "块地址不匹配，块 %lu: 期望=%lu, 读取=%lu", 
+                             block_idx, current_block + j, expected_block_addr);
+                }
+                error_count++;
             }
-            error_count++;
-        }
-        
-        /* 校验块内序号 */
-        if (expected_block_idx != (i % INCREMENTAL_WRITE_BLOCK_COUNT))
-        {
-            if (error_count < 5)
+            
+            /* 校验块内序号 */
+            if (expected_block_idx != (block_idx % INCREMENTAL_WRITE_BLOCK_COUNT))
             {
-                LOG_ERROR("MAIN", "块内序号不匹配，块 %lu: 期望=%lu, 读取=%lu", 
-                         i, i % INCREMENTAL_WRITE_BLOCK_COUNT, expected_block_idx);
+                if (error_count < 5)
+                {
+                    LOG_ERROR("MAIN", "块内序号不匹配，块 %lu: 期望=%lu, 读取=%lu", 
+                             block_idx, block_idx % INCREMENTAL_WRITE_BLOCK_COUNT, expected_block_idx);
+                }
+                error_count++;
             }
-            error_count++;
-        }
-        
-        /* 校验数据内容（检查递增序列） */
-        {
-            uint32_t j;
-            for (j = 16; j < 512; j++)
+            
+            /* 校验数据内容（检查递增序列） */
+            for (uint32_t k = 16; k < 512; k++)
             {
-                uint8_t expected = (uint8_t)((current_block + j) & 0xFF);
-                if (read_buffer[j] != expected)
+                uint8_t expected = (uint8_t)((current_block + j + k) & 0xFF);
+                if (block_buf[k] != expected)
                 {
                     if (error_count < 5)
                     {
                         LOG_ERROR("MAIN", "数据不匹配，块 %lu, 偏移 %lu: 期望=0x%02X, 读取=0x%02X", 
-                                 i, j, expected, read_buffer[j]);
+                                 block_idx, k, expected, block_buf[k]);
                     }
                     error_count++;
                     break;  /* 每个块只记录第一个错误 */
@@ -1054,18 +1882,19 @@ static uint8_t VerifyIncrementalData(void)
         
         /* 进度显示：每10%输出一次串口日志，每20%更新一次OLED */
         {
-            uint8_t current_percent = ((i + 1) * 100) / total_blocks;
+            uint32_t blocks_read = i + blocks_to_read;
+            uint8_t current_percent = (blocks_read * 100) / total_blocks;
             
             /* 串口日志：每10%输出一次 */
-            if (current_percent >= last_log_percent + 10 || i + 1 >= total_blocks)
+            if (current_percent >= last_log_percent + 10 || blocks_read >= total_blocks)
             {
                 LOG_INFO("MAIN", "校验进度: %lu/%lu 块 (%d%%)",
-                         i + 1, total_blocks, current_percent);
+                         blocks_read, total_blocks, current_percent);
                 last_log_percent = (current_percent / 10) * 10;  /* 向下取整到10的倍数 */
             }
             
             /* OLED显示：每20%更新一次 */
-            if (current_percent >= last_oled_percent + 20 || i + 1 >= total_blocks)
+            if (current_percent >= last_oled_percent + 20 || blocks_read >= total_blocks)
             {
                 char buf[17];
                 snprintf(buf, sizeof(buf), "Verify: %d%%", current_percent);
@@ -1118,7 +1947,6 @@ static uint8_t DetectAndHandleCard(void)
     uint32_t current_time = Delay_GetTick();
     uint32_t elapsed = Delay_GetElapsed(current_time, g_card_detect_state.last_detect_time_ms);
     uint8_t current_init_status;
-    TF_SPI_Status_t tf_status;
     
     /* 检查是否到了检测时间 */
     if (elapsed < CARD_DETECT_INTERVAL_MS)
@@ -1129,7 +1957,7 @@ static uint8_t DetectAndHandleCard(void)
     g_card_detect_state.last_detect_time_ms = current_time;
     
     /* 检查初始化状态 */
-    current_init_status = TF_SPI_IsInitialized();
+    current_init_status = g_device_info.is_initialized;
     
     /* 如果状态发生变化 */
     if (current_init_status != g_card_detect_state.last_init_status)
@@ -1176,8 +2004,7 @@ static uint8_t DetectAndHandleCard(void)
             Delay_ms(10);  /* 等待SPI总线稳定 */
         }
         
-        tf_status = TF_SPI_Init();
-        if (tf_status == TF_SPI_OK)
+        if (ManualInitTF() == 0)
         {
             LOG_INFO("MAIN", "SD卡重新初始化成功");
             g_card_detect_state.card_present = 1;
@@ -1191,7 +2018,7 @@ static uint8_t DetectAndHandleCard(void)
         }
         else
         {
-            LOG_WARN("MAIN", "SD卡重新初始化失败: %d", tf_status);
+            LOG_WARN("MAIN", "SD卡重新初始化失败");
             LOG_WARN("MAIN", "可能原因：1.卡未插入 2.MISO上拉电阻 3.SPI速度过快");
             g_card_detect_state.card_present = 0;
         }
@@ -1211,7 +2038,6 @@ static uint8_t DetectAndHandleCard(void)
 
 int main(void)
 {
-    TF_SPI_Status_t tf_status;
     SPI_Status_t spi_status;
     SoftI2C_Status_t i2c_status;
     UART_Status_t uart_status;
@@ -1253,7 +2079,7 @@ int main(void)
     }
     
     /* ========== 步骤5：输出初始化信息 ========== */
-    LOG_INFO("MAIN", "=== TF卡（MicroSD卡）读写测速示例 ===");
+    LOG_INFO("MAIN", "=== TF卡（MicroSD卡）手动初始化与多块传输测速示例 ===");
     LOG_INFO("MAIN", "UART1 已初始化: PA9(TX), PA10(RX), 115200");
     LOG_INFO("MAIN", "Debug 模块已初始化: UART 模式");
     LOG_INFO("MAIN", "Log 模块已初始化");
@@ -1287,7 +2113,7 @@ int main(void)
     else
     {
         OLED_Clear();
-        OLED_ShowString(1, 1, "TF Speed Test");
+        OLED_ShowString(1, 1, "TF Manual Init");
         OLED_ShowString(2, 1, "Initializing...");
         LOG_INFO("MAIN", "OLED 已初始化");
     }
@@ -1320,31 +2146,28 @@ int main(void)
     
     Delay_ms(500);
     
-    /* ========== 步骤10：TF卡自动初始化 ========== */
+    /* ========== 步骤10：TF卡手动初始化 ========== */
     OLED_Clear();
     OLED_ShowString(1, 1, "TF Card Init");
     Delay_ms(500);
     
-    LOG_INFO("MAIN", "=== TF卡自动初始化 ===");
+    LOG_INFO("MAIN", "=== TF卡手动初始化 ===");
     
-    tf_status = TF_SPI_Init();
-    if (tf_status == TF_SPI_OK)
+    if (ManualInitTF() == 0)
     {
         OLED_ShowString(2, 1, "Init: OK");
-        LOG_INFO("MAIN", "TF_SPI_Init()成功！");
+        LOG_INFO("MAIN", "ManualInitTF()成功！");
         
-        const tf_spi_dev_t *dev_info = TF_SPI_GetInfo();
-        if (dev_info != NULL)
-        {
-            char buf[17];
-            snprintf(buf, sizeof(buf), "Cap: %d MB", dev_info->capacity_mb);
-            OLED_ShowString(3, 1, buf);
-            
-            LOG_INFO("MAIN", "SD卡信息：");
-            LOG_INFO("MAIN", "  容量: %d MB", dev_info->capacity_mb);
-            LOG_INFO("MAIN", "  块大小: %d 字节", dev_info->block_size);
-            LOG_INFO("MAIN", "  块数量: %d", dev_info->block_count);
-        }
+        char buf[17];
+        snprintf(buf, sizeof(buf), "Cap: %d MB", g_device_info.capacity_mb);
+        OLED_ShowString(3, 1, buf);
+        
+        LOG_INFO("MAIN", "SD卡信息：");
+        LOG_INFO("MAIN", "  容量: %d MB", g_device_info.capacity_mb);
+        LOG_INFO("MAIN", "  块大小: %d 字节", g_device_info.block_size);
+        LOG_INFO("MAIN", "  块数量: %d", g_device_info.block_count);
+        LOG_INFO("MAIN", "  卡类型: %s", 
+                 g_device_info.is_sdhc ? "SDHC/SDXC" : "SDSC");
         
         g_card_detect_state.card_present = 1;
         g_card_detect_state.last_init_status = 1;
@@ -1353,9 +2176,9 @@ int main(void)
     {
         OLED_ShowString(2, 1, "Init: Failed");
         char err_buf[17];
-        snprintf(err_buf, sizeof(err_buf), "Error: %d", tf_status);
+        snprintf(err_buf, sizeof(err_buf), "Error");
         OLED_ShowString(3, 1, err_buf);
-        LOG_ERROR("MAIN", "TF_SPI_Init()失败，状态: %d", tf_status);
+        LOG_ERROR("MAIN", "ManualInitTF()失败");
         LOG_ERROR("MAIN", "请检查SD卡是否插入");
         
         g_card_detect_state.card_present = 0;
@@ -1364,12 +2187,12 @@ int main(void)
     
     Delay_ms(2000);
     
-    /* ========== 步骤11：执行演示1（高级API演示） ========== */
-    DemoHighLevelAPI();
+    /* ========== 步骤11：执行演示1（手动初始化演示） ========== */
+    DemoManualInit();
     Delay_ms(2000);
     
     /* ========== 步骤12：执行演示2（测速测试） ========== */
-    if (TF_SPI_IsInitialized())
+    if (g_device_info.is_initialized)
     {
         PerformSpeedTest();
         Delay_ms(500);  /* 减少延迟，快速进入主循环 */
@@ -1404,7 +2227,7 @@ int main(void)
         DetectAndHandleCard();
         
         /* 增量写入处理 */
-        if (TF_SPI_IsInitialized() && g_incremental_write_state.initialized)
+        if (g_device_info.is_initialized && g_incremental_write_state.initialized)
         {
             /* 检查是否已达到最大写入次数 */
             if (g_incremental_write_state.write_count >= INCREMENTAL_WRITE_MAX_COUNT)
@@ -1458,7 +2281,7 @@ int main(void)
                 }
             }
         }
-        else if (!TF_SPI_IsInitialized() && g_incremental_write_state.initialized)
+        else if (!g_device_info.is_initialized && g_incremental_write_state.initialized)
         {
             /* SD卡未初始化，但增量写入已启用，等待插拔卡检测处理 */
             /* 插拔卡检测会尝试重新初始化 */
