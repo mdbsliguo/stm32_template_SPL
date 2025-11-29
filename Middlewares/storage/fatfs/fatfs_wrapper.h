@@ -221,6 +221,112 @@ FatFS_Status_t FatFS_GetFreeSpace(FatFS_Volume_t volume, const char* path,
  */
 FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint64_t* total_bytes);
 
+/* ==================== 分区格式化 ==================== */
+
+#if FF_MULTI_PARTITION && FF_USE_MKFS
+/**
+ * @brief 分区配置结构体
+ */
+typedef struct {
+    uint32_t reserved_area_sectors;    /**< 保留区扇区数，默认2047 */
+    uint32_t mcu_direct_area_mb;      /**< MCU直接访问区大小MB，0=不使用，默认100 */
+    uint32_t partition_start_sector;  /**< FAT32分区起始扇区，0=自动计算 */
+    uint8_t  partition_number;       /**< 分区号（1-4），默认1 */
+    uint8_t  format_type;             /**< 格式化类型：FM_FAT32/FM_FAT/FM_EXFAT，默认FM_FAT32 */
+} FatFS_PartitionConfig_t;
+
+/**
+ * @brief 预设配置：标准混合存储方案
+ * @param mcu_mb MCU直接访问区大小（MB）
+ */
+#define FATFS_CONFIG_STANDARD(mcu_mb) {2047, mcu_mb, 0, 1, FM_FAT32}
+
+/**
+ * @brief 预设配置：仅FAT32分区（无MCU区）
+ */
+#define FATFS_CONFIG_FAT32_ONLY {0, 0, 0, 1, FM_FAT32}
+
+/**
+ * @brief 格式化分区（完整功能）
+ * @param[in] volume 卷类型
+ * @param[in] config 分区配置（可为NULL，使用默认配置）
+ * @return FatFS_Status_t 错误码
+ * @note 需要启用FF_MULTI_PARTITION和FF_USE_MKFS
+ * @note 如果config为NULL，使用默认配置（2047扇区保留区，100MB MCU区）
+ */
+FatFS_Status_t FatFS_FormatPartition(FatFS_Volume_t volume, const FatFS_PartitionConfig_t* config);
+
+/**
+ * @brief 格式化标准混合存储方案（便捷接口）
+ * @param[in] volume 卷类型
+ * @param[in] mcu_area_mb MCU直接访问区大小（MB）
+ * @return FatFS_Status_t 错误码
+ * @note 创建MBR + 保留区(1MB) + MCU区 + FAT32分区的标准布局
+ */
+FatFS_Status_t FatFS_FormatStandard(FatFS_Volume_t volume, uint32_t mcu_area_mb);
+
+/**
+ * @brief 格式化仅FAT32分区（便捷接口）
+ * @param[in] volume 卷类型
+ * @return FatFS_Status_t 错误码
+ * @note 创建MBR + FAT32分区，无保留区和MCU区
+ */
+FatFS_Status_t FatFS_FormatFAT32Only(FatFS_Volume_t volume);
+#endif /* FF_MULTI_PARTITION && FF_USE_MKFS */
+
+/* ==================== SD卡状态监控 ==================== */
+
+/**
+ * @brief SD卡状态枚举
+ */
+typedef enum {
+    FATFS_SD_STATUS_UNKNOWN = 0,          /**< 未知状态（未初始化） */
+    FATFS_SD_STATUS_NOT_PRESENT = 1,     /**< SD卡不存在 */
+    FATFS_SD_STATUS_PRESENT = 2,         /**< SD卡存在但未初始化 */
+    FATFS_SD_STATUS_INITIALIZED = 3,     /**< SD卡已初始化 */
+    FATFS_SD_STATUS_READY = 4,           /**< SD卡就绪（已初始化且可用） */
+    FATFS_SD_STATUS_ERROR = 5,           /**< SD卡错误 */
+    FATFS_SD_STATUS_WRITE_PROTECTED = 6  /**< SD卡写保护 */
+} FatFS_SDCardStatus_t;
+
+/**
+ * @brief SD卡状态信息结构体
+ */
+typedef struct {
+    FatFS_SDCardStatus_t current_status;  /**< 当前状态 */
+    FatFS_SDCardStatus_t last_status;    /**< 上次状态 */
+    uint8_t status_changed;               /**< 状态是否变化（1=变化，0=未变化） */
+} FatFS_SDCardStatusInfo_t;
+
+/**
+ * @brief 获取SD卡状态（自动检查并更新）
+ * @param[in] volume 卷类型
+ * @return FatFS_SDCardStatus_t 当前状态码
+ * @note 每次调用时会自动检查SD卡状态并更新
+ * @note 状态检查有最小间隔控制，避免过于频繁检查
+ */
+FatFS_SDCardStatus_t FatFS_GetSDCardStatus(FatFS_Volume_t volume);
+
+/**
+ * @brief 获取SD卡状态信息（包含变化标志）
+ * @param[in] volume 卷类型
+ * @return FatFS_SDCardStatusInfo_t 状态信息
+ */
+FatFS_SDCardStatusInfo_t FatFS_GetSDCardStatusInfo(FatFS_Volume_t volume);
+
+/**
+ * @brief 清除SD卡状态变化标志
+ * @param[in] volume 卷类型
+ */
+void FatFS_ClearSDCardStatusChanged(FatFS_Volume_t volume);
+
+/**
+ * @brief 获取SD卡状态字符串（用于调试）
+ * @param[in] status 状态码
+ * @return const char* 状态字符串
+ */
+const char* FatFS_GetSDCardStatusString(FatFS_SDCardStatus_t status);
+
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
 

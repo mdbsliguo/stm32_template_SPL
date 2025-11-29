@@ -95,7 +95,9 @@
 flowchart TB
     %% 应用层
     subgraph APP_LAYER[应用层]
-        APP[Flash08案例<br/>main_example.c]
+        MAIN[main_example.c<br/>主函数]
+        APP_LOGIC[flash08_app.c<br/>业务逻辑层]
+        MAIN --> APP_LOGIC
     end
     
     %% 系统服务层
@@ -139,13 +141,14 @@ flowchart TB
     end
     
     %% 应用层依赖
-    APP --> SYS_INIT
-    APP --> FATFS
-    APP --> TF_SPI
-    APP --> OLED
-    APP --> LED
-    APP --> UART
-    APP --> DELAY
+    MAIN --> APP_LOGIC
+    APP_LOGIC --> SYS_INIT
+    APP_LOGIC --> FATFS
+    APP_LOGIC --> TF_SPI
+    APP_LOGIC --> OLED
+    APP_LOGIC --> LED
+    APP_LOGIC --> UART
+    APP_LOGIC --> DELAY
     
     %% 系统服务层依赖
     SYS_INIT --> GPIO
@@ -175,7 +178,7 @@ flowchart TB
     classDef driverLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     classDef debugLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
     
-    class APP appLayer
+    class MAIN,APP_LOGIC appLayer
     class SYS_INIT,DELAY,BASE_TIMER sysLayer
     class FATFS,DISKIO_SPI mwLayer
     class GPIO,SPI,TF_SPI,I2C_SW,OLED,LED,UART driverLayer
@@ -186,6 +189,8 @@ flowchart TB
 
 | 模块分类 | 模块名称 | 用途 | 依赖关系 |
 |---------|---------|------|---------|
+| 应用层 | main_example.c | 主函数入口 | flash08_app |
+| 应用层 | flash08_app | 业务逻辑封装 | FatFS Wrapper, TF_SPI, OLED, LED, UART等 |
 | 中间件层 | FatFS Wrapper | 文件系统封装层 | diskio_spi |
 | 中间件层 | diskio_spi | SPI磁盘I/O接口 | TF_SPI |
 | 驱动层 | TF_SPI | TF卡SPI驱动 | SPI |
@@ -202,23 +207,30 @@ flowchart TB
 
 ## 🔄 实现流程
 
+### 代码结构
+
+本案例采用分层设计，将业务逻辑封装到独立模块：
+
+- **`main_example.c`**：主函数入口，只包含`main`函数，调用`flash08_app.c`中的封装函数，保持代码简洁
+- **`flash08_app.c`**：业务逻辑层，包含所有业务逻辑实现和内部辅助函数（如`CheckSDCardPresent`、`MountFileSystem`、`TestMCUAreaBoundary`等）
+- **`flash08_app.h`**：公共接口声明，提供应用层API（`Flash08_AppInit`、`Flash08_InitSDCard`等）
+
 ### 整体逻辑
 
 程序执行流程分为以下几个阶段：
 
-1. **系统初始化阶段**：初始化系统、SPI、TF_SPI、OLED、UART、Debug、Log等模块
-2. **SD卡检测阶段**：检测SD卡是否存在，检查SD卡是否满足使用要求
-3. **文件系统初始化阶段**：尝试挂载`"0:"`，如果失败（无文件系统）则创建MBR分区表并格式化FAT32分区，然后挂载文件系统
-4. **测试环节阶段**：
+1. **系统初始化阶段**（`Flash08_AppInit()`）：初始化系统、SPI、TF_SPI、OLED、UART、Debug、Log等模块
+2. **SD卡检测阶段**（`Flash08_InitSDCard()`）：检测SD卡是否存在，检查SD卡是否满足使用要求
+3. **文件系统初始化阶段**（`Flash08_MountFileSystem()`）：尝试挂载`"0:"`，如果失败（无文件系统）则创建MBR分区表并格式化FAT32分区，然后挂载文件系统
+4. **显示文件系统信息**（`Flash08_ShowFileSystemInfo()`）：显示总空间、空闲空间等信息
+5. **测试环节阶段**（`Flash08_RunTests()`）：
    - 文件夹测试（创建、重复创建处理）
    - 文件测试（创建、覆盖、追加、读取）
    - 重命名测试
    - 删除测试（文件、文件夹）
    - STM32直接操作区边界测试（开始位置、结束位置）
-5. **循环运行阶段**：运行300次循环（约30秒），测试插拔卡检测与自动重新挂载
-6. **倒计时阶段**：倒计时5秒
-7. **清除分区表阶段**：清除MBR分区表
-8. **程序结束阶段**：LED闪烁提示，进入死循环
+6. **循环运行阶段**（`Flash08_RunMainLoop()`）：运行指定时长（默认30秒），测试插拔卡检测与自动重新挂载
+7. **程序结束阶段**（`Flash08_Shutdown()`）：倒计时5秒，清除MBR分区表，LED闪烁提示
 
 ### 数据流向图
 
@@ -484,7 +496,40 @@ flowchart TD
   - 卸载文件系统，反初始化TF_SPI
   - 等待SD卡重新插入，重新初始化并挂载
 
-**详细函数实现和调用示例请参考**：`main_example.c` 中的代码
+### 应用层封装函数（flash08_app.c）
+
+- **`Flash08_AppInit()`**：初始化Flash08应用（系统初始化）
+  - 初始化系统、UART、Debug、Log、LED、I2C、OLED、SPI等模块
+  - 返回`Flash08_AppStatus_t`状态码
+
+- **`Flash08_InitSDCard()`**：初始化SD卡（检测并初始化）
+  - 检测SD卡是否存在，检查是否满足使用要求
+  - 显示SD卡信息（容量、块大小等）
+
+- **`Flash08_MountFileSystem()`**：挂载文件系统
+  - 尝试挂载文件系统，如果无文件系统则自动格式化
+  - 返回挂载路径（如"0:"）
+
+- **`Flash08_ShowFileSystemInfo()`**：显示文件系统信息
+  - 显示总空间、空闲空间、簇数等信息
+
+- **`Flash08_RunTests()`**：运行所有测试
+  - 执行目录创建、文件操作、重命名、删除、MCU区域边界测试
+
+- **`Flash08_RunMainLoop()`**：运行主循环（测试插拔卡检测与挂载）
+  - 运行指定时长的循环，测试SD卡热插拔检测与自动重新挂载
+
+- **`Flash08_Shutdown()`**：程序结束流程（倒计时、清除分区表）
+  - 倒计时5秒，然后清除MBR分区表
+
+**代码结构说明**：
+- `main_example.c`：只包含`main`函数，调用`flash08_app.c`中的封装函数，保持代码简洁
+- `flash08_app.c`：包含所有业务逻辑实现，包括内部辅助函数（如`CheckSDCardPresent`、`MountFileSystem`、`TestMCUAreaBoundary`等）
+- `flash08_app.h`：提供公共接口声明
+
+**详细函数实现和调用示例请参考**：
+- `main_example.c`：主函数入口和调用示例
+- `flash08_app.c`：业务逻辑实现和内部辅助函数
 
 ## ⚠️ 注意事项与重点
 
@@ -703,7 +748,8 @@ flowchart TD
 
 ### 业务文档
 
-- **主程序代码**：`main_example.c`
-- **硬件配置**：`BSP/board.h`
+- **主程序代码**：`main_example.c`（主函数入口）
+- **业务逻辑代码**：`flash08_app.c`（业务逻辑实现）
+- **业务逻辑头文件**：`flash08_app.h`（公共接口声明）
 - **模块配置**：`config.h`
 - **项目规范**：`PROJECT_KEYWORDS.md`
