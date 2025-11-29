@@ -127,6 +127,10 @@ static void tf_spi_cs_low(SPI_Instance_t instance)
     {
         TF_SPI_LOG_DEBUG("CS Low failed: %d", status);
     }
+    else
+    {
+        TF_SPI_LOG_DEBUG("CS Low OK (PA11=Low)");
+    }
 }
 
 /**
@@ -140,6 +144,10 @@ static void tf_spi_cs_high(SPI_Instance_t instance)
     if (status != SPI_OK)
     {
         TF_SPI_LOG_DEBUG("CS High failed: %d", status);
+    }
+    else
+    {
+        TF_SPI_LOG_DEBUG("CS High OK (PA11=High)");
     }
 }
 
@@ -508,13 +516,39 @@ TF_SPI_Status_t TF_SPI_Init(void)
     /* ========== 初始化流程 ========== */
     
     /* 1. 上电后等待至少74个时钟周期（通过发送10个0xFF实现） */
+    TF_SPI_LOG_DEBUG("Step 1: Power-on reset (CS high, send 10 dummy bytes)");
     tf_spi_cs_high(spi_instance);
+    Delay_ms(10);  /* 参考Flash06，使用10ms延时确保CS稳定 */
     tf_spi_send_dummy(spi_instance, 10);
+    Delay_ms(10);  /* 参考Flash06，使用10ms延时确保SPI总线稳定 */
     
     /* 2. 发送CMD0（复位卡） */
-    TF_SPI_LOG_DEBUG("Sending CMD0...");
-    tf_spi_cs_low(spi_instance);
-    response = tf_spi_send_cmd(spi_instance, TF_SPI_CMD_GO_IDLE_STATE, 0);
+    /* 参考Flash06，可能需要多次尝试CMD0才能让卡进入IDLE状态 */
+    TF_SPI_LOG_DEBUG("Step 2: Sending CMD0 (reset card)...");
+    for (uint8_t retry = 0; retry < 3; retry++)
+    {
+        tf_spi_cs_low(spi_instance);
+        Delay_us(10);  /* 短暂延时，确保CS拉低后SD卡准备好 */
+        response = tf_spi_send_cmd(spi_instance, TF_SPI_CMD_GO_IDLE_STATE, 0);
+        tf_spi_cs_high(spi_instance);
+        tf_spi_send_dummy(spi_instance, 1);
+        
+        if (response == TF_SPI_R1_IDLE_STATE)
+        {
+            TF_SPI_LOG_DEBUG("CMD0 success: 0x%02X (IDLE_STATE) on retry %d", response, retry);
+            break;
+        }
+        else if (retry < 2)
+        {
+            TF_SPI_LOG_DEBUG("CMD0 retry %d: response=0x%02X", retry + 1, response);
+            Delay_ms(10);
+        }
+        else
+        {
+            TF_SPI_LOG_DEBUG("CMD0 failed after 3 retries: 0x%02X", response);
+            return TF_SPI_ERROR_INIT_FAILED;
+        }
+    }
     tf_spi_cs_high(spi_instance);
     tf_spi_send_dummy(spi_instance, 1);
     

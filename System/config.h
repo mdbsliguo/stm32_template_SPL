@@ -51,6 +51,11 @@
 #define CONFIG_MODULE_W25Q_ENABLED   1   /**< W25Q模块开关（SPI Flash驱动） */
 #define CONFIG_MODULE_TF_SPI_ENABLED 1   /**< TF_SPI模块开关（TF卡SPI驱动） */
 
+/* 中间件层模块 */
+#define CONFIG_MODULE_FATFS_ENABLED       1   /**< FatFS文件系统模块开关 */
+#define CONFIG_MODULE_FATFS_SPI_ENABLED   1   /**< FatFS SPI接口开关 */
+#define CONFIG_MODULE_FATFS_SDIO_ENABLED  1   /**< FatFS SDIO接口开关 */
+
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */
 #define CONFIG_MODULE_BASE_TIMER_ENABLED   1   /**< TIM2时间基准模块开关 */

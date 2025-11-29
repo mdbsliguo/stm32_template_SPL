@@ -10,7 +10,8 @@
 middlewares/
 ├── protocols/      # 协议栈（计划中）
 ├── algorithms/     # 算法库（计划中）
-└── storage/        # 存储管理（计划中）
+└── storage/        # 存储管理
+    └── fatfs/      # FatFS文件系统（已实现）
 ```
 
 ---
@@ -47,6 +48,7 @@ middlewares/
 
 | 模块 | 功能 | 状态 |
 |------|------|------|
+| fatfs | FatFS文件系统（R0.15），支持SPI和SDIO接口 | ✅ 已实现 |
 | config_manager | 配置参数管理 | ⏳ 计划中 |
 | nvram | 非易失性存储抽象 | ⏳ 计划中 |
 
