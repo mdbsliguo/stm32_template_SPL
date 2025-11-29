@@ -42,15 +42,56 @@
 /* 日志模块功能 */
 #define CONFIG_LOG_LEVEL                    1   /**< 日志级别：0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=NONE */
 #define CONFIG_LOG_TIMESTAMP_EN             0   /**< 时间戳功能开关（需要TIM2_TimeBase模块） */
+
+/**
+ * @brief 文件系统详细调试信息开关
+ * @note 1=启用详细调试信息（MBR读取、disk_ioctl检查等），0=仅显示基本信息
+ * @note 生产环境建议设置为0，调试时设置为1
+ */
+#define FATFS_DETAILED_DEBUG                0   /**< 默认启用，生产环境可关闭 */
 #define CONFIG_LOG_MODULE_EN                1   /**< 模块名显示开关 */
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关（需要终端支持ANSI转义码） */
 
 /* TF_SPI模块调试开关 */
-#define TF_SPI_DEBUG_ENABLED                0   /**< TF_SPI调试输出开关 - 格式化时建议关闭以减少日志输出 */
+#define TF_SPI_DEBUG_ENABLED                0   /**< TF_SPI调试输出开关 - 启用以查看CSD原始数据和容量计算过程 */
 
 /* ==================== FatFS格式化配置 ==================== */
-#define FATFS_FORCE_FORMAT                  1   /**< 强制格式化开关：1=强制格式化（跳过挂载检查），0=自动检测（有文件系统则挂载，无则格式化） */
-                                                /**< ?? 警告：启用此选项将清空SD卡所有数据！ */
+/**
+ * @brief 强制格式化开关（仅用于调试）
+ * @note 生产环境必须设置为0，只有调试时手动改为1
+ * @note 1=强制格式化（优先级最高，直接格式化，仅检查保护标志），0=自动检测（有文件系统则挂载，无则格式化）
+ * @warning ?? 警告：启用此选项将清空SD卡所有数据！
+ */
+#define FATFS_FORCE_FORMAT                  0   /**< 默认关闭，调试时手动改为1 */
+
+/* ==================== FatFS分区配置 ==================== */
+
+/**
+ * @brief STM32直接访问区域大小（MB）
+ * 此区域不格式化，STM32可以直接通过扇区地址访问
+ * 位置：扇区2048开始，大小为FATFS_MCU_DIRECT_AREA_MB MB
+ * FatFS完全不管这个区域
+ */
+#define FATFS_MCU_DIRECT_AREA_MB             100   /**< STM32直接访问区域：100MB */
+
+/**
+ * @brief 保留区大小（扇区）
+ * 扇区1-2047：保留区（约1MB），对齐预留，避免覆盖MBR
+ */
+#define FATFS_RESERVED_AREA_SECTORS           2047  /**< 保留区：2047扇区（约1MB） */
+
+/**
+ * @brief FAT32分区起始扇区
+ * 计算：MBR(1) + 保留区(2047) + STM32直接访问区(100MB) = 1 + 2047 + 204800 = 206848
+ */
+#define FATFS_PARTITION_START_SECTOR          206848  /**< FAT32分区起始扇区 */
+
+/* ==================== FatFS挂载配置 ==================== */
+/**
+ * @brief 挂载分区配置（MBR分区编号）
+ * 由于只有一个FAT32分区，固定挂载分区1
+ */
+#define FATFS_MOUNT_PARTITION                1   /**< 挂载分区1（唯一的FAT32分区） */
 
 #endif /* EXAMPLE_CONFIG_H */
 

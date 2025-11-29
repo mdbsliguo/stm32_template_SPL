@@ -216,10 +216,10 @@ FatFS_Status_t FatFS_GetFreeSpace(FatFS_Volume_t volume, const char* path,
  * @brief 获取总空间
  * @param[in] volume 卷类型
  * @param[in] path 卷路径
- * @param[out] total_bytes 总字节数（可为NULL）
+ * @param[out] total_bytes 总字节数（可为NULL，使用uint64_t支持最大16EB）
  * @return FatFS_Status_t 错误码
  */
-FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint32_t* total_bytes);
+FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint64_t* total_bytes);
 
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_ENABLED */

@@ -99,6 +99,51 @@ static tf_spi_dev_t g_tf_spi_device = {
 /* ==================== 内部静态函数 ==================== */
 
 /**
+ * @brief 设置SPI分频（用于SD卡初始化时使用低速，初始化完成后使用高速）
+ * @param spi_instance SPI实例
+ * @param prescaler 分频值（SPI_BaudRatePrescaler_2, SPI_BaudRatePrescaler_256等）
+ */
+static void tf_spi_set_prescaler(SPI_Instance_t spi_instance, uint16_t prescaler)
+{
+    SPI_TypeDef* spi_periph = SPI_GetPeriph(spi_instance);
+    if (spi_periph == NULL)
+    {
+        return;
+    }
+    
+    /* 禁用SPI */
+    SPI_Cmd(spi_periph, DISABLE);
+    
+    /* 等待SPI总线空闲 */
+    uint32_t timeout = 1000;
+    while (SPI_I2S_GetFlagStatus(spi_periph, SPI_I2S_FLAG_BSY) == SET && timeout--)
+    {
+        Delay_us(1);
+    }
+    
+    /* 修改分频值 */
+    SPI_InitTypeDef SPI_InitStructure;
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+    SPI_InitStructure.SPI_BaudRatePrescaler = prescaler;
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+    SPI_InitStructure.SPI_CRCPolynomial = 7;
+    
+    /* 重新初始化SPI（只修改分频值） */
+    SPI_Init(spi_periph, &SPI_InitStructure);
+    
+    /* 使能SPI */
+    SPI_Cmd(spi_periph, ENABLE);
+    
+    /* 等待SPI总线稳定 */
+    Delay_us(10);
+}
+
+/**
  * @brief 将块地址转换为SD卡地址（SDHC/SDXC使用块地址，SDSC使用字节地址）
  * @param[in] block_addr 块地址
  * @return uint32_t SD卡地址
@@ -127,10 +172,11 @@ static void tf_spi_cs_low(SPI_Instance_t instance)
     {
         TF_SPI_LOG_DEBUG("CS Low failed: %d", status);
     }
-    else
+    /* 注释掉CS切换日志以提升性能 */
+    /* else
     {
         TF_SPI_LOG_DEBUG("CS Low OK (PA11=Low)");
-    }
+    } */
 }
 
 /**
@@ -145,10 +191,11 @@ static void tf_spi_cs_high(SPI_Instance_t instance)
     {
         TF_SPI_LOG_DEBUG("CS High failed: %d", status);
     }
-    else
+    /* 注释掉CS切换日志以提升性能 */
+    /* else
     {
         TF_SPI_LOG_DEBUG("CS High OK (PA11=High)");
-    }
+    } */
 }
 
 /**
@@ -390,6 +437,12 @@ static TF_SPI_Status_t tf_spi_read_csd(SPI_Instance_t instance)
     /* 解析CSD结构 */
     csd_structure = (csd[0] >> 6) & 0x03;
     
+    /* 输出CSD原始数据用于调试 */
+    TF_SPI_LOG_DEBUG("CSD raw data: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+                     csd[0], csd[1], csd[2], csd[3], csd[4], csd[5], csd[6], csd[7],
+                     csd[8], csd[9], csd[10], csd[11], csd[12], csd[13], csd[14], csd[15]);
+    TF_SPI_LOG_DEBUG("CSD structure: %d (0=SDSC v1.0, 1=SDHC/SDXC v2.0)", csd_structure);
+    
     if (csd_structure == 0)  /* CSD版本1.0（SDSC） */
     {
         /* 计算容量：C_SIZE = (csd[6] & 0x03) << 10 | csd[7] << 2 | (csd[8] >> 6) & 0x03 */
@@ -400,12 +453,17 @@ static TF_SPI_Status_t tf_spi_read_csd(SPI_Instance_t instance)
         uint8_t c_size_mult = ((csd[9] & 0x03) << 1) | ((csd[10] >> 7) & 0x01);
         uint32_t read_bl_len = csd[5] & 0x0F;  /* READ_BL_LEN */
         
+        TF_SPI_LOG_DEBUG("SDSC: C_SIZE=%lu, C_SIZE_MULT=%d, READ_BL_LEN=%lu", c_size, c_size_mult, read_bl_len);
+        
         /* 使用64位运算防止溢出 */
         uint64_t capacity_bytes_64 = ((uint64_t)(c_size + 1)) * (1ULL << (c_size_mult + 2)) * (1ULL << read_bl_len);
         
         /* 保存容量信息（使用64位计算，然后转换为32位） */
         uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
         uint64_t block_count_64 = capacity_bytes_64 / TF_SPI_BLOCK_SIZE;
+        
+        TF_SPI_LOG_DEBUG("SDSC capacity: %llu bytes (%.2f MB), %llu blocks", 
+                         capacity_bytes_64, (double)capacity_bytes_64 / (1024.0 * 1024.0), block_count_64);
         
         /* 检查是否超出32位范围 */
         if (capacity_mb_64 > UINT32_MAX || block_count_64 > UINT32_MAX)
@@ -424,8 +482,23 @@ static TF_SPI_Status_t tf_spi_read_csd(SPI_Instance_t instance)
         /* 计算容量：C_SIZE = (csd[7] & 0x3F) << 16 | csd[8] << 8 | csd[9] */
         c_size = ((uint32_t)(csd[7] & 0x3F) << 16) | ((uint32_t)csd[8] << 8) | csd[9];
         
+        TF_SPI_LOG_DEBUG("SDHC/SDXC: C_SIZE=%lu (from csd[7]=0x%02X, csd[8]=0x%02X, csd[9]=0x%02X)", 
+                         c_size, csd[7], csd[8], csd[9]);
+        
         /* 容量 = (C_SIZE + 1) * 512KB，使用64位运算防止溢出 */
         uint64_t capacity_bytes_64 = ((uint64_t)(c_size + 1)) * 512ULL * 1024ULL;
+        
+        /* 避免使用浮点数，直接计算MB（整数运算） */
+        uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
+        
+        #if TF_SPI_DEBUG_ENABLED
+        uint64_t capacity_gb_64 = capacity_bytes_64 / (1024ULL * 1024ULL * 1024ULL);
+        uint64_t capacity_gb_remainder = (capacity_bytes_64 % (1024ULL * 1024ULL * 1024ULL)) / (1024ULL * 1024ULL * 10ULL);  /* GB的小数部分（0.1GB精度） */
+        TF_SPI_LOG_DEBUG("SDHC/SDXC capacity calculation: (C_SIZE+1)=%lu, capacity_bytes=%llu", 
+                         c_size + 1, capacity_bytes_64);
+        TF_SPI_LOG_DEBUG("SDHC/SDXC capacity: %llu MB (约 %llu.%llu GB)", 
+                         capacity_mb_64, capacity_gb_64, capacity_gb_remainder);
+        #endif
         
         /* 根据容量判断卡类型（使用64位比较） */
         if (capacity_bytes_64 >= 32ULL * 1024ULL * 1024ULL * 1024ULL)  /* >= 32GB */
@@ -442,7 +515,7 @@ static TF_SPI_Status_t tf_spi_read_csd(SPI_Instance_t instance)
         /* 注意：即使容量超过32位范围，capacity_mb和block_count仍然可以正确计算 */
         /* 例如：8GB = 8192 MB（可以存储在uint32_t中） */
         /* 例如：8GB = 16,777,216 块（可以存储在uint32_t中） */
-        uint64_t capacity_mb_64 = capacity_bytes_64 / (1024ULL * 1024ULL);
+        /* capacity_mb_64已在上面计算 */
         uint64_t block_count_64 = capacity_bytes_64 / TF_SPI_BLOCK_SIZE;
         
         /* 检查是否超出32位范围，如果超出则限制，但尽量显示正确值 */
@@ -467,14 +540,19 @@ static TF_SPI_Status_t tf_spi_read_csd(SPI_Instance_t instance)
         }
         
         /* 记录实际容量（使用64位） */
+        #if TF_SPI_DEBUG_ENABLED
         if (capacity_bytes_64 > UINT32_MAX)
         {
-            TF_SPI_LOG_DEBUG("Actual capacity: %llu bytes (%.2f GB), stored as %lu MB, %lu blocks", 
+            uint64_t actual_gb_64 = capacity_bytes_64 / (1024ULL * 1024ULL * 1024ULL);
+            uint64_t actual_gb_remainder = (capacity_bytes_64 % (1024ULL * 1024ULL * 1024ULL)) / (1024ULL * 1024ULL * 10ULL);
+            TF_SPI_LOG_DEBUG("Actual capacity: %llu bytes (约 %llu.%llu GB), stored as %lu MB, %lu blocks", 
                              capacity_bytes_64, 
-                             (double)capacity_bytes_64 / (1024.0 * 1024.0 * 1024.0),
+                             actual_gb_64,
+                             actual_gb_remainder,
                              g_tf_spi_device.capacity_mb,
                              g_tf_spi_device.block_count);
         }
+        #endif
     }
     else
     {
@@ -515,6 +593,10 @@ TF_SPI_Status_t TF_SPI_Init(void)
     
     /* ========== 初始化流程 ========== */
     
+    /* 0. 设置SPI为256分频（初始化时使用低速） */
+    TF_SPI_LOG_DEBUG("Setting SPI prescaler to 256 for initialization...");
+    tf_spi_set_prescaler(spi_instance, SPI_BaudRatePrescaler_256);
+    
     /* 1. 上电后等待至少74个时钟周期（通过发送10个0xFF实现） */
     TF_SPI_LOG_DEBUG("Step 1: Power-on reset (CS high, send 10 dummy bytes)");
     tf_spi_cs_high(spi_instance);
@@ -527,9 +609,9 @@ TF_SPI_Status_t TF_SPI_Init(void)
     TF_SPI_LOG_DEBUG("Step 2: Sending CMD0 (reset card)...");
     for (uint8_t retry = 0; retry < 3; retry++)
     {
-        tf_spi_cs_low(spi_instance);
+    tf_spi_cs_low(spi_instance);
         Delay_us(10);  /* 短暂延时，确保CS拉低后SD卡准备好 */
-        response = tf_spi_send_cmd(spi_instance, TF_SPI_CMD_GO_IDLE_STATE, 0);
+    response = tf_spi_send_cmd(spi_instance, TF_SPI_CMD_GO_IDLE_STATE, 0);
         tf_spi_cs_high(spi_instance);
         tf_spi_send_dummy(spi_instance, 1);
         
@@ -1104,6 +1186,10 @@ TF_SPI_Status_t TF_SPI_Init(void)
         }
     }
     
+    /* 初始化完成，切换到8分频进入工作模式（4.5MHz，平衡性能和稳定性） */
+    TF_SPI_LOG_DEBUG("Initialization complete, switching SPI prescaler to 8 for operation...");
+    tf_spi_set_prescaler(spi_instance, SPI_BaudRatePrescaler_8);
+    
     /* 标记为已初始化 */
     g_tf_spi_device.state = TF_SPI_STATE_INITIALIZED;
     
@@ -1192,28 +1278,52 @@ TF_SPI_Status_t TF_SPI_ReadBlock(uint32_t block_addr, uint8_t *buf)
     
     if (response != 0x00)
     {
+        #if CONFIG_MODULE_LOG_ENABLED
+        LOG_WARN("TF_SPI", "TF_SPI_ReadBlock: CMD17 failed, response=0x%02X, block_addr=%lu", 
+                 response, (unsigned long)block_addr);
+        #endif
         tf_spi_cs_high(spi_instance);
         tf_spi_send_dummy(spi_instance, 1);
         return TF_SPI_ERROR_CMD_FAILED;
     }
     
     /* 等待数据令牌 */
+    #if CONFIG_MODULE_LOG_ENABLED
+    LOG_DEBUG("TF_SPI", "TF_SPI_ReadBlock: waiting for data token, block_addr=%lu", (unsigned long)block_addr);
+    #endif
     response = tf_spi_wait_response(spi_instance, TF_SPI_DEFAULT_TIMEOUT_MS);
     if (response != TF_SPI_TOKEN_START_BLOCK)
     {
+        #if CONFIG_MODULE_LOG_ENABLED
+        LOG_WARN("TF_SPI", "TF_SPI_ReadBlock: data token timeout or invalid, response=0x%02X, expected=0x%02X, block_addr=%lu", 
+                 response, TF_SPI_TOKEN_START_BLOCK, (unsigned long)block_addr);
+        #endif
         tf_spi_cs_high(spi_instance);
         tf_spi_send_dummy(spi_instance, 1);
         return TF_SPI_ERROR_CMD_FAILED;
     }
     
     /* 读取数据块（512字节） */
-    SPI_Status_t spi_status = SPI_MasterReceive(spi_instance, buf, TF_SPI_BLOCK_SIZE, TF_SPI_DEFAULT_TIMEOUT_MS);
+    #if CONFIG_MODULE_LOG_ENABLED
+    LOG_DEBUG("TF_SPI", "TF_SPI_ReadBlock: reading data block, block_addr=%lu", (unsigned long)block_addr);
+    #endif
+    
+    /* 对于512字节的大块数据，增加超时时间到2秒 */
+    SPI_Status_t spi_status = SPI_MasterReceive(spi_instance, buf, TF_SPI_BLOCK_SIZE, 2000);
+    
     if (spi_status != SPI_OK)
     {
+        #if CONFIG_MODULE_LOG_ENABLED
+        LOG_ERROR("TF_SPI", "TF_SPI_ReadBlock: SPI_MasterReceive failed, status=%d, block_addr=%lu", 
+                  spi_status, (unsigned long)block_addr);
+        #endif
         tf_spi_cs_high(spi_instance);
         tf_spi_send_dummy(spi_instance, 1);
         return TF_SPI_ERROR_CMD_FAILED;
     }
+    #if CONFIG_MODULE_LOG_ENABLED
+    LOG_DEBUG("TF_SPI", "TF_SPI_ReadBlock: data block read complete, block_addr=%lu", (unsigned long)block_addr);
+    #endif
     
     /* 读取CRC（2字节，忽略） */
     tf_spi_send_dummy(spi_instance, 2);

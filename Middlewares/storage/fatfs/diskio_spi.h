@@ -73,6 +73,21 @@ DRESULT disk_write_spi(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count);
  */
 DRESULT disk_ioctl_spi(BYTE pdrv, BYTE cmd, void* buff);
 
+#if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+/**
+ * @brief 设置分区扇区数缓存（用于格式化前确保使用正确的值）
+ * @param[in] sectors 分区扇区数
+ * @note 仅在分区模式下可用
+ */
+void disk_ioctl_spi_set_partition_sectors(uint32_t sectors);
+
+/**
+ * @brief 清除分区扇区数缓存（强制下次从MBR读取）
+ * @note 仅在分区模式下可用
+ */
+void disk_ioctl_spi_clear_partition_cache(void);
+#endif
+
 #endif /* CONFIG_MODULE_FATFS_SPI_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_SPI_ENABLED */
 

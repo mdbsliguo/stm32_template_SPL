@@ -19,6 +19,9 @@
 #include "ff.h"
 #include "diskio.h"
 #include "diskio_spi.h"
+#if CONFIG_MODULE_LOG_ENABLED
+#include "log.h"
+#endif
 
 /* 包含TF_SPI模块 */
 #ifdef CONFIG_MODULE_TF_SPI_ENABLED
@@ -36,6 +39,11 @@
 
 /* 初始化状态标志 */
 static uint8_t g_diskio_spi_initialized = 0;
+
+/* 分区扇区数缓存（避免每次读取MBR） */
+#if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+static uint32_t g_cached_partition_sectors = 0;  /* 0表示未缓存 */
+#endif
 
 /**
  * @brief 初始化SPI磁盘
@@ -111,6 +119,7 @@ DSTATUS disk_status_spi(BYTE pdrv)
 
 /**
  * @brief 读取SPI磁盘扇区
+ * @note 在分区模式下，FatFS的逻辑扇区0映射到物理扇区FATFS_PARTITION_START_SECTOR
  */
 DRESULT disk_read_spi(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 {
@@ -134,15 +143,43 @@ DRESULT disk_read_spi(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
         return RES_NOTRDY;
     }
     
+    /* 扇区映射：在分区模式下，FatFS的逻辑扇区需要映射到物理扇区 */
+    #if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+    /* 分区模式：逻辑扇区0映射到物理扇区FATFS_PARTITION_START_SECTOR */
+    /* 但是，f_mkfs在读取MBR时会读取扇区0，此时需要读取物理扇区0（MBR） */
+    /* 判断方法：如果读取扇区0且缓存未设置，说明是f_mkfs在读取MBR，读取物理扇区0 */
+    /* 如果缓存已设置，说明格式化已开始，分区数据读取应该映射到物理扇区 */
+    LBA_t physical_sector;
+    if (sector == 0 && g_cached_partition_sectors == 0) {
+        /* f_mkfs在读取MBR（格式化开始前），读取物理扇区0 */
+        physical_sector = 0;
+    } else {
+        /* 正常分区数据读取，映射到物理扇区 */
+        physical_sector = (LBA_t)((uint32_t)sector + FATFS_PARTITION_START_SECTOR);
+    }
+    #else
+    /* 标准模式：直接使用逻辑扇区 */
+    LBA_t physical_sector = sector;
+    #endif
+    
     /* 读取扇区 */
     TF_SPI_Status_t status;
+    #if CONFIG_MODULE_LOG_ENABLED
+    LOG_DEBUG("DISKIO", "disk_read_spi: logical_sector=%lu, physical_sector=%lu, count=%u", 
+              (unsigned long)sector, (unsigned long)physical_sector, count);
+    #endif
     if (count == 1) {
         /* 单扇区读取 */
-        status = TF_SPI_ReadBlock((uint32_t)sector, buff);
+        status = TF_SPI_ReadBlock((uint32_t)physical_sector, buff);
     } else {
         /* 多扇区读取 */
-        status = TF_SPI_ReadBlocks((uint32_t)sector, (uint32_t)count, buff);
+        status = TF_SPI_ReadBlocks((uint32_t)physical_sector, (uint32_t)count, buff);
     }
+    #if CONFIG_MODULE_LOG_ENABLED
+    if (status != TF_SPI_OK) {
+        LOG_DEBUG("DISKIO", "disk_read_spi failed: status=%d", status);
+    }
+    #endif
     
     /* 转换错误码 */
     if (status == TF_SPI_OK) {
@@ -161,6 +198,7 @@ DRESULT disk_read_spi(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 
 /**
  * @brief 写入SPI磁盘扇区
+ * @note 在分区模式下，FatFS的逻辑扇区0映射到物理扇区FATFS_PARTITION_START_SECTOR
  */
 DRESULT disk_write_spi(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
@@ -184,14 +222,32 @@ DRESULT disk_write_spi(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
         return RES_NOTRDY;
     }
     
+    /* 扇区映射：在分区模式下，FatFS的逻辑扇区需要映射到物理扇区 */
+    #if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+    /* 分区模式：逻辑扇区0映射到物理扇区FATFS_PARTITION_START_SECTOR */
+    /* 但是，写入扇区0时，可能是写入MBR，需要写入物理扇区0 */
+    /* 判断方法：如果写入扇区0且缓存未设置，说明可能是写入MBR，写入物理扇区0 */
+    LBA_t physical_sector;
+    if (sector == 0 && g_cached_partition_sectors == 0) {
+        /* 写入扇区0，可能是MBR，写入物理扇区0 */
+        physical_sector = 0;
+    } else {
+        /* 正常分区数据写入，映射到物理扇区 */
+        physical_sector = (LBA_t)((uint32_t)sector + FATFS_PARTITION_START_SECTOR);
+    }
+    #else
+    /* 标准模式：直接使用逻辑扇区 */
+    LBA_t physical_sector = sector;
+    #endif
+    
     /* 写入扇区 */
     TF_SPI_Status_t status;
     if (count == 1) {
         /* 单扇区写入 */
-        status = TF_SPI_WriteBlock((uint32_t)sector, buff);
+        status = TF_SPI_WriteBlock((uint32_t)physical_sector, buff);
     } else {
         /* 多扇区写入 */
-        status = TF_SPI_WriteBlocks((uint32_t)sector, (uint32_t)count, buff);
+        status = TF_SPI_WriteBlocks((uint32_t)physical_sector, (uint32_t)count, buff);
     }
     
     /* 格式化进度提示：每次写入后闪烁LED（让用户知道程序正在运行） */
@@ -226,6 +282,7 @@ DRESULT disk_write_spi(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 
 /**
  * @brief SPI磁盘控制命令
+ * @note 在分区模式下，GET_SECTOR_COUNT返回FAT32分区的扇区数（从MBR读取）
  */
 DRESULT disk_ioctl_spi(BYTE pdrv, BYTE cmd, void* buff)
 {
@@ -261,7 +318,60 @@ DRESULT disk_ioctl_spi(BYTE pdrv, BYTE cmd, void* buff)
         case GET_SECTOR_COUNT:
             /* 获取扇区总数 */
             if (buff != NULL) {
+                #if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+                /* 分区模式：从MBR读取FAT32分区的扇区数 */
+                uint32_t partition_sectors = 0;
+                uint32_t expected_sectors = dev_info->block_count - FATFS_PARTITION_START_SECTOR;
+                
+                /* 如果缓存有效，使用缓存值 */
+                if (g_cached_partition_sectors > 0 && 
+                    g_cached_partition_sectors <= dev_info->block_count) {
+                    partition_sectors = g_cached_partition_sectors;
+                } else {
+                    /* 从MBR读取 */
+                    BYTE mbr_buf[512];
+                    /* 直接读取物理扇区0（MBR），不使用disk_read_spi避免递归 */
+                    TF_SPI_Status_t tf_status = TF_SPI_ReadBlock(0, mbr_buf);
+                    if (tf_status == TF_SPI_OK) {
+                        /* 读取分区1的扇区数（MBR分区表偏移446，分区1偏移8字节为起始LBA，偏移12字节为扇区数） */
+                        #define MBR_PARTITION_TABLE_OFFSET  446
+                        #define PTE_SIZE_LBA               12
+                        BYTE* pte1 = mbr_buf + MBR_PARTITION_TABLE_OFFSET;
+                        
+                        /* 读取原始字节值 */
+                        uint8_t byte0 = pte1[PTE_SIZE_LBA + 0];
+                        uint8_t byte1 = pte1[PTE_SIZE_LBA + 1];
+                        uint8_t byte2 = pte1[PTE_SIZE_LBA + 2];
+                        uint8_t byte3 = pte1[PTE_SIZE_LBA + 3];
+                        
+                        /* 小端格式解析 */
+                        uint32_t mbr_sectors = (uint32_t)byte0 |
+                                             ((uint32_t)byte1 << 8) |
+                                             ((uint32_t)byte2 << 16) |
+                                             ((uint32_t)byte3 << 24);
+                        
+                        /* 验证读取的值是否合理 */
+                        if (mbr_sectors > 0 && mbr_sectors <= dev_info->block_count) {
+                            partition_sectors = mbr_sectors;
+                            /* 缓存有效值 */
+                            g_cached_partition_sectors = partition_sectors;
+                        } else {
+                            /* MBR值无效，使用期望值 */
+                            partition_sectors = expected_sectors;
+                            g_cached_partition_sectors = expected_sectors;
+                        }
+                    } else {
+                        /* MBR读取失败，使用期望值 */
+                        partition_sectors = expected_sectors;
+                        g_cached_partition_sectors = expected_sectors;
+                    }
+                }
+                
+                *(LBA_t*)buff = (LBA_t)partition_sectors;
+                #else
+                /* 标准模式：返回整个SD卡的扇区数 */
                 *(LBA_t*)buff = (LBA_t)dev_info->block_count;
+                #endif
             }
             res = RES_OK;
             break;
@@ -297,6 +407,24 @@ DRESULT disk_ioctl_spi(BYTE pdrv, BYTE cmd, void* buff)
     #endif
     #endif
 }
+
+#if defined(FATFS_PARTITION_START_SECTOR) && (FATFS_PARTITION_START_SECTOR > 0)
+/**
+ * @brief 设置分区扇区数缓存
+ */
+void disk_ioctl_spi_set_partition_sectors(uint32_t sectors)
+{
+    g_cached_partition_sectors = sectors;
+}
+
+/**
+ * @brief 清除分区扇区数缓存
+ */
+void disk_ioctl_spi_clear_partition_cache(void)
+{
+    g_cached_partition_sectors = 0;
+}
+#endif
 
 #endif /* CONFIG_MODULE_FATFS_SPI_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_SPI_ENABLED */

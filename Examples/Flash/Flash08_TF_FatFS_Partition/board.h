@@ -73,8 +73,8 @@ typedef struct
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI1：未使用，禁用 */  \
     {SPI2, GPIOB, GPIO_Pin_13, GPIOB, GPIO_Pin_14, GPIOB, GPIO_Pin_15, GPIOA, GPIO_Pin_11,              \
      SPI_Mode_Master, SPI_Direction_2Lines_FullDuplex, SPI_DataSize_8b,                                \
-     SPI_CPOL_Low, SPI_CPHA_1Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_256, SPI_FirstBit_MSB, 1},         \
-    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI), PA11(CS)，主模式，全双工，8位，模式0，软件NSS，预分频256（约0.28MHz，≤400kHz），MSB优先，启用 */ \
+     SPI_CPOL_Low, SPI_CPHA_1Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_2, SPI_FirstBit_MSB, 1},         \
+    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI), PA11(CS)，主模式，全双工，8位，模式0，软件NSS，预分频2（约18MHz），MSB优先，启用 */ \
 }
 
 /* ==================== TF_SPI配置 ==================== */

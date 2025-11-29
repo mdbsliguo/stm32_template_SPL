@@ -13,6 +13,8 @@
 #if CONFIG_MODULE_FATFS_ENABLED
 
 #include <stddef.h>
+#include <stdint.h>
+#include <limits.h>
 #include "fatfs_wrapper.h"
 #include "diskio.h"
 #include "diskio_spi.h"
@@ -29,10 +31,11 @@ static FATFS g_fatfs[FF_VOLUMES];
 /* 逻辑驱动器到物理驱动器和分区的映射表 */
 /* pd: 物理驱动器号（0=SPI, 1=SDIO等） */
 /* pt: 分区号（0=自动检测, 1-4=强制指定分区） */
-/* 注意：当使用分区方案时，需要在代码中动态设置分区号 */
-/* 默认配置为自动检测，使用 "0:2:" 路径时会自动解析分区号 */
+/* 注意：当使用分区方案时，路径中的分区号会覆盖此配置 */
+/* 例如：VolToPart[0] = {0, 1} 表示逻辑驱动器0 -> 物理驱动器0，分区1 */
+/* 使用路径 "0:1:" 时会使用分区1，使用路径 "0:" 时会使用VolToPart中的配置 */
 PARTITION VolToPart[FF_VOLUMES] = {
-    {FATFS_VOLUME_SPI, 0},  /* 逻辑驱动器0 -> 物理驱动器0（SPI），分区0（自动检测，路径中可指定） */
+    {FATFS_VOLUME_SPI, 1},  /* 逻辑驱动器0 -> 物理驱动器0（SPI），分区1（FAT32分区） */
 };
 #endif
 
@@ -463,7 +466,7 @@ FatFS_Status_t FatFS_GetFreeSpace(FatFS_Volume_t volume, const char* path,
 /**
  * @brief 获取总空间
  */
-FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint32_t* total_bytes)
+FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint64_t* total_bytes)
 {
     /* ========== 参数校验 ========== */
     if (path == NULL) {
@@ -481,7 +484,8 @@ FatFS_Status_t FatFS_GetTotalSpace(FatFS_Volume_t volume, const char* path, uint
     if (fr == FR_OK && fatfs != NULL && total_bytes != NULL) {
         DWORD total_clusters = fatfs->n_fatent - 2;
         DWORD cluster_size = fatfs->csize * FF_MIN_SS;  /* 簇大小（字节） */
-        *total_bytes = total_clusters * cluster_size;
+        /* 使用64位计算，支持最大16EB的文件系统 */
+        *total_bytes = (uint64_t)total_clusters * (uint64_t)cluster_size;
     }
     
     return FatFS_ConvertError(fr);

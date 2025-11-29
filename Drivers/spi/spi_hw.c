@@ -101,6 +101,7 @@ static SPI_Status_t SPI_WaitFlag(SPI_TypeDef *spi_periph, uint16_t flag, uint32_
     }
     
     /* 简单超时计数：假设循环一次约1us，timeout_ms毫秒 = timeout_ms * 1000次 */
+    /* 注意：这个假设在72MHz CPU上可能不准确，但至少不会导致卡死 */
     timeout_count = timeout_ms * 1000;
     
     /* 等待标志位 */
@@ -343,9 +344,11 @@ SPI_Status_t SPI_MasterTransmitReceive(SPI_Instance_t instance, const uint8_t *t
     for (i = 0; i < length; i++)
     {
         /* 等待发送缓冲区空 */
-        if (SPI_WaitFlag(spi_periph, SPI_I2S_FLAG_TXE, actual_timeout) != SPI_OK)
+        SPI_Status_t wait_status = SPI_WaitFlag(spi_periph, SPI_I2S_FLAG_TXE, actual_timeout);
+        if (wait_status != SPI_OK)
         {
-            return SPI_ERROR_TIMEOUT;
+            /* 超时：发送缓冲区未空 */
+            return wait_status;
         }
         
         /* 发送数据 */
@@ -359,9 +362,11 @@ SPI_Status_t SPI_MasterTransmitReceive(SPI_Instance_t instance, const uint8_t *t
         }
         
         /* 等待接收缓冲区非空 */
-        if (SPI_WaitFlag(spi_periph, SPI_I2S_FLAG_RXNE, actual_timeout) != SPI_OK)
+        wait_status = SPI_WaitFlag(spi_periph, SPI_I2S_FLAG_RXNE, actual_timeout);
+        if (wait_status != SPI_OK)
         {
-            return SPI_ERROR_TIMEOUT;
+            /* 超时：接收缓冲区未就绪 */
+            return wait_status;
         }
         
         /* 接收数据 */
