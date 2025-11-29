@@ -7,11 +7,44 @@
  */
 
 #include "printf_wrapper.h"
-#include "uart.h"
-#include "oled_ssd1306.h"
+#include "config.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+
+/* 条件编译：UART模块 */
+#ifdef CONFIG_MODULE_UART_ENABLED
+#if CONFIG_MODULE_UART_ENABLED
+#include "uart.h"
+#define PRINTF_UART_ENABLED  1
+#else
+#define PRINTF_UART_ENABLED  0
+/* UART模块禁用时，定义替代类型 */
+typedef uint8_t UART_Instance_t;
+#define UART_INSTANCE_1  0
+#define UART_INSTANCE_2  1
+#define UART_INSTANCE_3  2
+#endif
+#else
+#define PRINTF_UART_ENABLED  0
+/* UART模块禁用时，定义替代类型 */
+typedef uint8_t UART_Instance_t;
+#define UART_INSTANCE_1  0
+#define UART_INSTANCE_2  1
+#define UART_INSTANCE_3  2
+#endif
+
+/* 条件编译：OLED模块 */
+#ifdef CONFIG_MODULE_OLED_ENABLED
+#if CONFIG_MODULE_OLED_ENABLED
+#include "oled_ssd1306.h"
+#define PRINTF_OLED_ENABLED  1
+#else
+#define PRINTF_OLED_ENABLED  0
+#endif
+#else
+#define PRINTF_OLED_ENABLED  0
+#endif
 
 /* 缓冲区大小定义 */
 #define PRINTF_BUFFER_SIZE  256  /* 格式化缓冲区大小（足够大以容纳大多数格式化字符串） */
@@ -23,6 +56,7 @@
  * @param[in] format 格式化字符串
  * @param[in] args 可变参数列表
  */
+#if PRINTF_UART_ENABLED
 static void Printf_UART_Internal(UART_Instance_t instance, const char *format, va_list args)
 {
     char buffer[PRINTF_BUFFER_SIZE];
@@ -59,6 +93,16 @@ static void Printf_UART_Internal(UART_Instance_t instance, const char *format, v
     /* 发送到UART（超时时间0表示使用默认超时） */
     (void)UART_TransmitString(instance, buffer, 0);
 }
+#else
+/* UART模块禁用时，提供空实现 */
+static void Printf_UART_Internal(UART_Instance_t instance, const char *format, va_list args)
+{
+    (void)instance;
+    (void)format;
+    (void)args;
+    /* UART模块已禁用，静默失败 */
+}
+#endif
 
 /**
  * @brief 内部函数：输出格式化字符串到OLED
@@ -66,6 +110,7 @@ static void Printf_UART_Internal(UART_Instance_t instance, const char *format, v
  * @param[in] format 格式化字符串
  * @param[in] args 可变参数列表
  */
+#if PRINTF_OLED_ENABLED
 static void Printf_OLED_Internal(uint8_t line, const char *format, va_list args)
 {
     char buffer[PRINTF_BUFFER_SIZE];
@@ -108,6 +153,16 @@ static void Printf_OLED_Internal(uint8_t line, const char *format, va_list args)
     /* 显示到OLED指定行，从第1列开始 */
     (void)OLED_ShowString(line, 1, buffer);
 }
+#else
+/* OLED模块禁用时，提供空实现 */
+static void Printf_OLED_Internal(uint8_t line, const char *format, va_list args)
+{
+    (void)line;
+    (void)format;
+    (void)args;
+    /* OLED模块已禁用，静默失败 */
+}
+#endif
 
 /**
  * @brief 输出格式化字符串到UART1
