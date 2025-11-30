@@ -55,6 +55,8 @@
 #define CONFIG_MODULE_FATFS_ENABLED       1   /**< FatFS文件系统模块开关 */
 #define CONFIG_MODULE_FATFS_SPI_ENABLED   1   /**< FatFS SPI接口开关 */
 #define CONFIG_MODULE_FATFS_SDIO_ENABLED  1   /**< FatFS SDIO接口开关 */
+#define CONFIG_MODULE_LITTLEFS_ENABLED    1   /**< LittleFS文件系统模块开关 */
+#define CONFIG_MODULE_LITTLEFS_SPI_ENABLED 1  /**< LittleFS SPI接口开关（用于SPI Flash设备） */
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */

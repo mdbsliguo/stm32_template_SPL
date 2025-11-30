@@ -398,6 +398,12 @@ W25Q_Status_t W25Q_Init(void)
         return W25Q_ERROR_INIT_FAILED;
     }
     
+    /* 确保CS引脚被正确配置为输出，初始状态为高（释放） */
+    /* 注意：SPI_HW_Init()应该已经配置了CS引脚，但这里再次确认CS为高电平 */
+    /* 这可以避免W25Q模块在CS浮空时输出中间电压（如1.1V） */
+    SPI_NSS_High(spi_instance);
+    Delay_us(10);  /* 短暂延时确保CS稳定 */
+    
     /* 等待Flash就绪 */
     Delay_ms(10);
     
@@ -749,10 +755,20 @@ W25Q_Status_t W25Q_Read(uint32_t addr, uint8_t *buf, uint32_t len)
             /* 计算本次传输的字节数（SPI驱动最大支持65535字节） */
             chunk_size = (remaining > 65535) ? 65535 : (uint16_t)remaining;
             
-            spi_status = SPI_MasterReceive(spi_instance, &buf[offset], chunk_size, 100);
+            /* 注意：SPI_MasterReceive的超时时间需要根据数据量和SPI速度计算 */
+            /* 挂载时会读取4096字节的块，如果SPI速度为0.56MHz（预分频128），4096字节需要约7ms */
+            /* 加上余量，使用500ms超时时间，避免挂载时超时 */
+            /* 对于大块数据（>256字节），使用更长的超时时间 */
+            uint32_t read_timeout = (chunk_size > 256) ? 500 : 100;  /* 大块数据使用500ms，小块数据使用100ms */
+            spi_status = SPI_MasterReceive(spi_instance, &buf[offset], chunk_size, read_timeout);
             if (spi_status != SPI_OK)
             {
                 SPI_NSS_High(spi_instance);
+                /* 如果超时，返回错误 */
+                if (spi_status == SPI_ERROR_TIMEOUT)
+                {
+                    return W25Q_ERROR_INIT_FAILED;  /* 超时错误 */
+                }
                 return W25Q_ERROR_INIT_FAILED;
             }
             
