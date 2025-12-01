@@ -332,6 +332,92 @@ error_code_t FS_WriteFile(fs_dir_t dir, const char* name,
 }
 
 /**
+ * @brief 追加数据到文件
+ */
+error_code_t FS_AppendFile(fs_dir_t dir, const char* name, 
+                           const void* buf, uint32_t size)
+{
+    /* ========== 参数校验 ========== */
+    
+    if (name == NULL || buf == NULL) {
+        return FS_WRAPPER_ERROR_NULL_PTR;
+    }
+    
+    if (dir >= FS_DIR_MAX) {
+        return FS_WRAPPER_ERROR_INVALID_DIR;
+    }
+    
+    if (size == 0) {
+        return FS_WRAPPER_ERROR_INVALID_PARAM;
+    }
+    
+    if (!g_fs_wrapper_initialized) {
+        return FS_WRAPPER_ERROR_NOT_INIT;
+    }
+    
+    /* ========== 业务逻辑 ========== */
+    
+    /* 获取文件路径 */
+    const char* path = FS_GetPath(dir, name);
+    if (path == NULL) {
+        return FS_WRAPPER_ERROR_INVALID_PARAM;
+    }
+    
+    /* 打开文件（追加模式） */
+    lfs_file_t file;
+    memset(&file, 0, sizeof(file));
+    
+    LittleFS_Status_t status = LittleFS_FileOpen(&file, path, 
+                                                  LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND);
+    if (status != LITTLEFS_OK) {
+        #ifdef CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        #if CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        ErrorHandler_Handle(status, "FS_WRAPPER");
+        #endif
+        #endif
+        return FS_WRAPPER_ERROR_LITTLEFS;
+    }
+    
+    /* 写入数据 */
+    uint32_t bytes_written = 0;
+    status = LittleFS_FileWrite(&file, buf, size, &bytes_written);
+    if (status != LITTLEFS_OK) {
+        LittleFS_FileClose(&file);
+        #ifdef CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        #if CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        ErrorHandler_Handle(status, "FS_WRAPPER");
+        #endif
+        #endif
+        return FS_WRAPPER_ERROR_WRITE_FAILED;
+    }
+    
+    /* 同步文件（确保数据写入Flash） */
+    status = LittleFS_FileSync(&file);
+    if (status != LITTLEFS_OK) {
+        LittleFS_FileClose(&file);
+        #ifdef CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        #if CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        ErrorHandler_Handle(status, "FS_WRAPPER");
+        #endif
+        #endif
+        return FS_WRAPPER_ERROR_SYNC_FAILED;
+    }
+    
+    /* 关闭文件 */
+    status = LittleFS_FileClose(&file);
+    if (status != LITTLEFS_OK) {
+        #ifdef CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        #if CONFIG_MODULE_ERROR_HANDLER_ENABLED
+        ErrorHandler_Handle(status, "FS_WRAPPER");
+        #endif
+        #endif
+        return FS_WRAPPER_ERROR_LITTLEFS;
+    }
+    
+    return FS_WRAPPER_OK;
+}
+
+/**
  * @brief 检查模块是否已初始化
  */
 uint8_t FS_IsInitialized(void)

@@ -1,14 +1,14 @@
 /**
  * @file board.h
- * @brief 硬件配置头文件（Flash06独立工程专用）
- * @details 此文件包含Flash06案例所需的硬件配置
+ * @brief 硬件配置头文件（Flash12独立工程专用）
+ * @details 此文件包含Flash12案例所需的硬件配置
  * 
  * 注意：这是独立工程的board.h，包含案例所需的硬件配置
  * 
  * 硬件要求：
  * - LED1：PA1（系统状态指示）
- * - TF卡（MicroSD卡，SPI2接口）
- *   - CS：PA11（软件NSS模式）
+ * - W25Q SPI Flash模块（SPI2接口）
+ *   - CS：PA11
  *   - SCK：PB13（SPI2_SCK）
  *   - MISO：PB14（SPI2_MISO）
  *   - MOSI：PB15（SPI2_MOSI）
@@ -37,12 +37,16 @@ typedef struct
     uint8_t enabled;      /**< 使能标志：1=启用，0=禁用 */
 } LED_Config_t;
 
-/* LED统一配置表 - Flash06配置 */
+/* LED统一配置表 - Flash12配置 */
 #define LED_CONFIGS {                                                            \
     {GPIOA, GPIO_Pin_1, Bit_RESET, 1}, /* LED1：PA1，低电平点亮，启用（系统状态指示） */ \
 }
 
 /* ==================== SPI配置 ==================== */
+
+/* SPI NSS引脚配置（软件NSS模式） */
+#define SPI2_NSS_PORT    GPIOA        /**< SPI2 NSS引脚端口 */
+#define SPI2_NSS_PIN     GPIO_Pin_11  /**< SPI2 NSS引脚号（PA11） */
 
 /* SPI配置结构体 */
 typedef struct
@@ -67,21 +71,22 @@ typedef struct
     uint8_t enabled;                   /**< 使能标志：1=启用，0=禁用 */
 } SPI_Config_t;
 
-/* SPI统一配置表 - Flash06配置（SPI2，PB13/14/15，CS=PA11） */
+/* SPI统一配置表 - Flash12配置（SPI2，PB13/14/15，CS=PA11） */
 /* 注意：数组索引对应SPI_INSTANCE枚举值，SPI_INSTANCE_1=0，SPI_INSTANCE_2=1，SPI_INSTANCE_3=2 */
+/* 注意：SPI2在APB1总线上（36MHz），8分频后为4.5MHz，安全且性能提升约8倍（相比128分频约0.56MHz） */
 #define SPI_CONFIGS {                                                                                    \
     {NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* SPI1：未使用，禁用 */  \
     {SPI2, GPIOB, GPIO_Pin_13, GPIOB, GPIO_Pin_14, GPIOB, GPIO_Pin_15, GPIOA, GPIO_Pin_11,              \
      SPI_Mode_Master, SPI_Direction_2Lines_FullDuplex, SPI_DataSize_8b,                                \
-     SPI_CPOL_Low, SPI_CPHA_1Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_256, SPI_FirstBit_MSB, 1},         \
-    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI), PA11(CS)，主模式，全双工，8位，模式0，软件NSS，预分频256（约0.28MHz，≤400kHz），MSB优先，启用 */ \
+     SPI_CPOL_Low, SPI_CPHA_1Edge, SPI_NSS_Soft, SPI_BaudRatePrescaler_8, SPI_FirstBit_MSB, 1},         \
+    /* SPI2：PB13(SCK), PB14(MISO), PB15(MOSI), PA11(CS)，主模式，全双工，8位，模式0，软件NSS，预分频8（约4.5MHz），MSB优先，启用 */ \
 }
 
-/* ==================== TF_SPI配置 ==================== */
+/* ==================== W25Q SPI Flash配置 ==================== */
 
-/* TF_SPI SPI实例配置 */
-#ifndef TF_SPI_SPI_INSTANCE
-#define TF_SPI_SPI_INSTANCE SPI_INSTANCE_2  /**< TF_SPI使用的SPI实例，使用SPI2 */
+/* W25Q SPI实例配置 */
+#ifndef W25Q_SPI_INSTANCE
+#define W25Q_SPI_INSTANCE SPI_INSTANCE_2  /**< W25Q使用的SPI实例，使用SPI2 */
 #endif
 
 /* ==================== 软件I2C配置 ==================== */
@@ -97,7 +102,7 @@ typedef struct
     uint8_t enabled;                /**< 使能标志：1=启用，0=禁用 */
 } SoftI2C_Config_t;
 
-/* 软件I2C统一配置表 - Flash06配置 */
+/* 软件I2C统一配置表 - Flash12配置 */
 /* 注意：数组索引对应SoftI2C_Instance枚举值，SoftI2C_INSTANCE_1=0 */
 #define SOFT_I2C_CONFIGS {                                                                    \
     {GPIOB, GPIO_Pin_8, GPIOB, GPIO_Pin_9, 5, 1}, /* SoftI2C1：PB8(SCL), PB9(SDA)，5us延时，启用（OLED使用） */ \
@@ -120,7 +125,7 @@ typedef struct
     uint16_t sda_pin;       /**< SDA引脚号 */
 } OLED_I2C_Config_t;
 
-/* OLED I2C配置 - Flash06配置（软件I2C，PB8/9） */
+/* OLED I2C配置 - Flash12配置（软件I2C，PB8/9） */
 #define OLED_I2C_CONFIG {      \
     GPIOB,                     \
     GPIO_Pin_8, /* SCL: PB8 */ \
@@ -159,15 +164,10 @@ typedef struct
     uint8_t enabled;                    /**< 使能标志：1=启用，0=禁用 */
 } UART_Config_t;
 
-/* UART统一配置表 - Flash06配置（UART1，PA9/10，115200） */
+/* UART统一配置表 - Flash12配置（UART1，PA9/10，115200） */
 #define UART_CONFIGS {                                                                                    \
     {USART1, GPIOA, GPIO_Pin_9, GPIOA, GPIO_Pin_10, 115200, USART_WordLength_8b, USART_StopBits_1, USART_Parity_No, 1}, /* UART1：PA9(TX), PA10(RX)，115200，8N1，启用 */ \
 }
 
 #endif /* BOARD_H */
-
-
-
-
-
 

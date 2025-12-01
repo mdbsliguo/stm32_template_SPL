@@ -117,6 +117,51 @@ OLED_Status_t OLED_ShowHexNum(uint8_t line, uint8_t column, uint32_t number, uin
  */
 OLED_Status_t OLED_ShowBinNum(uint8_t line, uint8_t column, uint32_t number, uint8_t length);
 
+/* ==================== 中文显示功能（需要fs_wrapper模块） ==================== */
+
+#ifdef CONFIG_MODULE_FS_WRAPPER_ENABLED
+#if CONFIG_MODULE_FS_WRAPPER_ENABLED
+
+/**
+ * @brief OLED显示单个中文字符（16x16点阵）
+ * @param[in] line 行号（1~4）
+ * @param[in] column 列号（1~8，中文字符占用2列）
+ * @param[in] gb2312_code GB2312编码（2字节，高字节在前）
+ * @return OLED_Status_t 错误码
+ * @note 中文字符占用2列（16像素宽度）
+ * @note 需要先初始化中文字库模块（OLED_ChineseFont_Init()）
+ */
+OLED_Status_t OLED_ShowChineseChar(uint8_t line, uint8_t column, uint16_t gb2312_code);
+
+/**
+ * @brief OLED显示GB2312编码字符串（支持中英文混显）
+ * @param[in] line 行号（1~4）
+ * @param[in] column 列号（1~16，ASCII字符）或（1~8，中文字符）
+ * @param[in] str GB2312编码字符串指针
+ * @return OLED_Status_t 错误码
+ * @note 自动识别ASCII和GB2312中文字符
+ * @note ASCII字符占用1列，中文字符占用2列
+ * @note 需要先初始化中文字库模块（OLED_ChineseFont_Init()）
+ */
+OLED_Status_t OLED_ShowStringGB2312(uint8_t line, uint8_t column, const char *str);
+
+/**
+ * @brief OLED显示UTF-8编码字符串（支持中英文混显）
+ * @param[in] line 行号（1~4）
+ * @param[in] column 列号（1~16，ASCII字符）或（1~8，中文字符）
+ * @param[in] str UTF-8编码字符串指针
+ * @return OLED_Status_t 错误码
+ * @note 自动识别ASCII和UTF-8中文字符
+ * @note ASCII字符占用1列，中文字符占用2列
+ * @note UTF-8中文需要转换为GB2312（简化实现可能不支持所有字符）
+ * @note 需要先初始化中文字库模块（OLED_ChineseFont_Init()）
+ * @warning UTF-8到GB2312转换功能有限，建议直接使用GB2312编码字符串
+ */
+OLED_Status_t OLED_ShowStringUTF8(uint8_t line, uint8_t column, const char *str);
+
+#endif /* CONFIG_MODULE_FS_WRAPPER_ENABLED */
+#endif /* CONFIG_MODULE_FS_WRAPPER_ENABLED */
+
 #ifdef __cplusplus
 }
 #endif

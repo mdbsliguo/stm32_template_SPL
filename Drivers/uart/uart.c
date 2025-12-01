@@ -17,7 +17,11 @@
 #include "gpio.h"
 #include "delay.h"
 #include "nvic.h"
+#ifdef CONFIG_MODULE_DMA_ENABLED
+#if CONFIG_MODULE_DMA_ENABLED
 #include "dma.h"
+#endif
+#endif
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_usart.h"
 #include "misc.h"

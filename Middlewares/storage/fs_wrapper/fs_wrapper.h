@@ -97,6 +97,20 @@ error_code_t FS_WriteFile(fs_dir_t dir, const char* name,
                           const void* buf, uint32_t size);
 
 /**
+ * @brief 追加数据到文件
+ * @param[in] dir 目录枚举
+ * @param[in] name 文件名（不含路径）
+ * @param[in] buf 数据缓冲区
+ * @param[in] size 写入大小（字节）
+ * @return error_code_t 错误码，FS_WRAPPER_OK表示成功
+ * @note 内部自动管理文件句柄，写入后自动同步
+ * @note 如果文件不存在会自动创建，数据追加到文件末尾
+ * @note 用于大文件分段写入（如通过UART传输字库文件）
+ */
+error_code_t FS_AppendFile(fs_dir_t dir, const char* name, 
+                           const void* buf, uint32_t size);
+
+/**
  * @brief 获取文件路径
  * @param[in] dir 目录枚举
  * @param[in] name 文件名（不含路径）
