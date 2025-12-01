@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>Flash10</OutputName>
+          <OutputName>Flash11</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -334,7 +334,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD,LFS_NO_ASSERT,LFS_NO_MALLOC,LFS_NO_DEBUG,LFS_NO_WARN,LFS_NO_ERROR</Define>
+              <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD,LFS_NO_MALLOC,LFS_NO_DEBUG,LFS_NO_WARN,LFS_NO_ERROR</Define>
               <Undefine></Undefine>
               <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor;..\..\..\Middlewares\storage\littlefs</IncludePath>
             </VariousControls>

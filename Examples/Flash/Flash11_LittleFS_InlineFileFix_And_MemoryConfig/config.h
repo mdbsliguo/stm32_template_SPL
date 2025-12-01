@@ -1,8 +1,8 @@
 /**
  * @file config.h
- * @brief Flash10专用配置（独立工程）
- * @details 只启用Flash10需要的模块，禁用其他模块以减小代码体积
- * @note Flash10基础版本，后续将逐步添加LittleFS模块
+ * @brief Flash11专用配置（独立工程）
+ * @details 只启用Flash11需要的模块，禁用其他模块以减小代码体积
+ * @note Flash11 - LittleFS文件系统综合测试案例
  */
 
 #ifndef EXAMPLE_CONFIG_H
@@ -29,13 +29,13 @@
 #ifdef LFS_NO_ASSERT
 #undef LFS_NO_ASSERT
 #endif
-#define LFS_NO_ASSERT       1   /**< 禁用assert，避免启动时卡死 */
+#define LFS_NO_ASSERT       0   /**< 启用assert，用于定位NOSPC错误（调试时启用，发布时禁用） */
 #define LFS_NO_MALLOC       1   /**< 禁用malloc，使用静态缓冲区 */
 #define LFS_NO_DEBUG        1   /**< 禁用debug输出 */
 #define LFS_NO_WARN         1   /**< 禁用warn输出 */
 #define LFS_NO_ERROR        1   /**< 禁用error输出 */
 
-/* Flash10专用配置 */
+/* Flash11专用配置 */
 #define CONFIG_LITTLEFS_FORCE_FORMAT  0   /**< 强制格式化开关：1=每次启动都格式化（解决NOSPC问题），0=只在挂载失败时格式化 */
 
 /* 系统层模块 */

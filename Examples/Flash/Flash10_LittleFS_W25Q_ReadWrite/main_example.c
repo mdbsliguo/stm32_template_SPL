@@ -45,7 +45,7 @@
 #include "error_handler.h"
 #include "spi_hw.h"
 #include "w25q_spi.h"
-#include "littlefs.h"
+#include "littlefs_wrapper.h"
 #include "gpio.h"
 #include "config.h"
 #include "board.h"
@@ -223,22 +223,81 @@ int main(void)
     
     /* ========== 步骤13：挂载文件系统 ========== */
     LOG_INFO("MAIN", "开始挂载文件系统...");
-    OLED_ShowString(3, 1, "挂载文件系统...");
+    OLED_ShowString(3, 1, "Mounting...");
     LED_Toggle(LED_1);
     littlefs_status = LittleFS_Mount();
     LED_Toggle(LED_1);
     
+#if CONFIG_LITTLEFS_FORCE_FORMAT
+    /* 强制格式化模式：无论挂载是否成功，都先卸载然后格式化（解决NOSPC问题） */
+    if (littlefs_status == LITTLEFS_OK)
+    {
+        LOG_INFO("MAIN", "挂载成功，但配置为强制格式化模式，准备卸载以便格式化...");
+        OLED_ShowString(4, 1, "Unmounting...");
+        Delay_ms(500);
+        
+        /* 先卸载 */
+        LittleFS_Status_t unmount_status = LittleFS_Unmount();
+        if (unmount_status != LITTLEFS_OK)
+        {
+            LOG_ERROR("MAIN", "卸载失败: %d（继续执行格式化）", unmount_status);
+        }
+    }
+    
+    /* 开始格式化文件系统（强制格式化模式） */
+    LOG_INFO("MAIN", "开始格式化文件系统（强制格式化模式）...");
+    OLED_ShowString(3, 1, "Formatting...");
+    OLED_ShowString(4, 1, "Force Format");
+    Delay_ms(500);
+    
+    LED_Toggle(LED_1);
+    littlefs_status = LittleFS_Format();
+    LED_Toggle(LED_1);
+    
+    if (littlefs_status == LITTLEFS_OK)
+    {
+        LOG_INFO("MAIN", "格式化成功！");
+        OLED_ShowString(4, 1, "Format OK");
+        Delay_ms(500);
+        
+        /* 格式化后重新挂载 */
+        LOG_INFO("MAIN", "格式化后重新挂载...");
+        OLED_ShowString(3, 1, "Remounting...");
+        LED_Toggle(LED_1);
+        littlefs_status = LittleFS_Mount();
+        LED_Toggle(LED_1);
+        
+        if (littlefs_status == LITTLEFS_OK)
+        {
+            LOG_INFO("MAIN", "重新挂载成功！");
+            OLED_ShowString(4, 1, "Mount OK");
+        }
+        else
+        {
+            LOG_ERROR("MAIN", "重新挂载失败: %d", littlefs_status);
+            OLED_ShowString(4, 1, "Mount Failed!");
+            while(1) { Delay_ms(1000); }
+        }
+    }
+    else
+    {
+        LOG_ERROR("MAIN", "格式化失败: %d", littlefs_status);
+        OLED_ShowString(4, 1, "Format Failed!");
+        while(1) { Delay_ms(1000); }
+    }
+#else
+    /* 正常模式：只在挂载失败时格式化 */
     if (littlefs_status == LITTLEFS_OK)
     {
         LOG_INFO("MAIN", "挂载成功！");
-        OLED_ShowString(4, 1, "挂载成功");
+        OLED_ShowString(4, 1, "Mount OK");
     }
     else
     {
         /* 挂载失败，可能是文件系统不存在或损坏（第一次使用是正常的） */
         LOG_INFO("MAIN", "挂载失败: %d (可能是文件系统不存在，需要格式化)", littlefs_status);
-        OLED_ShowString(3, 1, "挂载失败");
-        OLED_ShowString(4, 1, "开始格式化...");
+        OLED_ShowString(3, 1, "Mount Failed");
+        OLED_ShowString(4, 1, "Formatting...");
         Delay_ms(1000);
         
         /* 尝试格式化 */
@@ -250,12 +309,12 @@ int main(void)
         if (littlefs_status == LITTLEFS_OK)
         {
             LOG_INFO("MAIN", "格式化成功！");
-            OLED_ShowString(4, 1, "格式化成功");
+            OLED_ShowString(4, 1, "Format OK");
             Delay_ms(500);
             
             /* 格式化后重新挂载 */
             LOG_INFO("MAIN", "格式化后重新挂载...");
-            OLED_ShowString(3, 1, "重新挂载...");
+            OLED_ShowString(3, 1, "Remounting...");
             LED_Toggle(LED_1);
             littlefs_status = LittleFS_Mount();
             LED_Toggle(LED_1);
@@ -263,22 +322,23 @@ int main(void)
             if (littlefs_status == LITTLEFS_OK)
             {
                 LOG_INFO("MAIN", "重新挂载成功！");
-                OLED_ShowString(4, 1, "挂载成功");
+                OLED_ShowString(4, 1, "Mount OK");
             }
             else
             {
                 LOG_ERROR("MAIN", "重新挂载失败: %d", littlefs_status);
-                OLED_ShowString(4, 1, "挂载失败!");
+                OLED_ShowString(4, 1, "Mount Failed!");
                 while(1) { Delay_ms(1000); }
             }
         }
         else
         {
             LOG_ERROR("MAIN", "格式化失败: %d", littlefs_status);
-            OLED_ShowString(4, 1, "格式化失败!");
+            OLED_ShowString(4, 1, "Format Failed!");
             while(1) { Delay_ms(1000); }
         }
     }
+#endif /* CONFIG_LITTLEFS_FORCE_FORMAT */
     Delay_ms(2000);
     
     /* ========== 步骤14：显示文件系统信息 ========== */
@@ -315,7 +375,8 @@ int main(void)
     OLED_ShowString(2, 1, "创建文件...");
     
     lfs_file_t file;
-    const char* test_file = "/test.txt";
+    memset(&file, 0, sizeof(file));  /* ? 关键：清零文件句柄，避免脏数据 */
+    const char* test_file = "test.txt";  /* ? 修复：使用相对路径，与目录列表一致 */
     const char* test_data = "Hello LittleFS!";
     
     /* 使用LittleFS标准API：LFS_O_WRONLY（只写）| LFS_O_CREAT（创建） */
@@ -327,8 +388,20 @@ int main(void)
         if (littlefs_status == LITTLEFS_OK)
         {
             LOG_INFO("MAIN", "写入成功: %lu 字节", (unsigned long)bytes_written);
+            
+            /* ? 关键：同步文件，确保数据写入Flash */
+            littlefs_status = LittleFS_FileSync(&file);
+            if (littlefs_status == LITTLEFS_OK)
+            {
+                LOG_INFO("MAIN", "文件同步成功");
+            }
+            else
+            {
+                LOG_ERROR("MAIN", "文件同步失败: %d", littlefs_status);
+            }
+            
             LittleFS_FileClose(&file);
-            OLED_ShowString(3, 1, "写入成功");
+            OLED_ShowString(3, 1, "Write OK");
         }
         else
         {
@@ -346,11 +419,33 @@ int main(void)
     
     /* 测试2：读取文件并验证 */
     LOG_INFO("MAIN", "测试2：读取文件并验证...");
-    OLED_ShowString(2, 1, "读取文件...");
+    OLED_ShowString(2, 1, "Read File...");
+    
+    /* ? 关键：先检查文件是否存在 */
+    lfs_t* lfs = LittleFS_GetLFS(LITTLEFS_INSTANCE_0);
+    if (lfs != NULL) {
+        struct lfs_info info;
+        int stat_err = lfs_stat(lfs, test_file, &info);
+        if (stat_err == 0) {
+            LOG_INFO("MAIN", "文件存在: name='%s' size=%lu type=%d", 
+                     info.name, (unsigned long)info.size, info.type);
+        } else {
+            LOG_ERROR("MAIN", "文件不存在或stat失败: %d", stat_err);
+            OLED_ShowString(3, 1, "File Not Found");
+            Delay_ms(1000);
+        }
+    }
     
     char read_buffer[64] = {0};
     uint32_t bytes_read = 0;
     
+    /* ? 关键：清零文件句柄，避免脏数据 */
+    memset(&file, 0, sizeof(file));
+    
+    /* ? 关键：添加延迟，确保Flash写入完成 */
+    Delay_ms(100);
+    
+    LOG_INFO("MAIN", "尝试打开文件: %s (标志: 0x%X)", test_file, LFS_O_RDONLY);
     littlefs_status = LittleFS_FileOpen(&file, test_file, LFS_O_RDONLY);
     if (littlefs_status == LITTLEFS_OK)
     {
@@ -383,7 +478,17 @@ int main(void)
     else
     {
         LOG_ERROR("MAIN", "打开文件失败: %d", littlefs_status);
-        OLED_ShowString(3, 1, "打开失败");
+        /* -3905 是 LITTLEFS_ERROR_NOENT 的封装错误码 */
+        if (littlefs_status == -3905 || littlefs_status == LITTLEFS_ERROR_NOENT) {
+            LOG_ERROR("MAIN", "错误码 %d = LFS_ERR_NOENT (文件不存在或元数据损坏)", littlefs_status);
+            LOG_ERROR("MAIN", "可能原因：1. 文件路径不正确 2. 文件元数据损坏 3. 缓存缓冲区冲突");
+            LOG_ERROR("MAIN", "建议：检查文件路径格式，确保使用相对路径（如'test.txt'而非'/test.txt'）");
+        } else if (littlefs_status == LITTLEFS_ERROR_CORRUPT) {
+            LOG_ERROR("MAIN", "错误码 %d = LFS_ERR_CORRUPT (文件系统损坏)", littlefs_status);
+        } else {
+            LOG_ERROR("MAIN", "未知错误码: %d", littlefs_status);
+        }
+        OLED_ShowString(3, 1, "Open Failed");
     }
     Delay_ms(1000);
     
@@ -393,7 +498,7 @@ int main(void)
     OLED_ShowString(1, 1, "目录操作测试");
     
     /* 创建目录 */
-    const char* test_dir = "/testdir";
+    const char* test_dir = "testdir";  /* ? 修复：使用相对路径 */
     LOG_INFO("MAIN", "创建目录: %s", test_dir);
     OLED_ShowString(2, 1, "创建目录...");
     littlefs_status = LittleFS_DirCreate(test_dir);
@@ -420,9 +525,10 @@ int main(void)
     OLED_ShowString(1, 1, "列出目录");
     
     lfs_dir_t dir;
+    memset(&dir, 0, sizeof(dir));  /* ? 关键：清零目录句柄 */
     struct lfs_info info;  /* 注意：使用struct lfs_info，不是LittleFS_Info_t */
     memset(&info, 0, sizeof(info));  /* 初始化info结构体 */
-    littlefs_status = LittleFS_DirOpen(&dir, "/");
+    littlefs_status = LittleFS_DirOpen(&dir, ".");  /* ? 修复：使用"."表示当前目录（根目录） */
     if (littlefs_status == LITTLEFS_OK)
     {
         LOG_INFO("MAIN", "根目录内容:");
