@@ -78,10 +78,12 @@
 __align(4) static uint8_t g_littlefs_read_buffer[LITTLEFS_DEFAULT_READ_SIZE];
 __align(4) static uint8_t g_littlefs_prog_buffer[LITTLEFS_DEFAULT_PROG_SIZE];
 __align(4) static uint8_t g_littlefs_lookahead_buffer[LITTLEFS_MAX_LOOKAHEAD_SIZE];
+__align(4) static uint8_t g_littlefs_file_cache_buffer[LITTLEFS_DEFAULT_CACHE_SIZE];  /**< 独立的文件缓存缓冲区 */
 #else
 static uint8_t g_littlefs_read_buffer[LITTLEFS_DEFAULT_READ_SIZE] __attribute__((aligned(4)));
 static uint8_t g_littlefs_prog_buffer[LITTLEFS_DEFAULT_PROG_SIZE] __attribute__((aligned(4)));
 static uint8_t g_littlefs_lookahead_buffer[LITTLEFS_MAX_LOOKAHEAD_SIZE] __attribute__((aligned(4)));
+static uint8_t g_littlefs_file_cache_buffer[LITTLEFS_DEFAULT_CACHE_SIZE] __attribute__((aligned(4)));  /**< 独立的文件缓存缓冲区 */
 #endif
 
 /**
@@ -716,6 +718,12 @@ static LittleFS_Status_t LittleFS_ConfigInitInstance(LittleFS_Instance_t instanc
     dev->config.file_max = config.file_max;
     dev->config.attr_max = config.attr_max;
     
+    /* 配置metadata_max：限制元数据对占用的总空间，减少元数据压缩时间
+     * 对于4KB块，设置为2048（block_size的一半）可以限制压缩时间
+     * 如果设置为0，LittleFS会使用block_size作为默认值
+     */
+    dev->config.metadata_max = 2048;  /* 设置为block_size的一半，减少元数据压缩时间 */
+    
     /* 配置context（指向实例编号，用于回调函数识别实例） */
     dev->config.context = (void*)(uintptr_t)instance;
     
@@ -1248,9 +1256,9 @@ LittleFS_Status_t LittleFS_FileOpen(lfs_file_t *file, const char *path, int flag
         return LITTLEFS_ERROR_NOT_MOUNTED;
     }
     
-    /* 配置文件缓冲区：使用read_buffer作为文件缓冲区 */
+    /* 配置文件缓冲区：使用独立的文件缓存缓冲区，避免与全局读取缓存冲突 */
     struct lfs_file_config file_cfg = {
-        .buffer = g_littlefs_read_buffer,
+        .buffer = g_littlefs_file_cache_buffer,  /* 使用独立的文件缓存缓冲区 */
         .attrs = NULL,
         .attr_count = 0
     };
