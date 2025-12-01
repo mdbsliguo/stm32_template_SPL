@@ -23,6 +23,7 @@
 /* 中间件层模块 */
 #define CONFIG_MODULE_LITTLEFS_ENABLED      1   /**< LittleFS模块开关 - 已修复RAM占用问题 */
 #define CONFIG_MODULE_LITTLEFS_SPI_ENABLED  1   /**< LittleFS SPI接口开关 - 已修复RAM占用问题 */
+#define CONFIG_MODULE_FS_WRAPPER_ENABLED   1   /**< FS_WRAPPER模块开关 - 测试12使用（可选） */
 
 /* LittleFS配置选项 */
 /* 注意：如果Keil项目预处理器定义中已有LFS_NO_ASSERT，需要先取消定义 */

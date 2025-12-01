@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD,LFS_NO_MALLOC,LFS_NO_DEBUG,LFS_NO_WARN,LFS_NO_ERROR</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor;..\..\..\Middlewares\storage\littlefs</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor;..\..\..\Middlewares\storage\littlefs;..\..\..\Middlewares\storage\fs_wrapper</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -499,6 +499,26 @@
               <FileName>littlefs_wrapper.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Middlewares\storage\littlefs\littlefs_wrapper.h</FilePath>
+            </File>
+            <File>
+              <FileName>fs_wrapper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Middlewares\storage\fs_wrapper\fs_wrapper.c</FilePath>
+            </File>
+            <File>
+              <FileName>fs_wrapper.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Middlewares\storage\fs_wrapper\fs_wrapper.h</FilePath>
+            </File>
+            <File>
+              <FileName>flash12_tests.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>flash12_tests.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash12_tests.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>flash12_tests.h</FilePath>
             </File>
             <File>
               <FileName>timer_pwm.c</FileName>
