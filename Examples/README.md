@@ -49,7 +49,8 @@ Examples/
 │   ├── Timer01_SoftwareTimer/     # 软件定时器示例
 │   ├── Timer02_InternalClockCounting/  # 内部时钟计数示例
 │   ├── Timer03_DS3231ExternalSquareWave/  # DS3231外部方波示例
-│   └── Timer04_DS3231ExternalClock32kHz/  # DS3231外部32kHz时钟示例
+│   ├── Timer04_DS3231ExternalClock32kHz/  # DS3231外部32kHz时钟示例
+│   └── Timer05_EncoderInterface/  # 编码器接口模式示例
 ├── UART/                         # 串口通信相关案例
 │   └── UART01_Error_Log_Output/   # 错误日志输出示例
 └── README.md                     # 本文档
@@ -136,6 +137,7 @@ Examples/
 | 02 | `Timer02_InternalClockCounting` | 内部时钟计数示例 | ✅ 已调试完成 |
 | 03 | `Timer03_DS3231ExternalSquareWave` | DS3231外部方波示例 | ✅ 已调试完成 |
 | 04 | `Timer04_DS3231ExternalClock32kHz` | DS3231外部32kHz时钟示例 | ✅ 已调试完成 |
+| 05 | `Timer05_EncoderInterface` | 编码器接口模式示例 | ✅ 已调试完成 |
 
 ### UART串口通信相关案例
 

@@ -9,6 +9,7 @@
 
 #include "error_code.h"
 #include <stdint.h>
+#include <stdbool.h>  /* 用于bool类型 */
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,19 @@ ENCODER_Status_t ENCODER_Stop(ENCODER_Instance_t instance);
  * @return uint8_t 1=已初始化，0=未初始化
  */
 uint8_t ENCODER_IsInitialized(ENCODER_Instance_t instance);
+
+/**
+ * @brief 设置TIM3重映射配置
+ * @param[in] enable_remap 是否启用重映射（true=启用，false=默认PA6/PA7）
+ * @param[in] full_remap 是否完全重映射（true=PC6/PC7，false=PB4/PB5）
+ * @note 必须在ENCODER_Init之前调用
+ * @note 仅对TIM3有效
+ * @note 重映射选项：
+ *   - 默认：CH1=PA6, CH2=PA7
+ *   - 部分重映射：CH1=PB4, CH2=PB5
+ *   - 完全重映射：CH1=PC6, CH2=PC7
+ */
+void ENCODER_SetTIM3Remap(bool enable_remap, bool full_remap);
 
 /* ========== 中断模式功能 ========== */
 
