@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ASCII Font Upload Tool
+# Extract ASCII font from C source and upload to STM32 via UART
+#
+# Usage:
+#     python send_ASCII_font.py [COM port] [baudrate]
+#
+# Example:
+#     python send_ASCII_font.py COM4 115200
+#
+# Dependencies:
+#     pip install pyserial
+
+import serial
+import time
+import sys
+import os
+import re
+
+# Protocol definitions
+CMD_START = 0xAA
+CMD_DATA = 0xBB
+CMD_END = 0xCC
+CMD_ACK = 0xDD
+CMD_ASCII = ord('A')  # ASCII×Ö¿âÃüÁî
+CHUNK_SIZE = 256
+
+def extract_font_from_c_file(c_file_path, output_file):
+    """Extract font data from C source file"""
+    
+    with open(c_file_path, 'rb') as f:
+        content = f.read()
+    
+    # Try to decode as GB2312 (Chinese comments)
+    try:
+        content_str = content.decode('gb2312', errors='ignore')
+    except:
+        try:
+            content_str = content.decode('utf-8', errors='ignore')
+        except:
+            content_str = content.decode('latin-1', errors='ignore')
+    
+    # Find the array definition
+    # Pattern: 0xXX,0xXX,... (hex values)
+    pattern = r'0x([0-9A-Fa-f]{2})'
+    matches = re.findall(pattern, content_str)
+    
+    if len(matches) < 96 * 16:
+        print(f"Error: Found only {len(matches)} bytes, expected {96 * 16}")
+        return False
+    
+    # Extract 96 characters * 16 bytes = 1536 bytes
+    font_data = bytearray()
+    for i in range(96 * 16):
+        if i < len(matches):
+            font_data.append(int(matches[i], 16))
+        else:
+            font_data.append(0x00)
+    
+    # Write to output file
+    with open(output_file, 'wb') as f:
+        f.write(font_data)
+    
+    print(f"Extracted {len(font_data)} bytes from {c_file_path}")
+    print(f"Output file: {output_file}")
+    
+    return True
+
+def send_font_file(port, baudrate, font_file):
+    """Send font file to STM32"""
+    
+    if not os.path.exists(font_file):
+        print(f"Error: File not found: {font_file}")
+        return False
+    
+    file_size = os.path.getsize(font_file)
+    print(f"Font file: {font_file}")
+    print(f"File size: {file_size} bytes ({file_size/1024:.2f} KB)")
+    
+    try:
+        ser = serial.Serial(port, baudrate, timeout=3)
+        print(f"Connected to {port}, baudrate {baudrate}")
+        
+        # Clear any pending data
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
+        
+        # Send 'A' command for ASCII font
+        print("Sending 'A' command (ASCII font)...")
+        ser.write(bytes([CMD_ASCII]))
+        ser.flush()
+        
+        # Wait for "OK" response
+        print("Waiting for 'OK' response...")
+        response = ser.read(4)  # Read "OK\r\n"
+        if len(response) < 4:
+            print("Warning: Did not receive 'OK' response, but continuing...")
+        else:
+            response_str = response.decode('ascii', errors='ignore')
+            if "OK" in response_str:
+                print("Received 'OK', starting upload...")
+            else:
+                print(f"Warning: Unexpected response: {response_str}")
+        
+        # Clear buffer before sending commands
+        time.sleep(0.5)
+        ser.reset_input_buffer()
+        
+        # Step 1: Send start command
+        max_retries = 50
+        retry_count = 0
+        ack_received = False
+        
+        print("Sending start command (CMD_START=0xAA)...")
+        while retry_count < max_retries and not ack_received:
+            ser.reset_input_buffer()
+            time.sleep(0.1)
+            
+            ser.write(bytes([CMD_START]))
+            ser.flush()
+            time.sleep(0.05)
+            
+            ser.write(file_size.to_bytes(4, 'little'))
+            ser.flush()
+            time.sleep(0.2)
+            
+            ack = ser.read(10)
+            if len(ack) > 0:
+                for byte in ack:
+                    if byte == CMD_ACK:
+                        ack_received = True
+                        print("ACK received! Starting data transfer...")
+                        break
+                
+                if not ack_received:
+                    if retry_count % 5 == 0:
+                        hex_bytes = ' '.join([f'0x{b:02X}' for b in ack[:5]])
+                        print(f"Received: {hex_bytes} (waiting for 0x{CMD_ACK:02X})...")
+            else:
+                retry_count += 1
+                if retry_count % 5 == 0:
+                    print(f"Waiting for STM32 ACK... (attempt {retry_count}/{max_retries})")
+                time.sleep(0.2)
+        
+        if not ack_received:
+            print(f"Error: No ACK received after {max_retries} attempts")
+            ser.close()
+            return False
+        
+        # Step 2: Send data in chunks
+        with open(font_file, 'rb') as f:
+            total_sent = 0
+            while total_sent < file_size:
+                chunk = f.read(CHUNK_SIZE)
+                if len(chunk) == 0:
+                    break
+                
+                ser.write(bytes([CMD_DATA]))
+                time.sleep(0.01)
+                
+                packet_size = len(chunk)
+                ser.write(packet_size.to_bytes(2, 'little'))
+                time.sleep(0.01)
+                
+                ser.write(chunk)
+                time.sleep(0.05)
+                
+                ack = ser.read(1)
+                if len(ack) == 0 or ack[0] != CMD_ACK:
+                    print(f"\nError: No ACK at {total_sent} bytes")
+                    ser.close()
+                    return False
+                
+                total_sent += len(chunk)
+                progress = (total_sent / file_size) * 100
+                print(f"\rProgress: {total_sent}/{file_size} bytes ({progress:.1f}%)", end='', flush=True)
+        
+        print()
+        
+        # Step 3: Send end command
+        ser.write(bytes([CMD_END]))
+        time.sleep(0.1)
+        
+        ser.close()
+        print("Transfer complete!")
+        return True
+        
+    except serial.SerialException as e:
+        print(f"Serial port error: {e}")
+        return False
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def main():
+    default_port = "COM4"
+    default_c_file = "../Drivers/display/oled_font_ascii8x16.c"
+    default_output_file = "ASCII16.bin"
+    default_baudrate = 115200
+    
+    if len(sys.argv) >= 2:
+        port = sys.argv[1]
+        baudrate = int(sys.argv[2]) if len(sys.argv) > 2 else default_baudrate
+    else:
+        port = default_port
+        baudrate = default_baudrate
+        print(f"Using default parameters:")
+        print(f"  Port: {port}")
+        print(f"  Baudrate: {baudrate}")
+        print(f"\nTo customize, use: python send_ASCII_font.py <COM port> [baudrate]")
+        print()
+    
+    # Extract font from C file
+    c_file = default_c_file
+    output_file = default_output_file
+    
+    if not os.path.exists(c_file):
+        print(f"Error: File not found: {c_file}")
+        print(f"Current directory: {os.getcwd()}")
+        sys.exit(1)
+    
+    print("Step 1: Extracting font from C source file...")
+    if not extract_font_from_c_file(c_file, output_file):
+        sys.exit(1)
+    
+    # Upload font file
+    print("\nStep 2: Uploading font file to STM32...")
+    success = send_font_file(port, baudrate, output_file)
+    if success:
+        print("\nUpload completed successfully!")
+    else:
+        print("\nUpload failed!")
+    
+    print("\nPress Enter to exit...")
+    input()
+    sys.exit(0 if success else 1)
+
+if __name__ == '__main__':
+    main()

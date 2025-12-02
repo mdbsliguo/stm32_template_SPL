@@ -85,6 +85,17 @@ typedef struct {
 IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t polarity);
 
 /**
+ * @brief 输入捕获初始化（使用从模式+Reset）
+ * @param[in] instance 输入捕获实例索引
+ * @param[in] channel 输入捕获通道
+ * @param[in] polarity 捕获极性
+ * @return IC_Status_t 状态码
+ * @note 使用从模式+Reset后，每次捕获会自动将CNT重置为0，直接读取CCR即可得到周期计数
+ * @note 适用于频率测量，简化了溢出处理逻辑
+ */
+IC_Status_t IC_InitWithSlaveMode(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t polarity);
+
+/**
  * @brief 输入捕获反初始化
  * @param[in] instance 输入捕获实例索引
  * @param[in] channel 输入捕获通道
@@ -118,14 +129,28 @@ IC_Status_t IC_Stop(IC_Instance_t instance, IC_Channel_t channel);
 IC_Status_t IC_ReadValue(IC_Instance_t instance, IC_Channel_t channel, uint32_t *value);
 
 /**
- * @brief 测量频率（单次测量）
+ * @brief 测量频率（测周法，适用于低频信号）
  * @param[in] instance 输入捕获实例索引
  * @param[in] channel 输入捕获通道
  * @param[out] frequency 频率值（Hz）
  * @param[in] timeout_ms 超时时间（毫秒）
  * @return IC_Status_t 状态码
+ * @note 测周法：测量一个完整周期的时间，然后计算频率 f = timer_clock / period_count
+ * @note 适用于低频信号（通常 < 1kHz），精度高但测量时间长
  */
 IC_Status_t IC_MeasureFrequency(IC_Instance_t instance, IC_Channel_t channel, uint32_t *frequency, uint32_t timeout_ms);
+
+/**
+ * @brief 测量频率（测频法，适用于高频信号）
+ * @param[in] instance 输入捕获实例索引
+ * @param[in] channel 输入捕获通道
+ * @param[out] frequency 频率值（Hz）
+ * @param[in] gate_time_ms 闸门时间（毫秒），在此时间内计数脉冲数量
+ * @return IC_Status_t 状态码
+ * @note 测频法：在固定时间内计数脉冲数量，然后计算频率 f = count / time
+ * @note 适用于高频信号（通常 > 1kHz），测量时间短但精度相对较低
+ */
+IC_Status_t IC_MeasureFrequencyByCount(IC_Instance_t instance, IC_Channel_t channel, uint32_t *frequency, uint32_t gate_time_ms);
 
 /**
  * @brief 测量PWM信号（频率、占空比）
