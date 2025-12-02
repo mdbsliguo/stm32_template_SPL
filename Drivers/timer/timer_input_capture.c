@@ -232,6 +232,45 @@ IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t 
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(gpio_port, &GPIO_InitStructure);
     
+    /* 如果是PWMI模式，需要同时配置通道1和通道2的GPIO */
+    if (polarity == IC_POLARITY_BOTH) {
+        GPIO_TypeDef *gpio_port_other;
+        uint16_t gpio_pin_other;
+        
+        /* 获取另一个通道的GPIO配置 */
+        if (channel == IC_CHANNEL_1) {
+            /* 通道1配置，需要配置通道2的GPIO */
+            IC_GetGPIOConfig(instance, IC_CHANNEL_2, &gpio_port_other, &gpio_pin_other);
+        } else if (channel == IC_CHANNEL_2) {
+            /* 通道2配置，需要配置通道1的GPIO */
+            IC_GetGPIOConfig(instance, IC_CHANNEL_1, &gpio_port_other, &gpio_pin_other);
+        } else {
+            gpio_port_other = NULL;
+            gpio_pin_other = 0;
+        }
+        
+        /* 配置另一个通道的GPIO（如果存在） */
+        if (gpio_port_other != NULL && gpio_pin_other != 0) {
+            /* 确保另一个通道的GPIO时钟已使能 */
+            uint32_t gpio_clock_other;
+            if (gpio_port_other == GPIOA) gpio_clock_other = RCC_APB2Periph_GPIOA;
+            else if (gpio_port_other == GPIOB) gpio_clock_other = RCC_APB2Periph_GPIOB;
+            else if (gpio_port_other == GPIOC) gpio_clock_other = RCC_APB2Periph_GPIOC;
+            else if (gpio_port_other == GPIOD) gpio_clock_other = RCC_APB2Periph_GPIOD;
+            else gpio_clock_other = 0;
+            
+            if (gpio_clock_other != 0) {
+                RCC_APB2PeriphClockCmd(gpio_clock_other, ENABLE);
+            }
+            
+            /* 配置另一个通道的GPIO为浮空输入模式 */
+            GPIO_InitStructure.GPIO_Pin = gpio_pin_other;
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+            GPIO_Init(gpio_port_other, &GPIO_InitStructure);
+        }
+    }
+    
     /* ========== 2. 配置时基单元：让CNT计数器在内部时钟的驱动下自增运行 ========== */
     TIM_TimeBaseStructure.TIM_Period = 0xFFFF;
     TIM_TimeBaseStructure.TIM_Prescaler = 0;
@@ -260,16 +299,48 @@ IC_Status_t IC_Init(IC_Instance_t instance, IC_Channel_t channel, IC_Polarity_t 
     /* 如果是PWM模式（双边沿），使用PWMI配置 */
     if (polarity == IC_POLARITY_BOTH) {
         TIM_PWMIConfig(tim_periph, &TIM_ICInitStructure);
+        /* PWMI模式需要同时使能通道1和通道2 */
+        /* 通道1捕获脉宽，通道2捕获周期（对于通道2配置） */
+        /* 通道1捕获周期，通道2捕获脉宽（对于通道1配置） */
+        if (tim_channel == TIM_Channel_1) {
+            TIM_CCxCmd(tim_periph, TIM_Channel_1, TIM_CCx_Enable);
+            TIM_CCxCmd(tim_periph, TIM_Channel_2, TIM_CCx_Enable);
+        } else if (tim_channel == TIM_Channel_2) {
+            TIM_CCxCmd(tim_periph, TIM_Channel_1, TIM_CCx_Enable);
+            TIM_CCxCmd(tim_periph, TIM_Channel_2, TIM_CCx_Enable);
+        } else {
+            /* PWMI模式只支持通道1和通道2 */
+            return IC_ERROR_INVALID_CHANNEL;
+        }
+        
+        /* PWMI模式需要配置从模式（Slave Mode） */
+        /* 配置从模式触发源：通道1使用TI1FP1，通道2使用TI2FP2 */
+        uint16_t trigger_source;
+        if (channel == IC_CHANNEL_1) {
+            trigger_source = TIM_TS_TI1FP1;
+        } else if (channel == IC_CHANNEL_2) {
+            trigger_source = TIM_TS_TI2FP2;
+        } else {
+            return IC_ERROR_INVALID_CHANNEL;
+        }
+        TIM_SelectInputTrigger(tim_periph, trigger_source);
+        
+        /* 配置从模式为Reset：每次上升沿（周期捕获）时自动将CNT重置为0 */
+        /* 这样可以直接读取CCR值得到周期，无需处理溢出 */
+        TIM_SelectSlaveMode(tim_periph, TIM_SlaveMode_Reset);
+        
+        /* 标记为已初始化（使用从模式） */
+        g_ic_initialized[instance][channel] = true;
+        g_ic_slave_mode[instance] = true;
     } else {
         TIM_ICInit(tim_periph, &TIM_ICInitStructure);
+        /* 普通输入捕获模式只使能指定通道 */
+        TIM_CCxCmd(tim_periph, tim_channel, TIM_CCx_Enable);
+        
+        /* 标记为已初始化（不使用从模式） */
+        g_ic_initialized[instance][channel] = true;
+        g_ic_slave_mode[instance] = false;
     }
-    
-    /* 使能输入捕获通道（必须在初始化时使能） */
-    TIM_CCxCmd(tim_periph, tim_channel, TIM_CCx_Enable);
-    
-    /* 标记为已初始化（不使用从模式） */
-    g_ic_initialized[instance][channel] = true;
-    g_ic_slave_mode[instance] = false;
     
     return IC_OK;
 }
@@ -370,23 +441,36 @@ IC_Status_t IC_InitWithSlaveMode(IC_Instance_t instance, IC_Channel_t channel, I
     /* 如果是PWM模式（双边沿），使用PWMI配置 */
     if (polarity == IC_POLARITY_BOTH) {
         TIM_PWMIConfig(tim_periph, &TIM_ICInitStructure);
+        /* PWMI模式需要同时使能通道1和通道2 */
+        /* 通道1捕获脉宽，通道2捕获周期（对于通道2配置） */
+        /* 通道1捕获周期，通道2捕获脉宽（对于通道1配置） */
+        if (tim_channel == TIM_Channel_1) {
+            TIM_CCxCmd(tim_periph, TIM_Channel_1, TIM_CCx_Enable);
+            TIM_CCxCmd(tim_periph, TIM_Channel_2, TIM_CCx_Enable);
+        } else if (tim_channel == TIM_Channel_2) {
+            TIM_CCxCmd(tim_periph, TIM_Channel_1, TIM_CCx_Enable);
+            TIM_CCxCmd(tim_periph, TIM_Channel_2, TIM_CCx_Enable);
+        } else {
+            /* PWMI模式只支持通道1和通道2 */
+            return IC_ERROR_INVALID_CHANNEL;
+        }
     } else {
         TIM_ICInit(tim_periph, &TIM_ICInitStructure);
+        /* 普通输入捕获模式只使能指定通道 */
+        TIM_CCxCmd(tim_periph, tim_channel, TIM_CCx_Enable);
     }
-    
-    /* 使能输入捕获通道（必须在初始化时使能） */
-    TIM_CCxCmd(tim_periph, tim_channel, TIM_CCx_Enable);
     
     /* ========== 4. 从模式触发源 ========== */
     /* 根据通道选择触发源 */
+    /* 注意：STM32标准外设库只支持通道1和通道2作为从模式触发源 */
+    /* 通道3和通道4不支持作为从模式触发源，需要返回错误 */
     if (channel == IC_CHANNEL_1) {
         trigger_source = TIM_TS_TI1FP1;
     } else if (channel == IC_CHANNEL_2) {
         trigger_source = TIM_TS_TI2FP2;
-    } else if (channel == IC_CHANNEL_3) {
-        trigger_source = TIM_TS_TI3FP3;
     } else {
-        trigger_source = TIM_TS_TI4FP4;
+        /* 通道3和通道4不支持作为从模式触发源 */
+        return IC_ERROR_INVALID_CHANNEL;
     }
     TIM_SelectInputTrigger(tim_periph, trigger_source);
     
@@ -877,31 +961,97 @@ IC_Status_t IC_MeasurePWM(IC_Instance_t instance, IC_Channel_t channel, IC_Measu
         return IC_ERROR_INVALID_PERIPH;
     }
     
-    /* PWMI模式：通道1捕获周期，通道2捕获脉宽 */
+    /* PWMI模式：需要同时使用通道1和通道2 */
+    /* 对于通道1配置：通道1捕获周期（上升沿），通道2捕获脉宽（下降沿） */
+    /* 对于通道2配置：通道2捕获周期（上升沿），通道1捕获脉宽（下降沿） */
+    /* 
+     * PWMI模式工作原理（使用从模式+Reset）：
+     * - 配置从模式为Reset，触发源为周期通道的上升沿
+     * - 当周期通道捕获到上升沿时，CNT自动复位为0
+     * - 通道2（直接输入，上升沿）：捕获周期（两个上升沿之间的时间，CNT自动复位）
+     * - 通道1（间接输入，下降沿）：捕获脉宽（上升沿到下降沿的时间）
+     * 
+     * 对于通道2配置：
+     * - 通道2（直接输入，上升沿）：捕获周期，触发CNT复位
+     * - 通道1（间接输入，下降沿）：捕获脉宽
+     * 
+     * 正确的读取方法（使用从模式+Reset）：
+     * 1. 等待周期通道的上升沿（完成一个完整周期，CNT自动复位为0）
+     * 2. 此时可以直接读取周期通道的CCR值得到周期（因为CNT已复位）
+     * 3. 读取脉宽通道的CCR值得到脉宽（应该是当前周期的脉宽）
+     */
     if (channel == IC_CHANNEL_1) {
-        /* 等待捕获完成 */
+        /* 清除标志位，准备新的捕获 */
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC1);
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC2);
+        
+        /* 等待周期捕获完成（通道1上升沿，CNT自动复位为0） */
         start_time = Delay_GetTick();
-        while (!TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC1) || !TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC2)) {
+        while (!TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC1)) {
             if (Delay_GetElapsed(Delay_GetTick(), start_time) > timeout_ms) {
                 return IC_ERROR_TIMEOUT;
             }
         }
         
-        /* 读取周期和脉宽 */
+        /* 读取周期和脉宽（通道1捕获周期，通道2捕获脉宽） */
+        /* 使用从模式+Reset，CNT已自动复位，直接读取CCR即可 */
         period_count = TIM_GetCapture1(tim_periph);
         pulse_width_count = TIM_GetCapture2(tim_periph);
+        
+        /* 清除标志位，准备下次测量 */
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC1);
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC2);
     } else if (channel == IC_CHANNEL_2) {
-        /* 等待捕获完成 */
+        /* 清除标志位，准备新的捕获 */
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC1);
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC2);
+        
+        /* PWMI模式读取流程（通道2配置，使用从模式+Reset）：
+         * 在一个周期中：
+         * 1. 信号从低到高（上升沿）→ 通道2捕获周期，CNT复位为0
+         * 2. 信号从高到低（下降沿）→ 通道1捕获脉宽
+         * 
+         * 使用从模式+Reset时：
+         * - 当通道2捕获到上升沿时，CNT自动复位为0
+         * - 此时通道1的值应该是上一个周期的脉宽（因为下降沿在上升沿之前发生）
+         * 
+         * 正确的读取方法（参考标准PWMI配置）：
+         * 1. 等待通道1的下降沿（脉宽捕获，当前周期的脉宽）
+         * 2. 读取脉宽值
+         * 3. 等待通道2的上升沿（周期捕获，CNT复位，当前周期的周期）
+         * 4. 读取周期值
+         * 这样确保读取的是同一个周期的数据
+         */
+        
+        /* 等待脉宽捕获完成（通道1下降沿，当前周期的脉宽） */
         start_time = Delay_GetTick();
-        while (!TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC1) || !TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC2)) {
+        while (!TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC1)) {
             if (Delay_GetElapsed(Delay_GetTick(), start_time) > timeout_ms) {
                 return IC_ERROR_TIMEOUT;
             }
         }
         
-        /* 读取周期和脉宽 */
-        period_count = TIM_GetCapture2(tim_periph);
+        /* 读取脉宽值（通道1捕获脉宽） */
         pulse_width_count = TIM_GetCapture1(tim_periph);
+        
+        /* 清除通道1标志位 */
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC1);
+        
+        /* 等待周期捕获完成（通道2上升沿，CNT自动复位为0，当前周期的周期） */
+        start_time = Delay_GetTick();
+        while (!TIM_GetFlagStatus(tim_periph, TIM_FLAG_CC2)) {
+            if (Delay_GetElapsed(Delay_GetTick(), start_time) > timeout_ms) {
+                return IC_ERROR_TIMEOUT;
+            }
+        }
+        
+        /* 读取周期值（通道2捕获周期） */
+        /* 使用从模式+Reset，CNT已自动复位，直接读取CCR即可 */
+        period_count = TIM_GetCapture2(tim_periph);
+        
+        /* 清除标志位，准备下次测量 */
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC1);
+        TIM_ClearFlag(tim_periph, TIM_FLAG_CC2);
     } else {
         return IC_ERROR_INVALID_CHANNEL;  /* PWMI模式只支持通道1和2 */
     }
