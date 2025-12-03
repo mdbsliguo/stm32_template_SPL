@@ -589,6 +589,125 @@ void USART3_IRQHandler(void)
 #endif /* UART_H */
 #endif /* CONFIG_MODULE_UART_ENABLED */
 
+/* ==================== DMA中断服务程序 ==================== */
+
+#if defined(CONFIG_MODULE_DMA_ENABLED) && CONFIG_MODULE_DMA_ENABLED
+#ifdef DMA_H
+#include "dma.h"
+
+/**
+ * @brief DMA1 Channel1中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel1_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_1);
+}
+
+/**
+ * @brief DMA1 Channel2中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel2_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_2);
+}
+
+/**
+ * @brief DMA1 Channel3中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel3_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_3);
+}
+
+/**
+ * @brief DMA1 Channel4中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel4_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_4);
+}
+
+/**
+ * @brief DMA1 Channel5中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel5_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_5);
+}
+
+/**
+ * @brief DMA1 Channel6中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel6_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_6);
+}
+
+/**
+ * @brief DMA1 Channel7中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数
+ */
+void DMA1_Channel7_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_1_7);
+}
+
+#if defined(STM32F10X_HD) || defined(STM32F10X_CL) || defined(STM32F10X_HD_VL)
+/**
+ * @brief DMA2 Channel1中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数（仅HD/CL/HD_VL型号）
+ */
+void DMA2_Channel1_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_2_1);
+}
+
+/**
+ * @brief DMA2 Channel2中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数（仅HD/CL/HD_VL型号）
+ */
+void DMA2_Channel2_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_2_2);
+}
+
+/**
+ * @brief DMA2 Channel3中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数（仅HD/CL/HD_VL型号）
+ */
+void DMA2_Channel3_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_2_3);
+}
+
+/**
+ * @brief DMA2 Channel4中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数（仅HD/CL/HD_VL型号）
+ */
+void DMA2_Channel4_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_2_4);
+}
+
+/**
+ * @brief DMA2 Channel5中断服务程序
+ * @note 独立中断向量，直接调用模块处理函数（仅HD/CL/HD_VL型号）
+ */
+void DMA2_Channel5_IRQHandler(void)
+{
+    DMA_IRQHandler(DMA_CHANNEL_2_5);
+}
+#endif /* STM32F10X_HD || STM32F10X_CL || STM32F10X_HD_VL */
+
+#endif /* DMA_H */
+#endif /* CONFIG_MODULE_DMA_ENABLED */
+
 /**
   * @}
   */ 

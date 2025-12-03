@@ -69,7 +69,7 @@ static const DMA_Channel_t uart_tx_dma_channels[UART_INSTANCE_MAX] = {
 };
 
 static const DMA_Channel_t uart_rx_dma_channels[UART_INSTANCE_MAX] = {
-    DMA_CHANNEL_1_2,  /* UART1 RX -> DMA1_CH2 */
+    DMA_CHANNEL_1_5,  /* UART1 RX -> DMA1_CH5 (STM32F103¹Ì¶¨Ó³Éä) */
     DMA_CHANNEL_1_4,  /* UART2 RX -> DMA1_CH4 */
     DMA_CHANNEL_1_6,  /* UART3 RX -> DMA1_CH6 */
 };

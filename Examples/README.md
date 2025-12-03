@@ -51,6 +51,9 @@ Examples/
 │   ├── Timer03_DS3231ExternalSquareWave/  # DS3231外部方波示例
 │   ├── Timer04_DS3231ExternalClock32kHz/  # DS3231外部32kHz时钟示例
 │   └── Timer05_EncoderInterface/  # 编码器接口模式示例
+├── DMA/                          # DMA相关案例
+│   ├── DMA01_MemoryToMemory/        # 内存到内存数据搬运示例
+│   └── DMA02_UART1toMemory/         # UART1 DMA接收示例
 ├── UART/                         # 串口通信相关案例
 │   └── UART01_Error_Log_Output/   # 错误日志输出示例
 └── README.md                     # 本文档
@@ -138,6 +141,13 @@ Examples/
 | 03 | `Timer03_DS3231ExternalSquareWave` | DS3231外部方波示例 | ✅ 已调试完成 |
 | 04 | `Timer04_DS3231ExternalClock32kHz` | DS3231外部32kHz时钟示例 | ✅ 已调试完成 |
 | 05 | `Timer05_EncoderInterface` | 编码器接口模式示例 | ✅ 已调试完成 |
+
+### DMA相关案例
+
+| 序号 | 目录名 | 说明 | 状态 |
+|------|--------|------|------|
+| 01 | `DMA01_MemoryToMemory` | 内存到内存数据搬运示例 | ✅ 已调试完成 |
+| 02 | `DMA02_UART1toMemory` | UART1 DMA接收示例 | ✅ 已调试完成 |
 
 ### UART串口通信相关案例
 

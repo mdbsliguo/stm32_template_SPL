@@ -463,7 +463,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Common</GroupName>
+          <GroupName>common</GroupName>
           <Files>
             <File>
               <FileName>error_code.h</FileName>
@@ -498,7 +498,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>System</GroupName>
+          <GroupName>system</GroupName>
           <Files>
             <File>
               <FileName>config.h</FileName>

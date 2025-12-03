@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>Example3</OutputName>
+          <OutputName>DMA01</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\Start;..\..\..\Library;..\..\..\Core;.;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors;..\..\..\Drivers\timer</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\display;..\..\..\Drivers\sensors;..\..\..\Drivers\timer;..\..\..\Drivers\uart;..\..\..\Drivers\dma;..\..\..\Drivers\peripheral</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -421,16 +421,6 @@
               <FilePath>..\..\..\Drivers\display\oled_ssd1306.h</FilePath>
             </File>
             <File>
-              <FileName>i2c_sw.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\i2c\i2c_sw.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_sw.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\i2c\i2c_sw.h</FilePath>
-            </File>
-            <File>
               <FileName>oled_font_ascii8x16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.c</FilePath>
@@ -439,6 +429,16 @@
               <FileName>oled_font_ascii8x16.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_sw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\i2c\i2c_sw.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_sw.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\i2c\i2c_sw.h</FilePath>
             </File>
             <File>
               <FileName>TIM2_TimeBase.c</FileName>
@@ -450,6 +450,36 @@
               <FileType>5</FileType>
               <FilePath>..\..\..\Drivers\timer\TIM2_TimeBase.h</FilePath>
             </File>
+            <File>
+              <FileName>uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\uart\uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\uart\uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>dma.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\dma\dma.c</FilePath>
+            </File>
+            <File>
+              <FileName>dma.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\dma\dma.h</FilePath>
+            </File>
+            <File>
+              <FileName>nvic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\peripheral\nvic.c</FilePath>
+            </File>
+            <File>
+              <FileName>nvic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\peripheral\nvic.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -459,6 +489,16 @@
               <FileName>error_code.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Common\error_code.h</FilePath>
+            </File>
+            <File>
+              <FileName>error_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Common\error_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>error_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Common\error_handler.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -799,6 +839,16 @@
               <FileName>debug.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Debug\debug.h</FilePath>
+            </File>
+            <File>
+              <FileName>log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Debug\log.c</FilePath>
+            </File>
+            <File>
+              <FileName>log.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Debug\log.h</FilePath>
             </File>
           </Files>
         </Group>
