@@ -125,6 +125,7 @@ static void ErrorModule_Init(void)
     ErrorModule_Register("SYSTEM_MONITOR", ERROR_BASE_SYSTEM_MONITOR);
     ErrorModule_Register("DS3231", ERROR_BASE_DS3231);
     ErrorModule_Register("SOFT_I2C", ERROR_BASE_SOFT_I2C);
+    ErrorModule_Register("MODBUS_RTU", ERROR_BASE_MODBUS_RTU);
     /* 可以继续添加其他模块 */
 }
 
@@ -445,6 +446,25 @@ const char* ErrorHandler_GetString(error_code_t error_code)
             case ERROR_BASE_SYSTEM_MONITOR - 1: return "SYSMON: Not initialized";
             case ERROR_BASE_SYSTEM_MONITOR - 2: return "SYSMON: Invalid parameter";
             default: return "SYSMON: Unknown error";
+        }
+    }
+    /* ModBusRTU模块错误码 */
+    /* 错误码范围：[ERROR_BASE_MODBUS_RTU - 99, ERROR_BASE_MODBUS_RTU]，即 [-4199, -4100] */
+    else if (ERROR_IN_RANGE(error_code, ERROR_BASE_MODBUS_RTU))
+    {
+        switch (error_code)
+        {
+            case ERROR_BASE_MODBUS_RTU - 1: return "ModBusRTU: Null pointer";
+            case ERROR_BASE_MODBUS_RTU - 2: return "ModBusRTU: Invalid parameter";
+            case ERROR_BASE_MODBUS_RTU - 3: return "ModBusRTU: Invalid instance";
+            case ERROR_BASE_MODBUS_RTU - 4: return "ModBusRTU: Not initialized";
+            case ERROR_BASE_MODBUS_RTU - 5: return "ModBusRTU: Timeout";
+            case ERROR_BASE_MODBUS_RTU - 6: return "ModBusRTU: CRC error";
+            case ERROR_BASE_MODBUS_RTU - 7: return "ModBusRTU: Invalid response";
+            case ERROR_BASE_MODBUS_RTU - 8: return "ModBusRTU: Invalid address";
+            case ERROR_BASE_MODBUS_RTU - 9: return "ModBusRTU: Invalid function code";
+            case ERROR_BASE_MODBUS_RTU - 10: return "ModBusRTU: Exception";
+            default: return "ModBusRTU: Unknown error";
         }
     }
     

@@ -8,7 +8,8 @@
 
 ```
 middlewares/
-├── protocols/      # 协议栈（计划中）
+├── protocols/      # 协议栈
+│   └── modbus_rtu/ # ModBusRTU协议栈（已实现）
 ├── algorithms/     # 算法库（计划中）
 └── storage/        # 存储管理
     └── fatfs/      # FatFS文件系统（已实现）
@@ -30,7 +31,7 @@ middlewares/
 
 | 模块 | 功能 | 状态 |
 |------|------|------|
-| modbus | Modbus RTU协议栈 | ⏳ 计划中 |
+| modbus_rtu | Modbus RTU协议栈，支持主机和从机模式，包含常用功能码（03/06/10/16等）和CRC16校验 | ✅ 已实现 |
 | onewire | 1-Wire协议 | ⏳ 计划中 |
 | canopen | CANopen协议栈 | ⏳ 计划中 |
 | dmx512 | DMX512协议 | ⏳ 计划中 |

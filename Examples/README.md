@@ -56,6 +56,8 @@ Examples/
 │   └── DMA02_UART1toMemory/         # UART1 DMA接收示例
 ├── UART/                         # 串口通信相关案例
 │   └── UART01_Error_Log_Output/   # 错误日志输出示例
+├── Bus/                          # 总线通信相关案例
+│   └── Bus01_ModBusRTU_GasSensor/  # ModBusRTU气体传感器读取示例
 └── README.md                     # 本文档
 ```
 
@@ -154,6 +156,12 @@ Examples/
 | 序号 | 目录名 | 说明 | 状态 |
 |------|--------|------|------|
 | 01 | `UART01_Error_Log_Output` | 错误日志输出示例 | ✅ 已调试完成 |
+
+### Bus总线通信相关案例
+
+| 序号 | 目录名 | 说明 | 状态 |
+|------|--------|------|------|
+| 01 | `Bus01_ModBusRTU_GasSensor` | ModBusRTU气体传感器读取示例 | ✅ 已调试完成 |
 
 ---
 

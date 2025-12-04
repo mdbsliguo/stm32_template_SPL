@@ -58,6 +58,7 @@
 #define CONFIG_MODULE_LITTLEFS_ENABLED    1   /**< LittleFS文件系统模块开关 */
 #define CONFIG_MODULE_LITTLEFS_SPI_ENABLED 1  /**< LittleFS SPI接口开关（用于SPI Flash设备） */
 #define CONFIG_MODULE_FS_WRAPPER_ENABLED  1   /**< FS_WRAPPER模块开关（文件系统应用层封装） */
+#define CONFIG_MODULE_MODBUS_RTU_ENABLED  1   /**< ModBusRTU协议栈模块开关 */
 
 /* 系统层模块 */
 #define CONFIG_MODULE_DELAY_ENABLED        1   /**< 延时模块开关 */
