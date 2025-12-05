@@ -1,6 +1,9 @@
 {
   "files.encoding": "gb2312",
   "files.autoGuessEncoding": true,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": false,
   "[c]": {
     "files.encoding": "gb2312"
   },
