@@ -49,7 +49,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Build\Keil\Objects\</OutputDirectory>
-          <OutputName>PWM03_FreqDutyResControl</OutputName>
+          <OutputName>PWM02_tb6612_ThreeDevicesDemo</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -481,16 +481,6 @@
               <FilePath>..\..\..\Drivers\timer\timer_pwm.h</FilePath>
             </File>
             <File>
-              <FileName>exti.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Drivers\peripheral\exti.c</FilePath>
-            </File>
-            <File>
-              <FileName>exti.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Drivers\peripheral\exti.h</FilePath>
-            </File>
-            <File>
               <FileName>tb6612.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\motor\tb6612.c</FilePath>
@@ -594,16 +584,6 @@
               <FileName>stm32f10x_gpio.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Library\stm32f10x_gpio.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_exti.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_exti.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f10x_exti.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Library\stm32f10x_exti.h</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_rcc.c</FileName>

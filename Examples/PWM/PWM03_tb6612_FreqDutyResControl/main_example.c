@@ -1,7 +1,7 @@
 /**
  * @file main_example.c
  * @brief 案例 - PWM频率、占空比手动控制
- * @example Examples/PWM/PWM03_FreqDutyResControl/main_example.c
+ * @example Examples/PWM/PWM03_TB6612_FreqDutyResControl/main_example.c
  * @details 通过旋转编码器手动调节PWM的频率和占空比，OLED显示三个参数值（频率、占空比、分辨率），按钮切换选中项
  *
  * 硬件要求：
@@ -13,11 +13,11 @@
  * - UART1：PA9(TX), PA10(RX)，115200波特率
  *
  * 硬件配置：
- * 在 Examples/PWM/PWM03_FreqDutyResControl/board.h 中配置
+ * 在 Examples/PWM/PWM03_TB6612_FreqDutyResControl/board.h 中配置
  *
  * 使用方法：
- * 1. 打开案例工程：双击 Examples/PWM/PWM03_FreqDutyResControl/Examples.uvprojx
- * 2. 根据实际硬件修改 Examples/PWM/PWM03_FreqDutyResControl/board.h 中的配置
+ * 1. 打开案例工程：双击 Examples/PWM/PWM03_TB6612_FreqDutyResControl/Examples.uvprojx
+ * 2. 根据实际硬件修改 Examples/PWM/PWM03_TB6612_FreqDutyResControl/board.h 中的配置
  * 3. 编译运行（F7编译，F8下载）
  * 
  * 注意：本案例是独立工程，无需复制文件

@@ -76,3 +76,6 @@ crc_received = (uint16_t)frame[frame_length - 2] | ((uint16_t)frame[frame_length
 2. **添加单元测试验证CRC校验**
 3. **在优化实施前确保逻辑正确**
 
+
+
+

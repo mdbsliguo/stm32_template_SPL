@@ -55,6 +55,12 @@
 #include "system_monitor.h"
 #endif
 
+#if defined(CONFIG_MODULE_TIMER_ENABLED) && CONFIG_MODULE_TIMER_ENABLED
+#ifdef TIMER_ENCODER_H
+#include "timer_encoder.h"
+#endif /* TIMER_ENCODER_H */
+#endif /* CONFIG_MODULE_TIMER_ENABLED */
+
 /** @addtogroup STM32F10x_StdPeriph_Template
  * @{
  */
@@ -343,6 +349,7 @@ extern void TIM_SW_Update(void);
 
 void TIM2_IRQHandler(void)
 {
+    /* ========== 处理TIM2_TimeBase中断（Update中断） ========== */
     if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
     {
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
@@ -361,6 +368,16 @@ void TIM2_IRQHandler(void)
         TIM_SW_Update();
         #endif
     }
+    
+    /* ========== 处理编码器中断（如果使用TIM2作为编码器） ========== */
+    #if defined(CONFIG_MODULE_TIMER_ENABLED) && CONFIG_MODULE_TIMER_ENABLED
+    #ifdef TIMER_ENCODER_H
+    /* 检查是否是编码器中断（CC1中断） */
+    if (TIM_GetITStatus(TIM2, TIM_IT_CC1) != RESET) {
+        ENCODER_IRQHandler(ENCODER_INSTANCE_TIM2);
+    }
+    #endif /* TIMER_ENCODER_H */
+    #endif /* CONFIG_MODULE_TIMER_ENABLED */
 }
 
 /******************************************************************************/

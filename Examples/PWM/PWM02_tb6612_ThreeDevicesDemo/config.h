@@ -1,6 +1,6 @@
 /**
  * @file config.h
- * @brief PWM02_ThreeDevicesDemo案例专用配置（独立工程）
+ * @brief PWM02_TB6612_ThreeDevicesDemo案例专用配置（独立工程）
  * @details 只启用案例需要的模块，禁用其他模块以减小代码体积
  */
 

@@ -41,7 +41,9 @@ Examples/
 │   └── OLED01_helloword/         # OLED显示测试
 ├── PWM/                          # PWM相关案例
 │   ├── PWM01_pwm_Buzzer/         # PWM模式Buzzer控制示例
-│   └── PWM02_ThreeDevicesDemo/   # PWM频率、占空比、分辨率三参数演示
+│   ├── PWM02_TB6612_ThreeDevicesDemo/   # PWM频率、占空比、分辨率三参数演示（TB6612电机驱动）
+│   ├── PWM03_TB6612_FreqDutyResControl/  # PWM频率、占空比、分辨率手动控制（TB6612电机驱动）
+│   └── PWM06_BTS7960_CarAirPumpMotor/  # BTS7960车载充气泵电机控制示例
 ├── RTC/                          # RTC实时时钟相关案例
 │   ├── RTC01_DS3231_Reading_writing/  # DS3231读写时间示例
 │   └── RTC02_DS3231_Alarm/       # DS3231闹钟功能示例
@@ -125,7 +127,9 @@ Examples/
 | 序号 | 目录名 | 说明 | 状态 |
 |------|--------|------|------|
 | 01 | `PWM01_pwm_Buzzer` | PWM模式Buzzer控制示例 | ✅ 已调试完成 |
-| 02 | `PWM02_ThreeDevicesDemo` | PWM频率、占空比、分辨率三参数演示 | ✅ 已调试完成 |
+| 02 | `PWM02_TB6612_ThreeDevicesDemo` | PWM频率、占空比、分辨率三参数演示（TB6612电机驱动） | ✅ 已调试完成 |
+| 03 | `PWM03_TB6612_FreqDutyResControl` | PWM频率、占空比、分辨率手动控制（TB6612电机驱动） | ✅ 已调试完成 |
+| 06 | `PWM06_BTS7960_CarAirPumpMotor` | BTS7960车载充气泵电机控制示例（编码器接口模式，占空比控制） | ✅ 已创建 |
 
 ### RTC实时时钟相关案例
 

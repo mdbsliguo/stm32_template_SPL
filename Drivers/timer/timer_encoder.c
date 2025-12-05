@@ -41,9 +41,12 @@ static bool g_encoder_initialized[ENCODER_INSTANCE_MAX] = {false};
 static bool g_tim3_remap_enabled = false;  /* false=默认(PA6/PA7), true=重映射(PB4/PB5或PC6/PC7) */
 static bool g_tim3_full_remap = false;     /* false=部分重映射(PB4/PB5), true=完全重映射(PC6/PC7) */
 
-/* 中断回调函数数组（中断功能未实现，暂时未使用） */
-static ENCODER_IT_Callback_t g_encoder_it_callbacks[ENCODER_INSTANCE_MAX][2] __attribute__((unused)) = {NULL};
-static void *g_encoder_it_user_data[ENCODER_INSTANCE_MAX][2] __attribute__((unused)) = {NULL};
+/* 中断回调函数数组 */
+static ENCODER_IT_Callback_t g_encoder_it_callbacks[ENCODER_INSTANCE_MAX][2] = {NULL};
+static void *g_encoder_it_user_data[ENCODER_INSTANCE_MAX][2] = {NULL};
+
+/* 方向变化检测（用于DIRECTION中断） */
+static ENCODER_Direction_t g_encoder_last_direction[ENCODER_INSTANCE_MAX] = {ENCODER_DIR_FORWARD, ENCODER_DIR_FORWARD, ENCODER_DIR_FORWARD, ENCODER_DIR_FORWARD};
 
 /**
  * @brief 获取定时器外设时钟使能值
@@ -536,22 +539,40 @@ uint8_t ENCODER_IsInitialized(ENCODER_Instance_t instance)
 
 /**
  * @brief 获取编码器中断类型对应的SPL库中断值
- * @note 中断功能未实现，暂时保留为占位函数
+ * @param[in] it_type 编码器中断类型
+ * @return uint16_t TIM中断类型值
  */
 static uint16_t ENCODER_GetITValue(ENCODER_IT_t it_type)
 {
-    (void)it_type;
-    return 0;
+    switch (it_type) {
+        case ENCODER_IT_OVERFLOW:
+            return TIM_IT_Update;  /* 溢出中断对应Update中断 */
+        case ENCODER_IT_DIRECTION:
+            return TIM_IT_CC1;     /* 方向变化中断使用CC1中断（编码器接口模式下，CC1/CC2都可以） */
+        default:
+            return 0;
+    }
 }
 
 /**
  * @brief 获取定时器中断向量
- * @note 中断功能未实现，暂时保留为占位函数
+ * @param[in] instance 编码器实例索引
+ * @return IRQn_Type 中断向量号
  */
 static IRQn_Type ENCODER_GetIRQn(ENCODER_Instance_t instance)
 {
-    (void)instance;
-    return (IRQn_Type)0;
+    switch (instance) {
+        case ENCODER_INSTANCE_TIM1:
+            return TIM1_UP_IRQn;  /* TIM1使用UP中断 */
+        case ENCODER_INSTANCE_TIM2:
+            return TIM2_IRQn;     /* TIM2全局中断 */
+        case ENCODER_INSTANCE_TIM3:
+            return TIM3_IRQn;     /* TIM3全局中断 */
+        case ENCODER_INSTANCE_TIM4:
+            return TIM4_IRQn;     /* TIM4全局中断 */
+        default:
+            return (IRQn_Type)0;
+    }
 }
 
 /**
@@ -559,6 +580,10 @@ static IRQn_Type ENCODER_GetIRQn(ENCODER_Instance_t instance)
  */
 ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_type)
 {
+    TIM_TypeDef *tim_periph;
+    uint16_t tim_it;
+    IRQn_Type irqn;
+    
     /* ========== 参数校验 ========== */
     if (instance >= ENCODER_INSTANCE_MAX) {
         return ENCODER_ERROR_INVALID_INSTANCE;
@@ -567,10 +592,39 @@ ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_t
         return ENCODER_ERROR_INVALID_PARAM;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    if (!g_encoder_initialized[instance]) {
+        return ENCODER_ERROR_NOT_INITIALIZED;
+    }
     
-    return ENCODER_ERROR_NOT_IMPLEMENTED;
+    /* ========== 获取定时器外设 ========== */
+    tim_periph = encoder_tim_periphs[instance];
+    if (tim_periph == NULL) {
+        return ENCODER_ERROR_INVALID_PERIPH;
+    }
+    
+    /* ========== 获取中断类型和中断向量 ========== */
+    tim_it = ENCODER_GetITValue(it_type);
+    irqn = ENCODER_GetIRQn(instance);
+    
+    if (tim_it == 0 || irqn == 0) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 使能定时器中断 ========== */
+    TIM_ITConfig(tim_periph, tim_it, ENABLE);
+    
+    /* ========== 使能NVIC中断 ========== */
+    NVIC_ConfigIRQ(irqn, 2, 0, true);  /* 抢占优先级=2，子优先级=0，使能 */
+    
+    /* ========== 初始化方向记录（用于DIRECTION中断） ========== */
+    if (it_type == ENCODER_IT_DIRECTION) {
+        ENCODER_Direction_t current_dir;
+        if (ENCODER_GetDirection(instance, &current_dir) == ENCODER_OK) {
+            g_encoder_last_direction[instance] = current_dir;
+        }
+    }
+    
+    return ENCODER_OK;
 }
 
 /**
@@ -578,6 +632,9 @@ ENCODER_Status_t ENCODER_EnableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_t
  */
 ENCODER_Status_t ENCODER_DisableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_type)
 {
+    TIM_TypeDef *tim_periph;
+    uint16_t tim_it;
+    
     /* ========== 参数校验 ========== */
     if (instance >= ENCODER_INSTANCE_MAX) {
         return ENCODER_ERROR_INVALID_INSTANCE;
@@ -586,10 +643,28 @@ ENCODER_Status_t ENCODER_DisableIT(ENCODER_Instance_t instance, ENCODER_IT_t it_
         return ENCODER_ERROR_INVALID_PARAM;
     }
     
-    /* ========== 占位空函数 ========== */
-    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    if (!g_encoder_initialized[instance]) {
+        return ENCODER_ERROR_NOT_INITIALIZED;
+    }
     
-    return ENCODER_ERROR_NOT_IMPLEMENTED;
+    /* ========== 获取定时器外设 ========== */
+    tim_periph = encoder_tim_periphs[instance];
+    if (tim_periph == NULL) {
+        return ENCODER_ERROR_INVALID_PERIPH;
+    }
+    
+    /* ========== 获取中断类型 ========== */
+    tim_it = ENCODER_GetITValue(it_type);
+    if (tim_it == 0) {
+        return ENCODER_ERROR_INVALID_PARAM;
+    }
+    
+    /* ========== 禁用定时器中断 ========== */
+    TIM_ITConfig(tim_periph, tim_it, DISABLE);
+    
+    /* 注意：不在这里禁用NVIC，因为可能有其他中断类型仍在使用同一个中断向量 */
+    
+    return ENCODER_OK;
 }
 
 /**
@@ -607,12 +682,11 @@ ENCODER_Status_t ENCODER_SetITCallback(ENCODER_Instance_t instance, ENCODER_IT_t
     }
     /* 注意：callback可以为NULL（表示禁用回调），user_data可以为NULL */
     
-    /* ========== 占位空函数 ========== */
-    (void)callback;
-    (void)user_data;
-    #warning "ENCODER函数: 占位空函数，功能未实现，待完善"
+    /* ========== 保存回调函数 ========== */
+    g_encoder_it_callbacks[instance][it_type] = callback;
+    g_encoder_it_user_data[instance][it_type] = user_data;
     
-    return ENCODER_ERROR_NOT_IMPLEMENTED;
+    return ENCODER_OK;
 }
 
 /**
@@ -620,19 +694,93 @@ ENCODER_Status_t ENCODER_SetITCallback(ENCODER_Instance_t instance, ENCODER_IT_t
  */
 void ENCODER_IRQHandler(ENCODER_Instance_t instance)
 {
+    TIM_TypeDef *tim_periph;
+    int32_t count;
+    ENCODER_Direction_t current_dir;
+    
     /* ========== 参数校验 ========== */
     if (instance >= ENCODER_INSTANCE_MAX) {
         return;  /* 无效实例直接返回 */
     }
     
-    /* ========== 占位空函数 ========== */
-    /* 功能未实现 */
+    if (!g_encoder_initialized[instance]) {
+        return;  /* 未初始化直接返回 */
+    }
+    
+    tim_periph = encoder_tim_periphs[instance];
+    if (tim_periph == NULL) {
+        return;
+    }
+    
+    /* ========== 处理溢出中断 ========== */
+    if (TIM_GetITStatus(tim_periph, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(tim_periph, TIM_IT_Update);
+        
+        /* 读取当前计数值 */
+        if (ENCODER_ReadCount(instance, &count) == ENCODER_OK) {
+            /* 调用溢出中断回调 */
+            if (g_encoder_it_callbacks[instance][ENCODER_IT_OVERFLOW] != NULL) {
+                g_encoder_it_callbacks[instance][ENCODER_IT_OVERFLOW](
+                    instance, ENCODER_IT_OVERFLOW, count, 
+                    g_encoder_it_user_data[instance][ENCODER_IT_OVERFLOW]);
+            }
+        }
+    }
+    
+    /* ========== 处理方向变化中断（通过CC1中断检测，每次边沿变化都触发） ========== */
+    if (TIM_GetITStatus(tim_periph, TIM_IT_CC1) != RESET) {
+        TIM_ClearITPendingBit(tim_periph, TIM_IT_CC1);
+        
+        /* 读取当前计数值（每次边沿变化CNT都会更新） */
+        if (ENCODER_ReadCount(instance, &count) == ENCODER_OK) {
+            /* 读取当前方向 */
+            if (ENCODER_GetDirection(instance, &current_dir) == ENCODER_OK) {
+                /* 检查方向是否变化 */
+                if (current_dir != g_encoder_last_direction[instance]) {
+                    g_encoder_last_direction[instance] = current_dir;
+                }
+            }
+            
+            /* 每次边沿变化都调用方向变化中断回调（用于实时响应编码器旋转） */
+            /* 注意：这里复用ENCODER_IT_DIRECTION回调，但实际是每次计数变化都触发 */
+            if (g_encoder_it_callbacks[instance][ENCODER_IT_DIRECTION] != NULL) {
+                g_encoder_it_callbacks[instance][ENCODER_IT_DIRECTION](
+                    instance, ENCODER_IT_DIRECTION, count, 
+                    g_encoder_it_user_data[instance][ENCODER_IT_DIRECTION]);
+            }
+        }
+    }
 }
 
 
 /* 定时器中断服务程序入口 */
 void TIM1_UP_IRQHandler(void) { ENCODER_IRQHandler(ENCODER_INSTANCE_TIM1); }
-/* TIM2/3/4的溢出中断与输入捕获共用，已在timer_input_capture.c中定义 */
+
+/* TIM2/3/4的全局中断服务程序（与输入捕获和TIM2_TimeBase共用） */
+/* 注意：TIM2_IRQHandler已在stm32f10x_it.c中定义（用于TIM2_TimeBase），需要在那里同时处理编码器中断 */
+/* 注意：如果同时使用编码器和输入捕获，需要在中断服务程序中同时处理 */
+
+/* TIM3中断服务程序（用于编码器，与输入捕获共用） */
+void TIM3_IRQHandler(void) 
+{
+    /* 检查是否是编码器中断 */
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET || 
+        TIM_GetITStatus(TIM3, TIM_IT_CC1) != RESET) {
+        ENCODER_IRQHandler(ENCODER_INSTANCE_TIM3);
+    }
+    /* 注意：如果同时使用输入捕获，需要在这里也调用IC_IRQHandler */
+}
+
+/* TIM4中断服务程序（用于编码器，与输入捕获共用） */
+void TIM4_IRQHandler(void) 
+{
+    /* 检查是否是编码器中断 */
+    if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET || 
+        TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET) {
+        ENCODER_IRQHandler(ENCODER_INSTANCE_TIM4);
+    }
+    /* 注意：如果同时使用输入捕获，需要在这里也调用IC_IRQHandler */
+}
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
 

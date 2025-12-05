@@ -102,7 +102,7 @@
     - 保持电机驱动电路与STM32控制电路的地线连接良好
 - LED使用PWM控制亮度，与占空比参数同步变化
 - 案例是独立工程，硬件配置在案例目录下的 `board.h` 中
-- 如果硬件引脚不同，直接修改 `Examples/PWM/PWM03_FreqDutyResControl/board.h` 中的配置即可
+- 如果硬件引脚不同，直接修改 `Examples/PWM/PWM03_TB6612_FreqDutyResControl/board.h` 中的配置即可
 
 ---
 
@@ -596,7 +596,7 @@ flowchart TD
 
 6. **硬件配置**：
    - 案例是独立工程，硬件配置在案例目录下的 `board.h` 中
-   - 如果硬件引脚不同，直接修改 `Examples/PWM/PWM03_FreqDutyResControl/board.h` 中的配置即可
+   - 如果硬件引脚不同，直接修改 `Examples/PWM/PWM03_TB6612_FreqDutyResControl/board.h` 中的配置即可
 
 7. **中断回调函数应简短**：
    - 在中断回调中只做简单操作（记录状态、更新计数、设置标志位）
@@ -790,12 +790,12 @@ flowchart TD
   - **系统初始化**：`System/system_init.c/h`
 
 - **业务文档**：
-  - **主程序代码**：`Examples/PWM/PWM03_FreqDutyResControl/main_example.c`
-  - **硬件配置**：`Examples/PWM/PWM03_FreqDutyResControl/board.h`
-  - **模块配置**：`Examples/PWM/PWM03_FreqDutyResControl/config.h`
+  - **主程序代码**：`Examples/PWM/PWM03_TB6612_FreqDutyResControl/main_example.c`
+  - **硬件配置**：`Examples/PWM/PWM03_TB6612_FreqDutyResControl/board.h`
+  - **模块配置**：`Examples/PWM/PWM03_TB6612_FreqDutyResControl/config.h`
   - **项目规范文档**：`PROJECT_KEYWORDS.md`
   - **案例参考**：`Examples/README.md`
-  - **PWM02案例**：`Examples/PWM/PWM02_ThreeDevicesDemo/` - PWM参数控制参考
+  - **PWM02案例**：`Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/` - PWM参数控制参考
   - **EXTI02案例**：`Examples/EXTI/EXTI02_RotaryEncoder_Counter/` - 旋转编码器处理参考
 
 ---

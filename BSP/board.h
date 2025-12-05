@@ -391,6 +391,38 @@ typedef struct
     {NULL, 0, NULL, 0, NULL, 0, 0, 0, 0}, /* TB6612实例2：未使用，占位 */ \
 }
 
+/* ==================== BTS7960配置 ==================== */
+
+/* BTS7960配置结构体 */
+typedef struct
+{
+    /* 使能引脚（必须配置，R_EN和L_EN必须同时接高电平才能工作） */
+    GPIO_TypeDef *r_en_port;         /**< R_EN引脚端口（正转使能） */
+    uint16_t r_en_pin;               /**< R_EN引脚号 */
+    GPIO_TypeDef *l_en_port;          /**< L_EN引脚端口（反转使能） */
+    uint16_t l_en_pin;               /**< L_EN引脚号 */
+    
+    /* PWM引脚（必须配置） */
+    uint8_t rpwm_instance;           /**< RPWM实例：0=TIM1, 1=TIM3, 2=TIM4 */
+    uint8_t rpwm_channel;            /**< RPWM通道：0=CH1, 1=CH2, 2=CH3, 3=CH4 */
+    uint8_t lpwm_instance;           /**< LPWM实例：0=TIM1, 1=TIM3, 2=TIM4 */
+    uint8_t lpwm_channel;            /**< LPWM通道：0=CH1, 1=CH2, 2=CH3, 3=CH4 */
+    
+    /* 电流报警输出（可选，用于过流检测） */
+    GPIO_TypeDef *r_is_port;          /**< R_IS引脚端口（正转电流报警） */
+    uint16_t r_is_pin;               /**< R_IS引脚号 */
+    GPIO_TypeDef *l_is_port;          /**< L_IS引脚端口（反转电流报警） */
+    uint16_t l_is_pin;               /**< L_IS引脚号 */
+    
+    uint8_t enabled;                 /**< 使能标志：1=启用，0=禁用 */
+} BTS7960_Config_t;
+
+/* BTS7960统一配置表 - 默认配置（未使用，占位） */
+#define BTS7960_CONFIGS {                                                                                    \
+    {NULL, 0, NULL, 0, 0, 0, 0, 0, NULL, 0, NULL, 0, 0}, /* BTS7960实例1：未使用，占位 */ \
+    {NULL, 0, NULL, 0, 0, 0, 0, 0, NULL, 0, NULL, 0, 0}, /* BTS7960实例2：未使用，占位 */ \
+}
+
 /* ==================== 时钟管理配置 ==================== */
 
 /* 时钟管理配置 - 案例10配置（自动模式，用于CPU负载监控） */

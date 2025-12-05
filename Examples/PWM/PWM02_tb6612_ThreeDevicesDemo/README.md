@@ -164,7 +164,7 @@ GND ─────────────────> GND ──────�
 ### 硬件配置
 
 **重要说明**：案例是独立工程，硬件配置在案例目录下的 `board.h` 中。
-如果硬件引脚不同，直接修改 `Examples/PWM/PWM02_ThreeDevicesDemo/board.h` 中的配置即可。
+如果硬件引脚不同，直接修改 `Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/board.h` 中的配置即可。
 
 **PWM配置**（已包含在board.h中）：
 ```c
@@ -330,7 +330,7 @@ flowchart TB
 
 ### 快速开始
 
-1. **打开案例工程**：双击 `Examples/PWM/PWM02_ThreeDevicesDemo/Examples.uvprojx` 打开Keil工程
+1. **打开案例工程**：双击 `Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/Examples.uvprojx` 打开Keil工程
 2. **检查硬件配置**：确认案例目录下的 `board.h` 中硬件配置正确
 3. **编译下载**：在Keil中编译（F7）并下载到开发板（F8）
 4. **观察效果**：
@@ -766,7 +766,7 @@ PWM_EnableChannel(PWM_INSTANCE_1, PWM_CHANNEL_2);  // 使能马达通道
 
 4. **硬件配置**：
    - 案例是独立工程，硬件配置在案例目录下的 `board.h` 中
-   - 如果硬件引脚不同，直接修改 `Examples/PWM/PWM02_ThreeDevicesDemo/board.h` 中的配置即可
+   - 如果硬件引脚不同，直接修改 `Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/board.h` 中的配置即可
 
 5. **演示顺序**：
    - 演示按照阶段0→1→2→3→4的顺序进行
@@ -1049,9 +1049,9 @@ PWM_EnableChannel(PWM_INSTANCE_1, PWM_CHANNEL_2);  // 使能马达通道
   - **系统初始化**：`System/system_init.c/h`
 
 - **业务文档**：
-  - **主程序代码**：`Examples/PWM/PWM02_ThreeDevicesDemo/main_example.c`
-  - **硬件配置**：`Examples/PWM/PWM02_ThreeDevicesDemo/board.h`
-- **模块配置**：`Examples/PWM/PWM02_ThreeDevicesDemo/config.h`
+  - **主程序代码**：`Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/main_example.c`
+  - **硬件配置**：`Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/board.h`
+- **模块配置**：`Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/config.h`
 - **PWM模块文档**：`Drivers/timer/README.md`
 - **TB6612模块文档**：`Drivers/motor/README.md`
 - **Buzzer模块文档**：`Drivers/basic/README.md`

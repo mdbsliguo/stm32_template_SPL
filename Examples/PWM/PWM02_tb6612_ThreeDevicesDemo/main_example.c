@@ -1,7 +1,7 @@
 /**
  * @file main_example.c
  * @brief 案例 - PWM频率、占空比、分辨率三参数演示
- * @example Examples/PWM/PWM02_ThreeDevicesDemo/main_example.c
+ * @example Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/main_example.c
  * @details 通过三设备联动（马达+LED+无源蜂鸣器）演示PWM的频率、占空比、分辨率三个核心参数的影响
  *
  * 硬件要求：
@@ -11,11 +11,11 @@
  * - 马达：通过TB6612驱动，PWMA连接PA7（TIM3 CH2），AIN1=PB3，AIN2=PB4，STBY=PB5
  *
  * 硬件配置：
- * 在 Examples/PWM/PWM02_ThreeDevicesDemo/board.h 中配置
+ * 在 Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/board.h 中配置
  *
  * 使用方法：
- * 1. 打开案例工程：双击 Examples/PWM/PWM02_ThreeDevicesDemo/Examples.uvprojx
- * 2. 根据实际硬件修改 Examples/PWM/PWM02_ThreeDevicesDemo/board.h 中的配置
+ * 1. 打开案例工程：双击 Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/Examples.uvprojx
+ * 2. 根据实际硬件修改 Examples/PWM/PWM02_TB6612_ThreeDevicesDemo/board.h 中的配置
  * 3. 编译运行（F7编译，F8下载）
  * 
  * 注意：本案例是独立工程，无需复制文件
