@@ -312,4 +312,3 @@ ADC_Status_t ADC_GetDualMode(ADC_DualMode_t *mode);
 #endif
 
 #endif /* ADC_H */
-

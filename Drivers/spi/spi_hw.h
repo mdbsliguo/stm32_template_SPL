@@ -403,4 +403,3 @@ void SPI_IRQHandler(SPI_Instance_t instance);
 #endif
 
 #endif /* SPI_HW_H */
-

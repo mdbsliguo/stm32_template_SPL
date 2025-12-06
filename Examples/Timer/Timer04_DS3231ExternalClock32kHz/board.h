@@ -134,4 +134,3 @@ typedef struct
 #define CLKM_IDLE_HOOK_ENABLE 0        /* 禁用空闲钩子（Timer04不使用） */
 
 #endif /* BOARD_H */
-

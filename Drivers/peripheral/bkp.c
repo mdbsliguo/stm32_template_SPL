@@ -158,4 +158,3 @@ void BKP_Tamper_IRQHandler(void)
 
 
 #endif /* CONFIG_MODULE_BKP_ENABLED */
-

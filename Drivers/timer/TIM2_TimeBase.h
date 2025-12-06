@@ -63,6 +63,3 @@ uint32_t TIM2_TimeBase_GetTick(void);
 bool TIM2_TimeBase_IsInitialized(void);
 
 #endif /* TIM2_TIMEBASE_H */
-
-
-

@@ -692,4 +692,3 @@ BTS7960_Status_t BTS7960_GetPWMFrequency(BTS7960_Instance_t instance, uint32_t *
 }
 
 #endif /* CONFIG_MODULE_BTS7960_ENABLED */
-

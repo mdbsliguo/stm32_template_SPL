@@ -101,4 +101,3 @@ DBGMCU_Status_t DBGMCU_DisablePeriphDebug(uint32_t periph);
 #endif
 
 #endif /* DBGMCU_H */
-

@@ -692,4 +692,3 @@ void CAN_ClearITPendingBit(CAN_TypeDef* CANx, uint32_t CAN_IT);
 /**
   * @}
   */
-

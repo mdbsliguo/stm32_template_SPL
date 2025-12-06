@@ -63,4 +63,3 @@ void Assert_FailedWithMsg(const char* expr, const char* file, uint32_t line, con
 #endif
 
 #endif /* ASSERT_H */
-

@@ -99,4 +99,3 @@ void disk_ioctl_spi_clear_partition_cache(void);
 #endif
 
 #endif /* DISKIO_SPI_H */
-

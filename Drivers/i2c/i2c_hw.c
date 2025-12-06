@@ -2278,4 +2278,3 @@ I2C_Status_t I2C_ConfigSMBusAlert(I2C_Instance_t instance, I2C_SMBusAlert_t aler
 }
 
 #endif /* CONFIG_MODULE_I2C_ENABLED */
-

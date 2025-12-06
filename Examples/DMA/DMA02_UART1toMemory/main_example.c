@@ -630,4 +630,3 @@ static void UART1_DMA_Restart(void)
     
     LOG_INFO("MAIN", "DMA已重新启动");
 }
-

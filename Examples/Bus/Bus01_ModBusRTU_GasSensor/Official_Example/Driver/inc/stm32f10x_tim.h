@@ -1159,4 +1159,3 @@ void TIM_ClearITPendingBit(TIM_TypeDef* TIMx, uint16_t TIM_IT);
 /**
   * @}
   */
-

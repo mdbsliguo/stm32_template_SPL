@@ -316,4 +316,3 @@ static void UpdateOLEDDisplay(const IC_MeasureResult_t *result)
         OLED_ShowString(4, 1, "Duty: --");
     }
 }
-

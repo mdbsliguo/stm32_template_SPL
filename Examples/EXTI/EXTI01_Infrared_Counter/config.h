@@ -35,4 +35,3 @@
 #define CONFIG_MODULE_LOG_ENABLED 0
 
 #endif /* CONFIG_H */
-

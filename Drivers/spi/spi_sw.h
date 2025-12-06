@@ -154,6 +154,3 @@ SPI_SW_Status_t SPI_SW_NSS_High(SPI_SW_Instance_t instance);
 #endif
 
 #endif /* SPI_SW_H */
-
-
-

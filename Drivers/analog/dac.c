@@ -325,4 +325,3 @@ DAC_Status_t DAC_DualSoftwareTrigger(void)
 #endif /* STM32F10X_HD || STM32F10X_CL || STM32F10X_HD_VL || STM32F10X_MD_VL */
 
 #endif /* CONFIG_MODULE_DAC_ENABLED */
-

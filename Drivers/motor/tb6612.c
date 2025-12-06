@@ -397,4 +397,3 @@ uint8_t TB6612_IsInitialized(TB6612_Instance_t instance)
 }
 
 #endif /* CONFIG_MODULE_TB6612_ENABLED */
-

@@ -151,4 +151,3 @@ void PWR_ClearFlag(uint32_t PWR_FLAG);
 /**
   * @}
   */
-

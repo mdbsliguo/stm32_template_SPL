@@ -200,5 +200,3 @@ void LED2_Turn(void)
 		GPIO_ResetBits(GPIOB, GPIO_Pin_1);					        //则设置PB1引脚为低电平
 	}
 }
-
-

@@ -325,4 +325,3 @@ uint8_t MODCTRL_GetInitializedModuleCount(void);
 #endif
 
 #endif /* MODULE_CONTROLLER_H */
-

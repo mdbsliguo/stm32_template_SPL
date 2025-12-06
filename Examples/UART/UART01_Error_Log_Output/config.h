@@ -72,4 +72,3 @@
 /* #define CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD  1024  */
 
 #endif /* EXAMPLE_CONFIG_H */
-

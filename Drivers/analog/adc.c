@@ -1049,4 +1049,3 @@ ADC_Status_t ADC_GetDualMode(ADC_DualMode_t *mode)
 }
 
 #endif /* CONFIG_MODULE_ADC_ENABLED */
-

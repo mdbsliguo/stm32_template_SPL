@@ -78,4 +78,3 @@ typedef struct
 #define CLKM_IDLE_HOOK_ENABLE 0
 
 #endif /* BOARD_H */
-

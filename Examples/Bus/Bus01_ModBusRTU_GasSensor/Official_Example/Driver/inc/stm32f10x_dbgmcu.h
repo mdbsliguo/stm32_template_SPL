@@ -114,4 +114,3 @@ void DBGMCU_Config(uint32_t DBGMCU_Periph, FunctionalState NewState);
 /**
   * @}
   */
-

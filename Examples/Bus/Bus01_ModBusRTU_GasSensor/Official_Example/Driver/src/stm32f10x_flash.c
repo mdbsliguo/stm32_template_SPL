@@ -1674,4 +1674,3 @@ FLASH_Status FLASH_WaitForLastBank2Operation(uint32_t Timeout)
 /**
   * @}
   */
-

@@ -66,4 +66,3 @@ Flash09_AppStatus_t Flash09_RunMainLoop(const char* mount_path, uint32_t loop_du
 Flash09_AppStatus_t Flash09_Shutdown(void);
 
 #endif /* FLASH09_APP_H */
-

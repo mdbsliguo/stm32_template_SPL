@@ -885,4 +885,3 @@ int16_t SystemMonitor_GetTemperature(void)
 }
 
 #endif /* CONFIG_MODULE_SYSTEM_MONITOR_ENABLED */
-

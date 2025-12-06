@@ -263,4 +263,3 @@ void TIM_SW_Update(void);
 bool TIM_SW_IsInitialized(void);
 
 #endif /* TIM_SW_H */
-

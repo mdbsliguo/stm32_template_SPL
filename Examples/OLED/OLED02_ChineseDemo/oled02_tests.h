@@ -33,4 +33,3 @@ void run_all_oled02_tests(void);
 #endif
 
 #endif /* OLED02_TESTS_H */
-

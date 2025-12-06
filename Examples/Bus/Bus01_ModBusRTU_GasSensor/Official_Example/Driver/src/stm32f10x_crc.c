@@ -155,4 +155,3 @@ uint8_t CRC_GetIDRegister(void)
 /**
   * @}
   */
-

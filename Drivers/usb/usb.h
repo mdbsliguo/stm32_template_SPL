@@ -144,4 +144,3 @@ uint8_t USB_GetStatus(void);
 #endif
 
 #endif /* USB_H */
-

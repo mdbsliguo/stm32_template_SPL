@@ -98,4 +98,3 @@ void check_filesystem_status(void);
 #endif
 
 #endif /* FLASH12_TESTS_H */
-

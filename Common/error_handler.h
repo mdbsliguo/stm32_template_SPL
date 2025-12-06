@@ -113,4 +113,3 @@ void ErrorHandler_ResetStats(void);
 #endif
 
 #endif /* ERROR_HANDLER_H */
-

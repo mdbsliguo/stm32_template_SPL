@@ -1227,4 +1227,3 @@ PWM_Status_t PWM_SetAlignMode(PWM_Instance_t instance, PWM_AlignMode_t align_mod
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
-

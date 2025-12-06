@@ -39,5 +39,3 @@ void App_Init_BTS7960(void);
 int App_Init_Encoder(int32_t *encoder_last_count);
 
 #endif /* APP_INIT_H */
-
-

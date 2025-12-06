@@ -347,4 +347,3 @@ void RTC_ClearITPendingBit(uint16_t RTC_IT)
 /**
   * @}
   */
-

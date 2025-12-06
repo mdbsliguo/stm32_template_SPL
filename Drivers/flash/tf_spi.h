@@ -222,4 +222,3 @@ TF_SPI_Status_t TF_SPI_SetDeviceInfoFromCSD(const uint8_t *csd, uint32_t ocr);
 #endif
 
 #endif /* TF_SPI_H */
-

@@ -1411,4 +1411,3 @@ DS3231_Status_t DS3231_WriteStatusRegister(uint8_t value)
 }
 
 #endif /* CONFIG_MODULE_DS3231_ENABLED */
-

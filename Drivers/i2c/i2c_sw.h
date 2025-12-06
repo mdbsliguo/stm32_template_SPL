@@ -249,4 +249,3 @@ SoftI2C_Status_t SoftI2C_GetConfig(SoftI2C_Instance_t instance, SoftI2C_ConfigIn
 #endif
 
 #endif /* I2C_SW_H */
-

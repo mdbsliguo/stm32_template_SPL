@@ -793,4 +793,3 @@ void SDIO_ClearITPendingBit(uint32_t SDIO_IT)
 /**
   * @}
   */
-

@@ -849,4 +849,3 @@ ModBusRTU_Status_t ModBusRTU_SlaveSendException(UART_Instance_t uart_instance, u
 }
 
 #endif /* CONFIG_MODULE_MODBUS_RTU_ENABLED */
-

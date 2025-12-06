@@ -399,4 +399,3 @@ static void UpdateOLEDDisplay(uint8_t transfer_ok, uint8_t verify_ok)
     snprintf(display_str, sizeof(display_str), "Data: 0x%02X", dst_buffer[0]);
     OLED_ShowString(4, 1, display_str);
 }
-

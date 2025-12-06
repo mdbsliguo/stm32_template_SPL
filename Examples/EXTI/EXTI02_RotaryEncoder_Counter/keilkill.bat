@@ -17,5 +17,3 @@ if exist "Objects" (
 )
 
 echo Clean complete.
-
-

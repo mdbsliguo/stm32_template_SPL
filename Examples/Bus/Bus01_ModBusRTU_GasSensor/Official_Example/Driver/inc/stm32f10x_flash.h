@@ -421,4 +421,3 @@ FLASH_Status FLASH_BootConfig(uint16_t FLASH_BOOT);
 /**
   * @}
   */
-

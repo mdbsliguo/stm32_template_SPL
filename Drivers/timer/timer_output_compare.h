@@ -185,4 +185,3 @@ OC_Status_t OC_ForceOutputLow(OC_Instance_t instance, OC_Channel_t channel);
 #endif
 
 #endif /* TIMER_OUTPUT_COMPARE_H */
-

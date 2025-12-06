@@ -1928,4 +1928,3 @@ LittleFS_Status_t LittleFS_GetBufferAddresses(LittleFS_Instance_t instance,
 #endif /* CONFIG_MODULE_W25Q_ENABLED */
 #endif /* CONFIG_MODULE_LITTLEFS_ENABLED */
 #endif /* CONFIG_MODULE_LITTLEFS_ENABLED */
-

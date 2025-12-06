@@ -263,4 +263,3 @@ RTC_Status_t RTC_SetOverflowCallback(RTC_OverflowCallback_t callback, void *user
 #endif
 
 #endif /* RTC_H */
-

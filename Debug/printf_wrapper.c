@@ -240,20 +240,3 @@ void Printf_OLED4(const char *format, ...)
     Printf_OLED_Internal(4, format, args);
     va_end(args);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

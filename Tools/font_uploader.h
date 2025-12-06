@@ -104,6 +104,3 @@ FontUpload_Status_t FontUpload_ReceiveFile(UART_Instance_t uart_instance,
 #endif
 
 #endif /* FONT_UPLOADER_H */
-
-
-

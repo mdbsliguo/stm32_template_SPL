@@ -109,4 +109,3 @@ uint8_t WWDG_GetCounter(void)
 }
 
 #endif /* CONFIG_MODULE_WWDG_ENABLED */
-

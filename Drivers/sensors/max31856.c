@@ -977,4 +977,3 @@ MAX31856_Status_t MAX31856_ReadCR1(uint8_t *cr1_value)
 }
 
 #endif /* CONFIG_MODULE_MAX31856_ENABLED */
-

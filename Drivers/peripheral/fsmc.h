@@ -196,4 +196,3 @@ FSMC_Status_t FSMC_ClearITPendingBit(uint32_t bank, uint32_t it);
 #endif
 
 #endif /* FSMC_H */
-

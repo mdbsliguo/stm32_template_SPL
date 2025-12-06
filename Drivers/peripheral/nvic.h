@@ -122,4 +122,3 @@ uint8_t NVIC_HW_GetPriority(IRQn_Type irq);
 #endif
 
 #endif /* NVIC_H */
-

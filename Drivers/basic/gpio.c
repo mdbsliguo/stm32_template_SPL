@@ -119,4 +119,3 @@ GPIO_Status_t GPIO_Toggle(GPIO_TypeDef* port, uint16_t pin)
     port->ODR ^= pin;
     return GPIO_OK;
 }
-

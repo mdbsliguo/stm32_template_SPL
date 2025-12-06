@@ -418,4 +418,3 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);
 /**
   * @}
   */ 
-

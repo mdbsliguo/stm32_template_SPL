@@ -80,25 +80,3 @@ void Printf_OLED4(const char *format, ...);
 #endif
 
 #endif /* PRINTF_WRAPPER_H */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

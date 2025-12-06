@@ -179,4 +179,3 @@ void EXTI_ClearITPendingBit(uint32_t EXTI_Line);
 /**
   * @}
   */
-

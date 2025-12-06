@@ -219,4 +219,3 @@ void WWDG_ClearFlag(void)
 /**
   * @}
   */
-

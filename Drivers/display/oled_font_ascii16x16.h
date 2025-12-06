@@ -123,6 +123,3 @@ OLED_AsciiFont_Status_t OLED_AsciiFont_GetIndex(char ch, uint8_t *char_index);
 #endif
 
 #endif /* OLED_FONT_ASCII16X16_H */
-
-
-

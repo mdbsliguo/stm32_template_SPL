@@ -1410,4 +1410,3 @@ static ITStatus CheckITStatus(uint32_t CAN_Reg, uint32_t It_Bit)
 /**
   * @}
   */
-

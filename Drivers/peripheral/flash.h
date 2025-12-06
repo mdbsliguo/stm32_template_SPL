@@ -227,4 +227,3 @@ uint8_t FLASH_GetReadProtectionStatus(void);
 #endif
 
 #endif /* FLASH_H */
-

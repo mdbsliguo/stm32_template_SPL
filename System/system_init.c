@@ -103,4 +103,3 @@ uint8_t System_IsInitialized(void)
 {
     return g_system_initialized ? 1 : 0;
 }
-

@@ -679,4 +679,3 @@ void I2C_ClearITPendingBit(I2C_TypeDef* I2Cx, uint32_t I2C_IT);
 /**
   * @}
   */ 
-

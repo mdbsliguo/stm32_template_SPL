@@ -366,4 +366,3 @@ RTC_Status_t RTC_SetOverflowCallback(RTC_OverflowCallback_t callback, void *user
 }
 
 #endif /* CONFIG_MODULE_RTC_ENABLED */
-

@@ -165,4 +165,3 @@ uint8_t CEC_IsInitialized(void);
 #endif
 
 #endif /* CEC_H */
-

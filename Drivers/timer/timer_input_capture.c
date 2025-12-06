@@ -1250,4 +1250,3 @@ IC_Status_t IC_SetPrescaler(IC_Instance_t instance, IC_Channel_t channel, uint8_
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
-

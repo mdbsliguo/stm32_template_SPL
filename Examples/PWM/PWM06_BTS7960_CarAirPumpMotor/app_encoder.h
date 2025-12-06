@@ -25,5 +25,3 @@ int App_Process_Encoder(int32_t *encoder_last_count,
                         void (*update_parameter_callback)(int32_t delta));
 
 #endif /* APP_ENCODER_H */
-
-

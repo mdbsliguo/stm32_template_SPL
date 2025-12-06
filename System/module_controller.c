@@ -451,4 +451,3 @@ uint8_t MODCTRL_GetInitializedModuleCount(void)
 }
 
 #endif /* CONFIG_MODULE_MODULE_CTRL_ENABLED */
-

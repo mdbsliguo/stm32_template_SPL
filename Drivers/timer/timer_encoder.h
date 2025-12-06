@@ -207,4 +207,3 @@ void ENCODER_IRQHandler(ENCODER_Instance_t instance);
 #endif
 
 #endif /* TIMER_ENCODER_H */
-

@@ -129,4 +129,3 @@ uint8_t System_IsInitialized(void);
 #endif
 
 #endif /* SYSTEM_INIT_H */
-

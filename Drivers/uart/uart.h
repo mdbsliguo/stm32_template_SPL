@@ -501,4 +501,3 @@ UART_Status_t UART_DisableOverSampling8(UART_Instance_t instance);
 #endif
 
 #endif /* UART_H */
-

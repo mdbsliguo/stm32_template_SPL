@@ -242,4 +242,3 @@ void DMA_IRQHandler(DMA_Channel_t channel);
 #endif
 
 #endif /* DMA_H */
-

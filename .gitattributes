@@ -1,1 +1,17 @@
-﻿* text=auto eol=lf
+﻿# 统一所有文本文件使用 LF 行尾符
+* text=auto eol=lf
+
+# 确保特定文件类型正确处理
+*.c text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.bat text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
+*.s text eol=lf
+*.asm text eol=lf

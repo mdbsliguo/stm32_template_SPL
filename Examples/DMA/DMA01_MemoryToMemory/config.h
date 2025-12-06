@@ -36,5 +36,3 @@
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关 - 禁用（串口助手可能不支持） */
 
 #endif /* CONFIG_H */
-
-

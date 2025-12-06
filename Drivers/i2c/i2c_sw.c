@@ -1231,4 +1231,3 @@ SoftI2C_Status_t SoftI2C_GetConfig(SoftI2C_Instance_t instance, SoftI2C_ConfigIn
 }
 
 #endif /* CONFIG_MODULE_SOFT_I2C_ENABLED */
-

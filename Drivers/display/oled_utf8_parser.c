@@ -152,4 +152,3 @@ uint8_t OLED_UTF8_ToGB2312(const uint8_t *utf8_str, uint16_t *gb2312_code)
 
 #endif /* CONFIG_MODULE_OLED_ENABLED */
 #endif /* CONFIG_MODULE_OLED_ENABLED */
-

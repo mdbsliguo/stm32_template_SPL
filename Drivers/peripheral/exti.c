@@ -545,4 +545,3 @@ void EXTI_IRQHandler(EXTI_Line_t line)
 }
 
 #endif /* CONFIG_MODULE_EXTI_ENABLED */
-

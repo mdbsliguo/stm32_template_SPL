@@ -342,4 +342,3 @@ int16_t SystemMonitor_GetTemperature(void);
 #endif
 
 #endif /* SYSTEM_MONITOR_H */
-

@@ -49,4 +49,3 @@ void SysTick_Handler(void);
 #endif
 
 #endif /* __STM32F10x_IT_H */
-

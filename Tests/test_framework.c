@@ -204,4 +204,3 @@ void TestFramework_ResetResult(void)
     LOG_INFO("TEST", "Test results reset");
     #endif
 }
-

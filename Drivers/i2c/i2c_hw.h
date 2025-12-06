@@ -429,4 +429,3 @@ I2C_Status_t I2C_ConfigSMBusAlert(I2C_Instance_t instance, I2C_SMBusAlert_t aler
 #endif
 
 #endif /* I2C_HW_H */
-

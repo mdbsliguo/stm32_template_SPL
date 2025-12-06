@@ -482,4 +482,3 @@ void SPI_I2S_ClearITPendingBit(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
 /**
   * @}
   */
-

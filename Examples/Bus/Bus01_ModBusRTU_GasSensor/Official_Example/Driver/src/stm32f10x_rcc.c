@@ -1466,4 +1466,3 @@ void RCC_ClearITPendingBit(uint8_t RCC_IT)
 /**
   * @}
   */
-

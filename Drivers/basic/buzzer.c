@@ -476,4 +476,3 @@ Buzzer_Status_t Buzzer_PlayTone(Buzzer_Number_t num, Buzzer_Tone_t tone, uint32_
 }
 
 #endif /* CONFIG_MODULE_BUZZER_ENABLED */
-

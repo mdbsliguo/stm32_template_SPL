@@ -38,4 +38,3 @@ typedef struct
 #define BUTTON_PIN   GPIO_Pin_4  /**< °´Å¥GPIOÒý½Å£¨PA4£© */
 
 #endif /* BOARD_H */
-

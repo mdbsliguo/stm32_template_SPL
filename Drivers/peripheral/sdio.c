@@ -273,4 +273,3 @@ uint8_t SDIO_IsInitialized(void)
 }
 
 #endif /* CONFIG_MODULE_SDIO_ENABLED */
-

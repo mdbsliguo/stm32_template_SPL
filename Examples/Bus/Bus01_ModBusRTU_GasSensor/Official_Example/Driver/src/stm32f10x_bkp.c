@@ -303,4 +303,3 @@ void BKP_ClearITPendingBit(void)
 /**
   * @}
   */
-

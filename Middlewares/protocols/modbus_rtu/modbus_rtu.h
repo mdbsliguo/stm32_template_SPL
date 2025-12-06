@@ -189,4 +189,3 @@ uint16_t ModBusRTU_CalculateCRC16(const uint8_t *data, uint16_t length);
 #endif
 
 #endif /* MODBUS_RTU_H */
-

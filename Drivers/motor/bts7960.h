@@ -174,8 +174,3 @@ BTS7960_Status_t BTS7960_GetPWMFrequency(BTS7960_Instance_t instance, uint32_t *
 #endif
 
 #endif /* BTS7960_H */
-
-
-
-
-

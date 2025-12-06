@@ -1088,4 +1088,3 @@ W25Q_Status_t W25Q_EraseChip(void)
 
 #endif /* CONFIG_MODULE_SPI_ENABLED */
 #endif /* CONFIG_MODULE_W25Q_ENABLED */
-

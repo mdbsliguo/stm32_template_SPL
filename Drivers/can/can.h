@@ -295,4 +295,3 @@ CAN_Status_t CAN_WakeUp(CAN_Instance_t instance);
 #endif
 
 #endif /* CAN_H */
-

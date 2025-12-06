@@ -431,4 +431,3 @@ void disk_ioctl_spi_clear_partition_cache(void)
 
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
-

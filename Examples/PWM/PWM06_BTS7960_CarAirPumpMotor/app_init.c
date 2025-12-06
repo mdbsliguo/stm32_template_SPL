@@ -256,4 +256,3 @@ int App_Init_Encoder(int32_t *encoder_last_count)
     
     return 0;
 }
-

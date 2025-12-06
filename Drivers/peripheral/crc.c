@@ -89,4 +89,3 @@ uint8_t CRC_ReadIDRegister(void)
 }
 
 #endif /* CONFIG_MODULE_CRC_ENABLED */
-

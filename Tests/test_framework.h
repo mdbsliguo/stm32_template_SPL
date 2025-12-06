@@ -179,22 +179,3 @@ void TestFramework_Pass(void);
 #endif
 
 #endif /* TEST_FRAMEWORK_H */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

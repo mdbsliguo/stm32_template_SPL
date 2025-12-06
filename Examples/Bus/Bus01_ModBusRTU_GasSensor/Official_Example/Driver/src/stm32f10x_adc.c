@@ -1302,4 +1302,3 @@ void ADC_ClearITPendingBit(ADC_TypeDef* ADCx, uint16_t ADC_IT)
 /**
   * @}
   */
-

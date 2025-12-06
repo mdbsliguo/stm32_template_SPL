@@ -507,4 +507,3 @@ CAN_Status_t CAN_WakeUp(CAN_Instance_t instance)
 }
 
 #endif /* CONFIG_MODULE_CAN_ENABLED */
-

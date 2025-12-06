@@ -645,4 +645,3 @@ void GPIO_ETH_MediaInterfaceConfig(uint32_t GPIO_ETH_MediaInterface)
 /**
   * @}
   */
-

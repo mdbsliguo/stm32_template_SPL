@@ -50,4 +50,3 @@ int Debug_PutChar(int ch);
 #endif
 
 #endif /* DEBUG_H */
-

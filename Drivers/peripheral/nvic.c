@@ -336,4 +336,3 @@ uint8_t NVIC_HW_GetPriority(IRQn_Type irq)
 }
 
 #endif /* CONFIG_MODULE_NVIC_ENABLED */
-

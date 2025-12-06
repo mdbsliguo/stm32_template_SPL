@@ -247,4 +247,3 @@ uint8_t CEC_IsInitialized(void)
 }
 
 #endif /* CONFIG_MODULE_CEC_ENABLED */
-

@@ -97,4 +97,3 @@ typedef struct
 #endif
 
 #endif /* BOARD_H */
-

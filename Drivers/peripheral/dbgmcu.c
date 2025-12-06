@@ -74,4 +74,3 @@ DBGMCU_Status_t DBGMCU_DisablePeriphDebug(uint32_t periph)
 }
 
 #endif /* CONFIG_MODULE_DBGMCU_ENABLED */
-

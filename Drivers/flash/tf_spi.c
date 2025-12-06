@@ -1927,4 +1927,3 @@ TF_SPI_Status_t TF_SPI_SetDeviceInfoFromCSD(const uint8_t *csd, uint32_t ocr)
 
 #endif /* CONFIG_MODULE_SPI_ENABLED */
 #endif /* CONFIG_MODULE_TF_SPI_ENABLED */
-

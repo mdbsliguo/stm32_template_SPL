@@ -497,4 +497,3 @@ uint8_t IWDG_IsEnabled(void)
 }
 
 #endif /* CONFIG_MODULE_IWDG_ENABLED */
-

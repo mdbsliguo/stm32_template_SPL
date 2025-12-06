@@ -430,4 +430,3 @@ uint8_t FS_IsInitialized(void)
 
 #endif /* CONFIG_MODULE_FS_WRAPPER_ENABLED */
 #endif /* CONFIG_MODULE_FS_WRAPPER_ENABLED */
-

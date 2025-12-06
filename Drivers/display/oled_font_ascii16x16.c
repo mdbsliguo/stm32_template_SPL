@@ -195,6 +195,3 @@ OLED_AsciiFont_Status_t OLED_AsciiFont_GetData(uint8_t char_index, uint8_t *font
 
 #endif /* CONFIG_MODULE_OLED_ENABLED */
 #endif /* CONFIG_MODULE_OLED_ENABLED */
-
-
-

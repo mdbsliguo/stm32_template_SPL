@@ -167,4 +167,3 @@ OLED_Status_t OLED_ShowStringUTF8(uint8_t line, uint8_t column, const char *str)
 #endif
 
 #endif /* OLED_SSD1306_H */
-

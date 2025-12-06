@@ -157,4 +157,3 @@ BKP_Status_t BKP_DisableTamperPin(void);
 #endif
 
 #endif /* BKP_H */
-

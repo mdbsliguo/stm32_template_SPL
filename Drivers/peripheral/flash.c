@@ -260,4 +260,3 @@ uint8_t FLASH_GetReadProtectionStatus(void)
 }
 
 #endif /* CONFIG_MODULE_FLASH_ENABLED */
-

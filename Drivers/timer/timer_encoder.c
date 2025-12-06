@@ -783,4 +783,3 @@ void TIM4_IRQHandler(void)
 }
 
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
-

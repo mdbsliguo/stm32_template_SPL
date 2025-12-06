@@ -274,4 +274,3 @@ IWDG_Status_t IWDG_CalculateParams(uint32_t timeout_ms, uint8_t* prescaler, uint
 #endif
 
 #endif /* IWDG_H */
-

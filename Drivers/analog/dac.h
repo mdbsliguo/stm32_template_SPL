@@ -197,4 +197,3 @@ DAC_Status_t DAC_DualSoftwareTrigger(void);
 #endif
 
 #endif /* DAC_H */
-

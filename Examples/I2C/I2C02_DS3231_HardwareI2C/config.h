@@ -42,4 +42,3 @@
 #define CONFIG_LOG_COLOR_EN                 0   /**< 颜色输出开关（需要终端支持ANSI转义码） */
 
 #endif /* EXAMPLE_CONFIG_H */
-

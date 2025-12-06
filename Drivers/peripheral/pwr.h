@@ -128,4 +128,3 @@ uint8_t PWR_CheckPVDFlag(void);
 #endif
 
 #endif /* PWR_H */
-

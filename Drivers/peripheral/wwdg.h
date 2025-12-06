@@ -101,4 +101,3 @@ uint8_t WWDG_GetCounter(void);
 #endif
 
 #endif /* WWDG_H */
-

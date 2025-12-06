@@ -73,6 +73,3 @@ void CPU_SimulateHighLoad50ms(void);
 #endif
 
 #endif /* CPU_LOAD_SIMULATOR_H */
-
-
-

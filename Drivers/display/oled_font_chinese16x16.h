@@ -126,8 +126,3 @@ uint8_t OLED_ChineseFont_IsValidGB2312(uint16_t gb2312_code);
 #endif
 
 #endif /* OLED_FONT_CHINESE16X16_H */
-
-
-
-
-

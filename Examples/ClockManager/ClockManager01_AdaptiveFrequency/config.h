@@ -50,8 +50,3 @@
 /* #define CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD  1024  */
 
 #endif /* CONFIG_H */
-
-
-
-
-

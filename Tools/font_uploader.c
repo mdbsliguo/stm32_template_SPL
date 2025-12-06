@@ -228,4 +228,3 @@ FontUpload_Status_t FontUpload_WaitForCommand(UART_Instance_t uart_instance,
 
 #endif /* CONFIG_MODULE_UART_ENABLED */
 #endif /* CONFIG_MODULE_UART_ENABLED */
-

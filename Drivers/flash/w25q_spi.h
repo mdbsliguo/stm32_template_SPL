@@ -148,4 +148,3 @@ W25Q_Status_t W25Q_WaitReady(uint32_t timeout_ms);
 #endif
 
 #endif /* W25Q_SPI_H */
-

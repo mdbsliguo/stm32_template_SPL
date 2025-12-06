@@ -106,24 +106,3 @@ uint8_t TB6612_IsInitialized(TB6612_Instance_t instance);
 #endif
 
 #endif /* TB6612_H */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

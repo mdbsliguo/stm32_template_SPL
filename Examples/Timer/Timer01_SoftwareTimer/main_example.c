@@ -271,4 +271,3 @@ int main(void)
         Delay_ms(1);  /* 1ms，提高按键检测频率 */
     }
 }
-

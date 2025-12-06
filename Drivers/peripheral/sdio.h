@@ -190,4 +190,3 @@ uint8_t SDIO_IsInitialized(void);
 #endif
 
 #endif /* SDIO_H */
-

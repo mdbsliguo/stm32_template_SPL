@@ -561,4 +561,3 @@ LittleFS_Status_t LittleFS_GetBufferAddresses(LittleFS_Instance_t instance,
 #endif
 
 #endif /* LITTLEFS_WRAPPER_H */
-

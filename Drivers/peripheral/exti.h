@@ -155,4 +155,3 @@ void EXTI_IRQHandler(EXTI_Line_t line);
 #endif
 
 #endif /* EXTI_H */
-

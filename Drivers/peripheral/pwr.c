@@ -118,4 +118,3 @@ uint8_t PWR_CheckPVDFlag(void)
 }
 
 #endif /* CONFIG_MODULE_PWR_ENABLED */
-

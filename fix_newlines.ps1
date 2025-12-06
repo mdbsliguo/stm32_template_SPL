@@ -57,4 +57,3 @@ foreach ($file in $files) {
 }
 
 Write-Host "`n总共处理了 $count 个文件" -ForegroundColor Cyan
-

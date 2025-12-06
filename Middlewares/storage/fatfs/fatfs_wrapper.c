@@ -1026,4 +1026,3 @@ const char* FatFS_GetSDCardStatusString(FatFS_SDCardStatus_t status)
 
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
 #endif /* CONFIG_MODULE_FATFS_ENABLED */
-

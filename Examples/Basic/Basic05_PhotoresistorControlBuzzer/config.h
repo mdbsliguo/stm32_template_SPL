@@ -28,4 +28,3 @@
 #define CONFIG_MODULE_LOG_ENABLED           0   /**< 日志模块开关 - 禁用（案例不使用） */
 
 #endif /* EXAMPLE_CONFIG_H */
-

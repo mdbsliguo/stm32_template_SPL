@@ -335,4 +335,3 @@ const char* FatFS_GetSDCardStatusString(FatFS_SDCardStatus_t status);
 #endif
 
 #endif /* FATFS_WRAPPER_H */
-

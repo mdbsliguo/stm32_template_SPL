@@ -72,4 +72,3 @@
 #endif /* USE_FULL_ASSERT */
 
 #endif /* __STM32F10x_CONF_H */
-

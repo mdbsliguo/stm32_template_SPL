@@ -887,4 +887,3 @@ uint16_t SPI_HW_GetCRC(SPI_Instance_t instance)
 }
 
 #endif /* CONFIG_MODULE_SPI_ENABLED */
-

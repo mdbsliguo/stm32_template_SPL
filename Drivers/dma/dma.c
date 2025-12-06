@@ -1064,4 +1064,3 @@ void DMA_IRQHandler(DMA_Channel_t channel)
 /* 注意：DMA中断服务程序入口在Core/stm32f10x_it.c中实现，遵循项目规范 */
 
 #endif /* CONFIG_MODULE_DMA_ENABLED */
-

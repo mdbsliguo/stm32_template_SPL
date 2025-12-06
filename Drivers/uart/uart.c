@@ -1840,4 +1840,3 @@ UART_Status_t UART_SetBaudRate(USART_TypeDef *uart_periph, uint32_t baudrate)
 }
 
 #endif /* CONFIG_MODULE_UART_ENABLED */
-

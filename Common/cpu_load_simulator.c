@@ -34,7 +34,3 @@ void CPU_SimulateHighLoad50ms(void)
         Delay_us(100); /* 短暂延时，避免完全占用CPU */
     }
 }
-
-
-
-

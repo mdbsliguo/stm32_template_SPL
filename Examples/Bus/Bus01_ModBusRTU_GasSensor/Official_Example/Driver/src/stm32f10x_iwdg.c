@@ -185,4 +185,3 @@ FlagStatus IWDG_GetFlagStatus(uint16_t IWDG_FLAG)
 /**
   * @}
   */
-

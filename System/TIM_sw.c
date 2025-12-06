@@ -550,4 +550,3 @@ bool TIM_SW_IsInitialized(void)
 {
     return g_tim_sw_initialized;
 }
-

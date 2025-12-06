@@ -91,4 +91,3 @@
 #define FATFS_MOUNT_PARTITION                1   /**< 挂载分区1（唯一的FAT32分区） */
 
 #endif /* EXAMPLE_CONFIG_H */
-

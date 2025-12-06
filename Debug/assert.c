@@ -48,4 +48,3 @@ void Assert_FailedWithMsg(const char* expr, const char* file, uint32_t line, con
         /* 可以在这里添加LED闪烁等指示 */
     }
 }
-

@@ -861,4 +861,3 @@ void FSMC_ClearITPendingBit(uint32_t FSMC_Bank, uint32_t FSMC_IT)
 /**
   * @}
   */
-
