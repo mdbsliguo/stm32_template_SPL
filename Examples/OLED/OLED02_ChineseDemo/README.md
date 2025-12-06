@@ -443,8 +443,8 @@ flowchart TD
    - **ASCII字库**：`/font/ASCII16.bin`，8×16点阵，1536字节（96个字符：空格到波浪号）
    - **中文字库**：`/font/chinese16x16.bin`，16×16点阵，约261KB（完整GB2312字符集）
    - 字库文件存储在W25Q Flash的`/font`目录下
-   - 可以使用`Tools/send_ASCII_font.py`上传ASCII字库
-   - 可以使用`Tools/send_chinese_font.py`上传中文字库
+   - 可以使用`Tools/font_uploader/send_ASCII16_font.py`上传ASCII字库
+   - 可以使用`Tools/font_uploader/send_chinese_font.py`上传中文字库
 
 5. **初始化顺序**：
    - 必须先初始化W25Q和LittleFS
@@ -498,8 +498,8 @@ flowchart TD
 
 **解决方法**：
 1. 先运行Flash13案例上传ASCII字库（`/font/ASCII16.bin`）和中文字库（`/font/chinese16x16.bin`）
-2. 或使用`Tools/send_ASCII_font.py`上传ASCII字库
-3. 或使用`Tools/send_chinese_font.py`上传中文字库
+2. 或使用`Tools/font_uploader/send_ASCII16_font.py`上传ASCII字库
+3. 或使用`Tools/font_uploader/send_chinese_font.py`上传中文字库
 4. 检查文件系统是否初始化成功
 5. 检查W25Q Flash是否正常工作
 6. 使用串口查看详细错误信息
@@ -634,8 +634,8 @@ flowchart TD
 
 ### 工具脚本
 
-- **send_ASCII_font.py**：`Tools/send_ASCII_font.py` - 一键提取并上传ASCII字库（从C源码提取，自动上传）
-- **send_chinese_font.py**：`Tools/send_chinese_font.py` - 上传中文字库文件
+- **send_ASCII16_font.py**：`Tools/font_uploader/send_ASCII16_font.py` - 一键提取并上传ASCII字库（从C源码提取，自动上传）
+- **send_chinese_font.py**：`Tools/font_uploader/send_chinese_font.py` - 上传中文字库文件
 
 ### 项目规范
 

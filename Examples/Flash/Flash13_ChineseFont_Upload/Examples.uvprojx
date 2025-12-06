@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_MD,LFS_NO_MALLOC,LFS_NO_DEBUG,LFS_NO_WARN,LFS_NO_ERROR</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor;..\..\..\Middlewares\storage\littlefs;..\..\..\Middlewares\storage\fs_wrapper;..\..\..\Tools</IncludePath>
+              <IncludePath>.;..\..\..\Start;..\..\..\Library;..\..\..\Core;..\..\..\System;..\..\..\Debug;..\..\..\Common;..\..\..\Drivers\basic;..\..\..\Drivers\display;..\..\..\Drivers\i2c;..\..\..\Drivers\spi;..\..\..\Drivers\flash;..\..\..\Drivers\uart;..\..\..\Drivers\timer;..\..\..\Drivers\analog;..\..\..\Drivers\peripheral;..\..\..\Drivers\dma;..\..\..\Drivers\motor;..\..\..\Middlewares\storage\littlefs;..\..\..\Middlewares\storage\fs_wrapper;..\..\..\Tools\font_uploader</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -513,12 +513,12 @@
             <File>
               <FileName>font_uploader.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Tools\font_uploader.c</FilePath>
+              <FilePath>..\..\..\Tools\font_uploader\font_uploader.c</FilePath>
             </File>
             <File>
               <FileName>font_uploader.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\Tools\font_uploader.h</FilePath>
+              <FilePath>..\..\..\Tools\font_uploader\font_uploader.h</FilePath>
             </File>
             <File>
               <FileName>oled_font_chinese16x16.c</FileName>

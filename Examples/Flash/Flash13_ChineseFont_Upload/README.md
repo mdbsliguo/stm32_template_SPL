@@ -387,18 +387,18 @@ flowchart TD
 
 ### 步骤1：准备字库文件
 
-确保字库文件位于 `Tools` 目录下：
+确保字库文件位于 `Tools/font_uploader` 目录下：
 
 ```
-Tools/
+Tools/font_uploader/
   ├── ASCII16.bin          (1536字节，8×16点阵ASCII字库，可选)
   ├── chinese16x16.bin     (约261KB，16×16点阵GB2312字库，可选)
-  ├── send_ASCII_font.py   (ASCII字库上传脚本)
+  ├── send_ASCII16_font.py (ASCII字库上传脚本)
   └── send_chinese_font.py (中文字库上传脚本)
 ```
 
 **注意**：
-- `send_ASCII_font.py`：一键提取并上传ASCII字库（从C源码提取，自动上传）
+- `send_ASCII16_font.py`：一键提取并上传ASCII字库（从C源码提取，自动上传）
 - `send_chinese_font.py`：上传中文字库文件
 
 ### 步骤2：安装Python依赖
@@ -426,11 +426,11 @@ pip install pyserial
 
 #### 上传ASCII字库
 
-在 `Tools` 目录下运行：
+在 `Tools/font_uploader` 目录下运行：
 
 ```bash
-cd Tools
-python send_ASCII_font.py COM4 115200
+cd Tools/font_uploader
+python send_ASCII16_font.py COM4 115200
 ```
 
 **功能**：
@@ -444,16 +444,16 @@ python send_ASCII_font.py COM4 115200
 
 #### 上传中文字库
 
-在 `Tools` 目录下运行：
+在 `Tools/font_uploader` 目录下运行：
 
 ```bash
-cd Tools
+cd Tools/font_uploader
 python send_chinese_font.py COM4 chinese16x16.bin 115200
 ```
 
 **参数说明**：
 - `COM4`：串口端口号（根据实际情况修改）
-- `chinese16x16.bin`：字库文件名（默认在Tools目录下）
+- `chinese16x16.bin`：字库文件名（默认在Tools/font_uploader目录下）
 - `115200`：波特率（可选，默认115200）
 
 **脚本行为**：
@@ -712,8 +712,8 @@ Transfer complete!
    - **ASCII字库**：`/font/ASCII16.bin`，8×16点阵，1536字节（96个字符：空格到波浪号）
    - **中文字库**：`/font/chinese16x16.bin`，16×16点阵，约261KB（完整GB2312字符集）
    - 字库文件存储在W25Q Flash的`/font`目录下
-   - 可以使用`Tools/send_ASCII_font.py`上传ASCII字库（自动提取并上传）
-   - 可以使用`Tools/send_chinese_font.py`上传中文字库
+   - 可以使用`Tools/font_uploader/send_ASCII16_font.py`上传ASCII字库（自动提取并上传）
+   - 可以使用`Tools/font_uploader/send_chinese_font.py`上传中文字库
 
 5. **GB2312编码**：
    - 显示中文需要使用GB2312编码的字符串
@@ -875,8 +875,8 @@ Transfer complete!
 
 ### 工具文档
 
-- [ASCII字库上传工具](../../../Tools/send_ASCII_font.py) - 一键提取并上传ASCII字库（从C源码提取，自动上传）
-- [中文字库上传工具](../../../Tools/send_chinese_font.py) - 上传中文字库文件
+- [ASCII字库上传工具](../../../Tools/font_uploader/send_ASCII16_font.py) - 一键提取并上传ASCII字库（从C源码提取，自动上传）
+- [中文字库上传工具](../../../Tools/font_uploader/send_chinese_font.py) - 上传中文字库文件
 - [UTF-8转GB2312工具](../../../UTF8_2_GB2312.py) - 字符串编码转换工具
 
 ### 其他案例
