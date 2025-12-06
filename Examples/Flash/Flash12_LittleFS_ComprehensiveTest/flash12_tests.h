@@ -84,11 +84,6 @@ void run_all_flash12_tests(void);
 /* ==================== 辅助函数 ==================== */
 
 /**
- * @brief 将LittleFS错误码转换为可读字符串
- */
-const char* littlefs_errstr(LittleFS_Status_t err);
-
-/**
  * @brief 检查文件系统状态并显示诊断信息
  */
 void check_filesystem_status(void);

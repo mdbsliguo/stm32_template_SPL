@@ -441,6 +441,26 @@
               <FilePath>..\..\..\Drivers\display\oled_font_ascii8x16.h</FilePath>
             </File>
             <File>
+              <FileName>oled_font_chinese16x16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\display\oled_font_chinese16x16.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled_font_chinese16x16.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\display\oled_font_chinese16x16.h</FilePath>
+            </File>
+            <File>
+              <FileName>oled_utf8_parser.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\display\oled_utf8_parser.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled_utf8_parser.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\Drivers\display\oled_utf8_parser.h</FilePath>
+            </File>
+            <File>
               <FileName>i2c_sw.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\i2c\i2c_sw.c</FilePath>

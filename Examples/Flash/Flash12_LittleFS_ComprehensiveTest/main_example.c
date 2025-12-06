@@ -224,8 +224,63 @@ int main(void)
     LOG_INFO("MAIN", "CS引脚已配置为推挽输出并拉高");
     Delay_ms(500);
     
-    /* ========== 步骤13：执行11个综合测试 ========== */
-    LOG_INFO("MAIN", "=== 开始执行11个综合测试 ===");
+    /* ========== 步骤13：挂载LittleFS文件系统 ========== */
+    OLED_ShowString(3, 1, "Mount LittleFS...");
+    
+    /* 如果配置了强制格式化，先格式化 */
+    #ifdef CONFIG_LITTLEFS_FORCE_FORMAT
+    #if CONFIG_LITTLEFS_FORCE_FORMAT
+    LOG_INFO("MAIN", "强制格式化模式：先格式化文件系统...");
+    OLED_ShowString(4, 1, "Formatting...");
+    littlefs_status = LittleFS_Format();
+    if (littlefs_status != LITTLEFS_OK)
+    {
+        LOG_ERROR("MAIN", "格式化失败: %d", littlefs_status);
+        ErrorHandler_Handle(littlefs_status, "LittleFS");
+        OLED_ShowString(4, 1, "Format Fail!");
+        while(1) { Delay_ms(1000); }
+    }
+    LOG_INFO("MAIN", "格式化成功");
+    Delay_ms(500);
+    #endif
+    #endif
+    
+    /* 尝试挂载 */
+    littlefs_status = LittleFS_Mount();
+    if (littlefs_status != LITTLEFS_OK)
+    {
+        /* 挂载失败，尝试格式化（可能是损坏或NOSPC错误） */
+        if (littlefs_status == LITTLEFS_ERROR_CORRUPT || littlefs_status == LITTLEFS_ERROR_NOSPC)
+        {
+            LOG_WARN("MAIN", "文件系统挂载失败 (错误: %d)，尝试格式化...", littlefs_status);
+            OLED_ShowString(4, 1, "Formatting...");
+            littlefs_status = LittleFS_Format();
+            if (littlefs_status == LITTLEFS_OK)
+            {
+                LOG_INFO("MAIN", "格式化成功，重新挂载...");
+                littlefs_status = LittleFS_Mount();
+            }
+            else
+            {
+                LOG_ERROR("MAIN", "格式化失败: %d", littlefs_status);
+                ErrorHandler_Handle(littlefs_status, "LittleFS");
+            }
+        }
+        
+        if (littlefs_status != LITTLEFS_OK)
+        {
+            OLED_ShowString(4, 1, "Mount Fail!");
+            LOG_ERROR("MAIN", "LittleFS 挂载失败: %d", littlefs_status);
+            ErrorHandler_Handle(littlefs_status, "LittleFS");
+            while(1) { Delay_ms(1000); }
+        }
+    }
+    LOG_INFO("MAIN", "LittleFS 挂载成功");
+    OLED_ShowString(4, 1, "Mounted OK");
+    Delay_ms(500);
+    
+    /* ========== 步骤14：底层Flash硬件测试 ========== */
+    LOG_INFO("MAIN", "=== 底层Flash硬件测试 ===");
     
     /* 先测试底层W25Q Flash是否正常 */
     LOG_INFO("MAIN", "=== 底层Flash硬件测试 ===");
@@ -283,10 +338,10 @@ int main(void)
     }
     Delay_ms(1000);
     
-    /* ========== 步骤13：执行所有测试 ========== */
+    /* ========== 步骤15：执行所有测试 ========== */
     run_all_flash12_tests();
     
-    /* ========== 步骤15：显示初始化完成 ========== */
+    /* ========== 步骤16：显示初始化完成 ========== */
     OLED_Clear();
     OLED_ShowString(1, 1, "Flash12");
     
@@ -295,7 +350,7 @@ int main(void)
     LOG_INFO("MAIN", "=== 所有测试完成，进入主循环 ===");
     Delay_ms(1000);
     
-    /* ========== 步骤15：主循环 ========== */
+    /* ========== 步骤17：主循环 ========== */
     while (1)
     {
         loop_count++;
