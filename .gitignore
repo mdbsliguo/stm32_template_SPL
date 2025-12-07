@@ -28,7 +28,6 @@ Build/
 *.mpj
 
 # ========== Keil用户配置（个人设置，不共享） ==========
-*.uvoptx
 *.uvopt
 *.uvguix.*
 *.db

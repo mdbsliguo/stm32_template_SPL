@@ -100,7 +100,7 @@
 #define CONFIG_SYSTEM_MONITOR_LOG_INTERVAL   5000  /**< 日志输出间隔（毫秒），默认5秒 */
 #define CONFIG_SYSTEM_MONITOR_CPU_THRESHOLD  80    /**< CPU使用率告警阈值（%），超过此值告警 */
 #define CONFIG_SYSTEM_MONITOR_HEAP_THRESHOLD  1024  /**< 堆内存告警阈值（字节），低于此值告警 */
-#define CONFIG_STACK_SIZE                    0x400 /**< 栈总大小（字节），默认1KB，需与startup.s中的Stack_Size一致 */
+#define CONFIG_STACK_SIZE                    0x1000 /**< 栈总大小（字节），4KB，需与startup.s中的Stack_Size一致 */
 
 /* ==================== 未来扩展预留 ==================== */
 
