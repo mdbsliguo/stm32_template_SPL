@@ -11,7 +11,6 @@
 #include "delay.h"
 #include "board.h"
 #include "config.h"
-#include "core_cm3.h"
 #include "system_stm32f10x.h"
 #include <string.h>
 #include <stdio.h>
@@ -27,49 +26,6 @@
 
 #if CONFIG_MODULE_OLED_ENABLED
 #include "oled_ssd1306.h"
-#endif
-
-/* ==================== DWT定义 ==================== */
-#ifndef DWT_BASE
-#define DWT_BASE            (0xE0001000UL)
-#endif
-
-#ifndef DWT_Type
-typedef struct
-{
-  __IO uint32_t CTRL;
-  __IO uint32_t CYCCNT;
-  __I  uint32_t CPICNT;
-  __I  uint32_t EXCCNT;
-  __I  uint32_t SLEEPCNT;
-  __I  uint32_t LSUCNT;
-  __I  uint32_t FOLDCNT;
-  __I  uint32_t PCSR;
-  __I  uint32_t COMP0;
-  __I  uint32_t MASK0;
-  __I  uint32_t FUNCTION0;
-       uint32_t RESERVED0[1];
-  __I  uint32_t COMP1;
-  __I  uint32_t MASK1;
-  __I  uint32_t FUNCTION1;
-       uint32_t RESERVED1[1];
-  __I  uint32_t COMP2;
-  __I  uint32_t MASK2;
-  __I  uint32_t FUNCTION2;
-       uint32_t RESERVED2[1];
-  __I  uint32_t COMP3;
-  __I  uint32_t MASK3;
-  __I  uint32_t FUNCTION3;
-} DWT_Type;
-#endif
-
-#ifndef DWT_CTRL_CYCCNTENA_Msk
-#define DWT_CTRL_CYCCNTENA_Pos                0
-#define DWT_CTRL_CYCCNTENA_Msk                (1ul << DWT_CTRL_CYCCNTENA_Pos)
-#endif
-
-#ifndef DWT
-#define DWT                 ((DWT_Type *)     DWT_BASE)
 #endif
 
 /* ==================== 常量定义 ==================== */
@@ -203,31 +159,6 @@ static uint8_t g_endurance_test_initialized = 0;  /**< 模块初始化标志 */
 static uint8_t s_test_buffer[256] __attribute__((aligned(4)));      /**< 测试数据缓冲区 */
 static uint8_t s_read_buffer[256] __attribute__((aligned(4)));       /**< 读取数据缓冲区 */
 
-/* ==================== DWT辅助函数 ==================== */
-
-/**
- * @brief 初始化DWT周期计数器
- */
-static void DWT_Init(void)
-{
-    if (!(DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk))
-    {
-        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-        DWT->CYCCNT = 0;
-        DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    }
-}
-
-/**
- * @brief 使用DWT计算毫秒级延迟
- */
-static float DWT_GetElapsedMs(uint32_t start_cycles, uint32_t end_cycles)
-{
-    uint32_t cycles = end_cycles - start_cycles;
-    extern uint32_t SystemCoreClock;
-    return (float)((uint64_t)cycles * 1000ULL) / (float)SystemCoreClock;
-}
-
 /* ==================== 辅助函数 ==================== */
 
 /**
@@ -357,9 +288,6 @@ Endurance_Test_Status_t EnduranceTest_Init(void)
         return ENDURANCE_TEST_ERROR_W25Q_FAILED;
     }
     
-    /* 初始化DWT周期计数器 */
-    DWT_Init();
-    
     /* 标记为已初始化 */
     g_endurance_test_initialized = 1;
     
@@ -412,7 +340,7 @@ Endurance_Test_Status_t EnduranceTest_RunSingleCycle(Endurance_Test_Result_t *re
     uint32_t total_blocks;
     uint32_t page_addr;
     W25Q_Status_t w25q_status;
-    uint32_t start_cycles, end_cycles;
+    uint32_t start_tick, end_tick;
     float erase_time_ms = 0.0f;
     float erase_time_per_block_ms = 0.0f;
     float program_time_sum = 0.0f;
@@ -861,10 +789,9 @@ Endurance_Test_Status_t EnduranceTest_RunSingleCycle(Endurance_Test_Result_t *re
         uint8_t *write_buffer = s_test_buffer;
 #endif
         
-        /* 测量编程时间 */
-        start_cycles = DWT->CYCCNT;
+        /* 测量编程时间（包含Flash内部编程时间） */
+        start_tick = Delay_GetTick();
         w25q_status = W25Q_Write(page_addr, write_buffer, W25Q_PAGE_SIZE);
-        end_cycles = DWT->CYCCNT;
         
         if (w25q_status != W25Q_OK)
         {
@@ -881,7 +808,7 @@ Endurance_Test_Status_t EnduranceTest_RunSingleCycle(Endurance_Test_Result_t *re
             continue;
         }
         
-        /* 等待编程完成 */
+        /* 等待编程完成（Flash内部编程时间） */
         w25q_status = W25Q_WaitReady(2000);
         if (w25q_status != W25Q_OK)
         {
@@ -890,7 +817,9 @@ Endurance_Test_Status_t EnduranceTest_RunSingleCycle(Endurance_Test_Result_t *re
             continue;
         }
         
-        program_time_sum += DWT_GetElapsedMs(start_cycles, end_cycles);
+        /* 记录结束时间（包含完整的编程时间：SPI传输 + Flash内部编程） */
+        end_tick = Delay_GetTick();
+        program_time_sum += (float)Delay_GetElapsed(end_tick, start_tick);
         program_count++;
         
 #if CONFIG_MODULE_LOG_ENABLED
@@ -990,16 +919,16 @@ Endurance_Test_Status_t EnduranceTest_RunSingleCycle(Endurance_Test_Result_t *re
         }
         
         /* 读取数据并测量读取时间 */
-        start_cycles = DWT->CYCCNT;
+        start_tick = Delay_GetTick();
         w25q_status = W25Q_Read(page_addr, s_read_buffer, W25Q_PAGE_SIZE);
-        end_cycles = DWT->CYCCNT;
+        end_tick = Delay_GetTick();
         if (w25q_status != W25Q_OK)
         {
             continue;
         }
         
         /* 统计读取时间 */
-        read_time_sum += DWT_GetElapsedMs(start_cycles, end_cycles);
+        read_time_sum += (float)Delay_GetElapsed(end_tick, start_tick);
         read_count++;
         
         /* 统计位错误 */
