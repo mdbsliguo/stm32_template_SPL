@@ -227,24 +227,13 @@ int main(void)
     endurance_config.log_interval = 100;           /* 每100次循环记录日志 */
     endurance_config.verbose_log = 1;             /* 输出详细日志 */
     
-    /* 显示W25Q芯片信息（自动适配不同型号） */
-    if (dev_info != NULL)
-    {
-        LOG_INFO("MAIN", "检测到W25Q芯片:");
-        LOG_INFO("MAIN", "  容量: %d MB", dev_info->capacity_mb);
-        LOG_INFO("MAIN", "  地址字节数: %d", dev_info->addr_bytes);
-        LOG_INFO("MAIN", "  4字节模式: %s", dev_info->is_4byte_mode ? "是" : "否");
-        LOG_INFO("MAIN", "  制造商ID: 0x%04X", dev_info->manufacturer_id);
-        LOG_INFO("MAIN", "  设备ID: 0x%04X", dev_info->device_id);
-    }
-    
     /* 执行正式寿命测试 */
     OLED_Clear();
     OLED_ShowString(1, 1, "Endurance Test");
     OLED_ShowString(2, 1, "Running...");
     OLED_ShowString(3, 1, "To Failure");
     
-    LOG_WARN("MAIN", "警告：此测试会将芯片测到报废，请确认！");
+    LOG_WARN("MAIN", "警告：此测试会将芯片测到报废，请确认！（擦除时禁止重启，会导致测试数据丢失）");
     Delay_ms(2000);
     
     LED_On(LED_1);

@@ -58,6 +58,17 @@ typedef enum {
     CHIP_STATUS_DEAD = 3         /**< 报废状态 */
 } Chip_Status_t;
 
+/* ==================== 测试状态定义 ==================== */
+
+/**
+ * @brief 测试状态枚举
+ */
+typedef enum {
+    TEST_STATUS_RUNNING = 0,     /**< 测试进行中 */
+    TEST_STATUS_COMPLETED = 1,   /**< 测试已完成（芯片已报废） */
+    TEST_STATUS_PAUSED = 2       /**< 测试已暂停（断电等） */
+} Test_Status_t;
+
 /* ==================== 测试配置 ==================== */
 
 /**
@@ -75,13 +86,39 @@ typedef struct {
  * @brief 基准数据结构体（0次擦写循环时的初始状态）
  */
 typedef struct {
-    float erase_time_min;            /**< 最小擦除时间（毫秒） */
-    float erase_time_avg;            /**< 平均擦除时间（毫秒） */
-    float program_time_avg;          /**< 平均编程时间（毫秒） */
+    float erase_time_avg;            /**< 块擦除时间（毫秒） */
+    float program_time_avg;          /**< 页编程时间（毫秒） */
     float read_speed;                 /**< 读取速度（KB/s） */
-    uint32_t error_rate;             /**< 初始错误率（位错误数） */
+    float error_rate;                 /**< 初始错误率（0.0~1.0之间的浮点数） */
     uint64_t unique_id;              /**< Unique ID（用于追踪） */
 } Baseline_Data_t;
+
+/* ==================== 损坏时数据 ==================== */
+
+/**
+ * @brief 损坏时数据结构体（芯片报废时的最终状态）
+ */
+typedef struct {
+    uint32_t dead_cycle;             /**< 报废时的循环次数 */
+    float erase_time_final;          /**< 最终块擦除时间（毫秒） */
+    float program_time_final;        /**< 最终页编程时间（毫秒） */
+    float read_speed_final;          /**< 最终读取速度（KB/s） */
+    uint32_t erase_errors_final;     /**< 最终擦除错误次数 */
+    uint32_t program_errors_final;   /**< 最终编程错误次数 */
+    uint32_t verify_errors_final;   /**< 最终校验错误次数（位错误数） */
+    uint32_t bad_block_count_final; /**< 最终坏块数量 */
+    float error_rate_final;          /**< 最终误码率 */
+    float telomere_progress_final;  /**< 最终端粒进度（%，按官方标准10万次=100%，可超过100%） */
+    Chip_Status_t chip_status_final; /**< 最终芯片状态 */
+    uint64_t total_data_written_mb_final; /**< 最终总写入数据量（MB） */
+} Endurance_Test_DeadData_t;
+
+/* ==================== 汇总信息存储相关常量 ==================== */
+
+#define ENDURANCE_TEST_SUMMARY_ADDR           0x00000000  /**< 汇总信息存储地址（Block 0，第一个块） */
+#define ENDURANCE_TEST_MAGIC                  0x464C4153  /**< 魔数标签（"FLAS"的ASCII码） */
+#define ENDURANCE_TEST_VERSION                0x0001      /**< 版本号（初始版本） */
+#define ENDURANCE_TEST_OFFICIAL_STANDARD      100000      /**< 官方标准P/E循环次数（10万次 = 100%） */
 
 /* ==================== 测试结果结构体 ==================== */
 
@@ -97,11 +134,9 @@ typedef struct {
     uint64_t total_data_written_mb;   /**< 总写入数据量（MB） */
     
     /* 时间统计 */
-    float erase_time_current;         /**< 当前擦除时间（毫秒） */
-    float erase_time_avg;             /**< 平均擦除时间（毫秒） */
-    float erase_time_min;             /**< 最小擦除时间（毫秒） */
-    float erase_time_max;             /**< 最大擦除时间（毫秒） */
-    float program_time_avg;           /**< 平均编程时间（毫秒） */
+    float erase_time_avg;             /**< 块擦除时间（毫秒） */
+    float program_time_avg;           /**< 页编程时间（毫秒） */
+    float read_speed;                 /**< 读取速度（KB/s） */
     
     /* 错误统计 */
     uint32_t erase_errors;           /**< 擦除错误次数 */
@@ -111,15 +146,16 @@ typedef struct {
     float error_rate;                 /**< 误码率 */
     
     /* 性能退化 */
-    float erase_degradation_rate;     /**< 擦除时间退化率（%） */
-    float program_degradation_rate;   /**< 编程时间退化率（%） */
+    float erase_degradation_rate;     /**< 擦除时间退化率（%，用进行中的块擦除时间与首次的块擦除时间计算） */
+    float program_degradation_rate;   /**< 编程时间退化率（%，用进行中的页编程时间与首次的页编程时间计算） */
+    float read_speed_degradation_rate; /**< 读取速度退化率（%，用进行中的读取速度与首次的读取速度计算） */
     
     /* 读干扰 */
     uint32_t read_disturb_errors;     /**< 读干扰错误数 */
     
     /* 芯片状态 */
     Chip_Status_t chip_status;        /**< 芯片状态 */
-    float lifetime_score;             /**< 寿命评分（0-100） */
+    float telomere_progress;         /**< 端粒进度（%，按官方标准10万次=100%，可超过100%） */
     
     /* 基准数据 */
     Baseline_Data_t baseline;         /**< 基准数据（初始状态） */
@@ -128,6 +164,29 @@ typedef struct {
     uint8_t baseline_recorded;         /**< 基准数据已记录标志 */
     uint8_t chip_dead;                /**< 芯片已报废标志 */
 } Endurance_Test_Result_t;
+
+/* ==================== 汇总信息结构体 ==================== */
+
+/**
+ * @brief 汇总信息结构体（存储在Flash中）
+ * @note 存储在Block 0的第一个扇区（地址0x00000000）
+ * 
+ * 包含内容：
+ * - 首轮数据（baseline）：基准数据，0次循环时的初始状态
+ * - 进行时数据（result）：当前测试状态，每轮更新
+ * - 损坏时数据（dead_data）：芯片报废时的最终状态（如果已报废）
+ * - 测试状态（test_status）：当前测试状态（进行中/已完成/已暂停）
+ */
+typedef struct {
+    uint32_t magic;                             /**< 魔数标签（0x464C4153 = "FLAS"） */
+    uint16_t version;                           /**< 版本号（0x0001） */
+    uint16_t reserved;                          /**< 保留字段（用于未来扩展） */
+    Test_Status_t test_status;                  /**< 测试状态（进行中/已完成/已暂停） */
+    Baseline_Data_t baseline;                    /**< 首轮数据（基准数据，0次循环时的初始状态） */
+    Endurance_Test_Result_t result;             /**< 进行时数据（当前测试状态，每轮更新） */
+    Endurance_Test_DeadData_t dead_data;        /**< 损坏时数据（芯片报废时的最终状态，如果已报废） */
+    uint8_t dead_data_recorded;                 /**< 损坏时数据已记录标志（1=已记录，0=未记录） */
+} Endurance_Test_Summary_t;
 
 /* ==================== 公共接口函数 ==================== */
 
@@ -177,12 +236,24 @@ Endurance_Test_Status_t EnduranceTest_DeepHealthCheck(Endurance_Test_Result_t *r
  */
 Endurance_Test_Status_t EnduranceTest_CheckEndOfLife(Endurance_Test_Result_t *result, uint8_t *is_dead);
 
+
 /**
- * @brief 计算寿命评分
- * @param[in,out] result 测试结果结构体指针
+ * @brief 从Flash加载汇总信息（断点续测）
+ * @param[out] result 测试结果结构体指针
  * @return Endurance_Test_Status_t 错误码
+ * @note 从Block 0的第一个扇区读取汇总信息，验证魔数标签
+ *       如果魔数有效，恢复测试状态；如果无效，返回错误（表示需要从0开始）
  */
-Endurance_Test_Status_t EnduranceTest_CalculateLifetimeScore(Endurance_Test_Result_t *result);
+Endurance_Test_Status_t EnduranceTest_LoadSummary(Endurance_Test_Result_t *result);
+
+/**
+ * @brief 保存汇总信息到Flash（断点续测）
+ * @param[in] result 测试结果结构体指针
+ * @return Endurance_Test_Status_t 错误码
+ * @note 将汇总信息写入Block 0的第一个扇区，包含魔数标签
+ *       写入前检查是否需要擦除（Flash只能从1变0）
+ */
+Endurance_Test_Status_t EnduranceTest_SaveSummary(const Endurance_Test_Result_t *result);
 
 #ifdef __cplusplus
 }
