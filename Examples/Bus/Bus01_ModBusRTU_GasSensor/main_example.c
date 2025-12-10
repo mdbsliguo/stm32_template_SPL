@@ -63,9 +63,9 @@ typedef struct {
 
 /* ==================== 传感器配置 ==================== */
 
-#define SENSOR_COUNT 3  /**< 传感器数量 */
-// #define SENSORS_PER_PAGE 3  /**< 每页显示的传感器数量 */
-// #define PAGE_COUNT ((SENSOR_COUNT + SENSORS_PER_PAGE - 1) / SENSORS_PER_PAGE)  /**< 总页数 */
+#define SENSOR_COUNT 6  /**< 传感器数量 */
+#define SENSORS_PER_PAGE 3  /**< 每页显示的传感器数量 */
+#define PAGE_COUNT ((SENSOR_COUNT + SENSORS_PER_PAGE - 1) / SENSORS_PER_PAGE)  /**< 总页数 */
 
 /**
  * @brief 传感器配置信息
@@ -80,16 +80,16 @@ static const SensorConfig_t g_sensor_configs[SENSOR_COUNT] = {
     {1, "TempHum", "C/%"},      /**< 地址1：温湿度传感器 */
     {2, "O2", "ppm"},           /**< 地址2：氧气传感器 */
     {3, "CO", "ppm"},           /**< 地址3：一氧化碳传感器 */
-    // {4, "CO2", "ppm"},          /**< 地址4：二氧化碳传感器 */
-    // {5, "CH4", "ppm"},          /**< 地址5：甲烷传感器 */
-    // {6, "H2", "ppm"},           /**< 地址6：氢气传感器 */
+    {4, "CO2", "ppm"},          /**< 地址4：二氧化碳传感器 */
+    {5, "CH4", "ppm"},          /**< 地址5：甲烷传感器 */
+    {6, "H2", "ppm"},           /**< 地址6：氢气传感器 */
 };
 
 /* ==================== 全局变量 ==================== */
 
 static SensorData_t g_sensor_data[SENSOR_COUNT] = {0};  /**< 传感器数据缓冲区 */
 static uint8_t g_sensor_read_success[SENSOR_COUNT] = {0};  /**< 传感器读取成功标志 */
-// static uint8_t g_current_page = 0;  /**< 当前显示页（0-1） */
+static uint8_t g_current_page = 0;  /**< 当前显示页（0=显示1-3，1=显示4-6） */
 
 /* ==================== 私有函数 ==================== */
 
@@ -203,11 +203,14 @@ static float CalculateConcentration(uint16_t raw_value, uint8_t decimal_places)
 }
 
 /**
- * @brief 在OLED上显示传感器数据
+ * @brief 在OLED上显示传感器数据（分页显示）
  */
 static void DisplaySensorData(void)
 {
     uint8_t i;
+    uint8_t start_index;
+    uint8_t end_index;
+    uint8_t display_line;
     char buffer[32];
     float temp, hum;
     float concentration;
@@ -218,7 +221,16 @@ static void DisplaySensorData(void)
     OLED_Clear();
     OLED_ShowString(1, 1, "Bus01 ModBusRTU");
     
-    for (i = 0; i < SENSOR_COUNT; i++) {
+    /* 计算当前页显示的传感器范围 */
+    start_index = g_current_page * SENSORS_PER_PAGE;
+    end_index = start_index + SENSORS_PER_PAGE;
+    if (end_index > SENSOR_COUNT) {
+        end_index = SENSOR_COUNT;
+    }
+    
+    /* 显示当前页的传感器数据 */
+    display_line = 2;  /* 从第2行开始显示 */
+    for (i = start_index; i < end_index; i++) {
         const SensorConfig_t *config = &g_sensor_configs[i];
         const SensorData_t *data = &g_sensor_data[i];
         
@@ -230,7 +242,7 @@ static void DisplaySensorData(void)
                 snprintf(buffer, sizeof(buffer), "%d:%s T:%.1f H:%.1f", 
                         config->address, config->name, temp, hum);
             } else {
-                /* 地址2和3：气体传感器，显示浓度 */
+                /* 地址2-6：气体传感器，显示浓度 */
                 /* 解析寄存器0的单位和小数点配置 */
                 unit_type = (uint8_t)((data->unit_decimal >> 12) & 0x0F);
                 decimal_places = (uint8_t)((data->unit_decimal >> 8) & 0x0F);
@@ -265,20 +277,21 @@ static void DisplaySensorData(void)
             snprintf(buffer, sizeof(buffer), "%d:%s Error", config->address, config->name);
         }
         
-        OLED_ShowString(i + 2, 1, buffer);
+        OLED_ShowString(display_line, 1, buffer);
+        display_line++;
     }
 }
 
-// /**
-//  * @brief 切换到下一页
-//  */
-// static void NextPage(void)
-// {
-//     g_current_page++;
-//     if (g_current_page >= PAGE_COUNT) {
-//         g_current_page = 0;  /* 循环到第一页 */
-//     }
-// }
+/**
+ * @brief 切换到下一页
+ */
+static void NextPage(void)
+{
+    g_current_page++;
+    if (g_current_page >= PAGE_COUNT) {
+        g_current_page = 0;  /* 循环到第一页 */
+    }
+}
 
 /**
  * @brief 输出传感器数据到串口
@@ -417,7 +430,7 @@ int main(void)
     LOG_INFO("MAIN", "开始读取传感器数据...");
     
     while (1) {
-        /* 轮询读取3个传感器 */
+        /* 轮询读取6个传感器 */
         for (i = 0; i < SENSOR_COUNT; i++) {
             (void)ReadSensorData(i);  /* 读取传感器数据，忽略返回值（错误已在函数内处理） */
             
@@ -427,11 +440,14 @@ int main(void)
             }
         }
         
-        /* 显示数据 */
+        /* 显示当前页数据 */
         DisplaySensorData();
         
-        /* 输出日志 */
+        /* 输出所有传感器数据到串口 */
         PrintSensorData();
+        
+        /* 切换到下一页（交替显示123和456） */
+        NextPage();
         
         /* 轮询间隔500ms */
         Delay_ms(500);
