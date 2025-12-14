@@ -641,7 +641,7 @@ uart_periph->CR1 |= USART_CR1_UE;
   - **主程序代码**：`main_example.c`
   - **硬件配置**：`board.h`
   - **模块配置**：`config.h`
-  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../AI/README.md`（AI规则体系）
   - **案例参考**：`Examples/README.md`
 - **OLED驱动**：`../../Drivers/display/oled_ssd1306.c/h`
 - **OLED字库**：`../../Drivers/display/oled_font_ascii8x16.c/h`

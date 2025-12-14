@@ -30,7 +30,7 @@ Core/
      - 独立中断向量（EXTI0-4）：直接调用`EXTI_IRQHandler(EXTI_LINE_X)`
      - 共享中断向量（EXTI5-9、EXTI10-15）：检查所有可能的线，然后调用对应的处理函数
      - 特殊功能中断（EXTI16-19）：PVD、RTC Alarm、USB Wakeup、Ethernet Wakeup
-   - **详细规范**：参考`PROJECT_KEYWORDS.md`中的"中断服务程序（ISR）实现规范"章节
+   - **详细规范**：参考[STM32项目规则](../AI/rules/1_topics/stm32.md)中的"中断服务程序（ISR）规范"章节
 3. **系统配置**：SPL库功能开关，系统级宏定义
 
 ---

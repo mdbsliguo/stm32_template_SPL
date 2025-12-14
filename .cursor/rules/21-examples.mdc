@@ -1,0 +1,228 @@
+---
+description: 示例文档参考 - 仅参考，无约束力，提供文档格式和代码示例参考
+alwaysApply: false
+priority: low
+type: reference
+---
+
+<!-- 
+注意：本文件的实际内容存储在 AI/rules/2_reference/examples.mdc
+此文件为 Cursor IDE 的规则入口，内容与 AI/rules/2_reference/examples.mdc 同步
+如需修改规则，请编辑 AI/rules/2_reference/examples.mdc，然后同步到此文件
+-->
+
+# 示例文档参考
+
+**仅参考，无约束力，提供文档格式和代码示例参考。**
+
+---
+
+## 1. README文档示例
+
+```markdown
+# 模块名称
+
+模块简要说明。
+
+---
+
+## 📋 目录说明
+
+```
+Module/
+├── module.c/h    # 模块实现
+└── README.md    # 本文档
+```
+
+---
+
+## 🎯 职责
+
+1. 职责1
+2. 职责2
+3. 职责3
+
+---
+
+## 📝 功能列表
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 功能1 | 说明1 | ✅ 已实现 |
+| 功能2 | 说明2 | ⏳ 计划中 |
+
+---
+
+## ⚠️ 重要说明
+
+1. **重要说明1**
+   - 详细说明
+   - 注意事项
+
+2. **重要说明2**
+   - 详细说明
+   - 注意事项
+
+---
+
+## 📚 详细文档
+
+- [配置教程](path/to/config.md)
+- [使用示例](path/to/examples.md)
+
+---
+
+## 🔗 相关模块
+
+- [模块1](path/to/module1.md)
+- [模块2](path/to/module2.md)
+
+---
+
+**最后更新**：YYYY-MM-DD
+```
+
+---
+
+## 2. 代码示例
+
+### 2.1 模块初始化示例
+```c
+#include "system_init.h"
+#include "module.h"
+
+int main(void) {
+    // 系统初始化
+    System_Init();
+    
+    // 模块初始化
+    error_code_t result = Module_Init();
+    if (result != ERROR_OK) {
+        ErrorHandler_Report(result, __FILE__, __LINE__);
+        return -1;
+    }
+    
+    while(1) {
+        // 主循环
+    }
+}
+```
+
+### 2.2 函数使用示例
+```c
+// 使用模块函数
+error_code_t result = Module_Function(param);
+if (result != ERROR_OK) {
+    ErrorHandler_Report(result, __FILE__, __LINE__);
+    // 错误处理
+    return result;
+}
+```
+
+### 2.3 错误处理示例
+```c
+error_code_t result = SomeFunction(param);
+if (result != ERROR_OK) {
+    // 记录错误
+    ErrorHandler_Report(result, __FILE__, __LINE__);
+    
+    // 根据错误类型处理
+    switch (result) {
+        case MODULE_ERROR_INVALID_PARAM:
+            // 处理参数错误
+            break;
+        case MODULE_ERROR_NOT_INIT:
+            // 处理未初始化错误
+            break;
+        default:
+            // 处理其他错误
+            break;
+    }
+    
+    return result;
+}
+```
+
+---
+
+## 3. 配置示例
+
+### 3.1 硬件配置示例
+```c
+// 在BSP/board.h中配置
+#define LED_CONFIGS { \
+    {GPIOA, GPIO_Pin_1, Bit_RESET, 1}, \
+    {GPIOA, GPIO_Pin_2, Bit_RESET, 1}, \
+}
+```
+
+### 3.2 模块开关配置示例
+```c
+// 在System/config.h中配置
+#define CONFIG_MODULE_LED_ENABLED 1
+#define CONFIG_MODULE_GPIO_ENABLED 1
+```
+
+---
+
+## 4. API文档示例
+
+```c
+/**
+ * @brief LED开启函数
+ * @param led_id LED ID，取值范围：0 ~ LED_COUNT-1
+ * @return error_code_t 错误码
+ *   - ERROR_OK: 成功
+ *   - LED_ERROR_INVALID_ID: LED ID无效
+ *   - LED_ERROR_NOT_INIT: LED未初始化
+ * @note 必须在LED_Init()之后调用
+ * @example
+ *   error_code_t result = LED_On(LED_1);
+ *   if (result != ERROR_OK) {
+ *       ErrorHandler_Report(result, __FILE__, __LINE__);
+ *   }
+ */
+error_code_t LED_On(LED_ID_t led_id);
+```
+
+---
+
+## 5. 测试示例
+
+```c
+// 测试函数
+void test_module(void) {
+    // 测试正常情况
+    error_code_t result = Module_Function(valid_param);
+    assert(result == ERROR_OK);
+    
+    // 测试参数错误
+    result = Module_Function(invalid_param);
+    assert(result == MODULE_ERROR_INVALID_PARAM);
+    
+    // 测试状态错误
+    result = Module_Function(param);
+    assert(result == MODULE_ERROR_NOT_INIT);
+}
+```
+
+---
+
+## 6. 文档更新示例
+
+```markdown
+## 更新日志
+
+### v1.0.0 (2024-01-01)
+- 初始版本
+- 实现基本功能
+
+### v1.1.0 (2024-02-01)
+- 新增功能1
+- 修复问题1
+
+### v1.2.0 (2024-03-01)
+- 新增功能2
+- 优化性能
+```
+

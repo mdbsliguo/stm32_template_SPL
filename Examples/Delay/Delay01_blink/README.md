@@ -408,7 +408,7 @@ flowchart TD
   - **主程序代码**：`main_example.c`
   - **硬件配置**：`board.h`
   - **模块配置**：`config.h`
-  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../AI/README.md`（AI规则体系）
   - **案例参考**：`Examples/README.md`
 - **软件I2C驱动**：`../../Drivers/i2c/i2c_sw.c/h`
 - **GPIO驱动**：`../../Drivers/basic/gpio.c/h`

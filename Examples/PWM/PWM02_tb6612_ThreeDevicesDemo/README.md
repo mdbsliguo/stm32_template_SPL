@@ -1060,7 +1060,7 @@ PWM_EnableChannel(PWM_INSTANCE_1, PWM_CHANNEL_2);  // 使能马达通道
 - **Log模块文档**：`Debug/log.c/h`
 - **ErrorHandler模块文档**：`Common/error_handler.c/h`
 - **OLED驱动模块文档**：`Drivers/display/README.md`
-- **项目规范文档**：`PROJECT_KEYWORDS.md`
+- **项目规范文档**：`../../AI/README.md`（AI规则体系）
 - **案例参考**：`Examples/README.md`
 
 ---

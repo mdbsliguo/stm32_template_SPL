@@ -666,7 +666,7 @@ flowchart TD
   - **主程序代码**：`main_example.c`
   - **硬件配置**：`board.h`
   - **模块配置**：`config.h`
-  - **项目规范文档**：`../../PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../../AI/README.md`（AI规则体系）
   - **案例参考**：`../../Examples/README.md`
   - **Flash01案例**：`../Flash01_W25Q_ReadWrite/README.md`（W25Q基础操作）
   - **Flash11案例**：`../Flash11_LittleFS_InlineFileFix_And_MemoryConfig/README.md`（LittleFS高级用法）

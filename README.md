@@ -19,7 +19,7 @@ STM32F103C8T6快速开发工程模板，提供模块化架构、硬件抽象、�
 
 ### 快速链接
 
-- 📗 [AI规则与项目约束](PROJECT_KEYWORDS.md) - 开发规范和约束
+- 📗 [AI规则体系](AI/README.md) - AI规则体系说明（开发规范和约束）
 - 📕 [案例参考](Examples/README.md) - 12个演示案例
 - 📐 [项目架构文档](Docs/PROJECT_ARCHITECTURE.md) - 架构设计说明
 
@@ -133,7 +133,9 @@ stm32_template_SPL/
 
 ### 开发规范类
 
-- [AI规则与项目约束](PROJECT_KEYWORDS.md) - **AI的唯一规则来源**（包含项目描述和开发约束，新建会话时请复制使用）
+- [AI规则体系](AI/README.md) - **AI规则体系**（分层分级规则）
+  - [最高优先级规则](AI/KEYWORDS.md) - KEYWORDS规则（包含项目描述和开发约束）
+  - [STM32项目规则](AI/rules/1_topics/stm32.md) - STM32特定开发规范
 
 ### 架构文档
 
@@ -169,7 +171,7 @@ stm32_template_SPL/
 
 项目遵循统一的代码规范，包括命名规范、错误处理、防御性编程等。
 
-**详细规范请参考** [AI规则与项目约束](PROJECT_KEYWORDS.md)
+**详细规范请参考** [AI规则体系](AI/README.md) 和 [STM32项目规则](AI/rules/1_topics/stm32.md)
 
 ### 核心规范速查
 
@@ -185,7 +187,7 @@ stm32_template_SPL/
 
 - **OLED默认显示**：除案例1外，所有案例默认使用OLED作为显示输出设备，详细说明见 [Examples/README.md](Examples/README.md)
 - **独立工程**：每个案例和测试工程都是独立的Keil工程，可直接编译运行
-- **代码规范**：所有模块函数返回`error_code_t`，详细规范见 [PROJECT_KEYWORDS.md](PROJECT_KEYWORDS.md)
+- **代码规范**：所有模块函数返回`error_code_t`，详细规范见 [AI规则体系](AI/README.md)
 - **文件编码**：`.md`文件使用UTF-8编码，`.c/.h`文件使用GB2312编码
 
 ---
@@ -197,6 +199,7 @@ MIT License - 随意使用，自由修改
 ---
 
 **最后更新**：2024-01-01（v0.1.0 - 初始化 STM32 模块化基础结构）
+
 
 
 

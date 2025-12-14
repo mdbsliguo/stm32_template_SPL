@@ -527,7 +527,7 @@ flowchart TD
 - **主程序代码**：`Examples/Flash/Flash14_TestW25QQuality/main_example.c`
 - **硬件配置**：`Examples/Flash/Flash14_TestW25QQuality/board.h`
 - **模块配置**：`Examples/Flash/Flash14_TestW25QQuality/config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../../AI/README.md`（AI规则体系）
 
 ## 📝 更新日志
 

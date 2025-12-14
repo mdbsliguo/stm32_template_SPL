@@ -1,4 +1,4 @@
-﻿# Examples - 演示案例
+# Examples - 演示案例
 
 演示案例目录，用于存放各种功能模块的使用示例和参考代码。
 
@@ -308,7 +308,7 @@ Examples/
 
 **创建案例时必须检查**：案例中使用的模块函数是否为**占位空函数**。
 
-详细规范请参考：[PROJECT_KEYWORDS.md](../PROJECT_KEYWORDS.md) 中的"案例创建规范"章节。
+详细规范请参考：[AI规则体系](../AI/README.md) 和 [STM32项目规则](../AI/rules/1_topics/stm32.md)。
 
 ---
 

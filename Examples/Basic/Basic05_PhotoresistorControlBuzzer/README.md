@@ -450,7 +450,7 @@ flowchart TD
   - **主程序代码**：`Examples/Basic/Basic05_PhotoresistorControlBuzzer/main_example.c`
   - **硬件配置**：`Examples/Basic/Basic05_PhotoresistorControlBuzzer/board.h`
   - **模块配置**：`Examples/Basic/Basic05_PhotoresistorControlBuzzer/config.h`
-  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../AI/README.md`（AI规则体系）
   - **案例参考**：`Examples/README.md`
 
 ---

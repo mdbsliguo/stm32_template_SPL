@@ -504,7 +504,7 @@ flowchart TD
   - **主程序代码**：`Examples/PWM/PWM04_InputCapture_DS3231_FreqSQW/main_example.c`
   - **硬件配置**：`Examples/PWM/PWM04_InputCapture_DS3231_FreqSQW/board.h`
   - **模块配置**：`Examples/PWM/PWM04_InputCapture_DS3231_FreqSQW/config.h`
-  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../AI/README.md`（AI规则体系）
   - **案例参考**：`Examples/README.md`
   - **Timer03案例**：`Examples/Timer/Timer03_DS3231ExternalSquareWave/` - DS3231 SQW输出参考
 

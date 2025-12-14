@@ -601,7 +601,7 @@ flowchart TD
 - **硬件配置**：`Examples/Bus/Bus01_ModBusRTU_GasSensor/board.h`
 - **模块配置**：`Examples/Bus/Bus01_ModBusRTU_GasSensor/config.h`
 - **协议文档**：`Examples/Bus/Bus01_ModBusRTU_GasSensor/PROTOCOL.md`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../AI/README.md`（AI规则体系）
 - **案例参考**：`Examples/README.md`
 
 ## 🔗 相关案例
@@ -612,6 +612,7 @@ flowchart TD
 ---
 
 **最后更新**：2024-01-01
+
 
 
 

@@ -774,7 +774,7 @@ flowchart TD
 - **硬件配置**：`Examples/Flash/Flash15_WARN_W25QLifetime/board.h`
 - **模块配置**：`Examples/Flash/Flash15_WARN_W25QLifetime/config.h`
 - **需求规格说明**：`Examples/Flash/Flash15_WARN_W25QLifetime/SRS.md`（完整的需求文档）
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../../AI/README.md`（AI规则体系）
 - **相关案例**：`Examples/Flash/Flash14_TestW25QQuality/README.md`（品质测试案例）
 
 ### 配置说明

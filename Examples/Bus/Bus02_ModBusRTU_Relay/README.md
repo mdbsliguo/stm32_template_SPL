@@ -572,7 +572,7 @@ flowchart TD
 - **硬件配置**：`Examples/Bus/Bus02_ModBusRTU_Relay/board.h`
 - **模块配置**：`Examples/Bus/Bus02_ModBusRTU_Relay/config.h`
 - **开发指令速查**：`Examples/Bus/Bus02_ModBusRTU_Relay/开发指令速查.md`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../AI/README.md`（AI规则体系）
 - **案例参考**：`Examples/README.md`
 
 ## 🔗 相关案例

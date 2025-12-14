@@ -753,7 +753,7 @@ flowchart TD
   - **模块配置**：`Examples/PWM/PWM06_BTS7960_CarAirPumpMotor/config.h`
   - **BTS7960模块文档**：`Drivers/motor/README.md`
   - **PWM模块文档**：`Drivers/timer/README.md`
-  - **项目规范文档**：`PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../AI/README.md`（AI规则体系）
   - **案例参考**：`Examples/README.md`
 
 ---

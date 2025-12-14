@@ -1,0 +1,281 @@
+---
+description: STM32项目特定开发规范 - 包含函数返回类型、命名规范、硬件配置、错误处理等STM32项目特定规则
+alwaysApply: false
+priority: medium
+globs:
+  - "**/*.c"
+  - "**/*.h"
+  - "Core/**"
+  - "Drivers/**"
+  - "System/**"
+  - "BSP/**"
+---
+
+<!-- 
+注意：本文件的实际内容存储在 AI/rules/1_topics/stm32.mdc
+此文件为 Cursor IDE 的规则入口，内容与 AI/rules/1_topics/stm32.mdc 同步
+如需修改规则，请编辑 AI/rules/1_topics/stm32.mdc，然后同步到此文件
+-->
+
+# STM32项目特定开发规范
+
+**本文件包含STM32项目的所有特定开发规范，优先级低于KEYWORDS.md和核心规则。**
+
+---
+
+## 1. 函数返回类型规范（强制）
+
+### 1.1 基本要求
+- **所有模块函数必须返回`error_code_t`，禁止返回`void`**
+- 错误示例：`void LED_On(void);`
+- 正确示例：`error_code_t LED_On(LED_ID_t led_id);`
+
+### 1.2 错误码定义
+- 所有模块必须在`Common/error_code.h`中定义错误码基值
+- 错误码格式：`ERROR_BASE_MODULE_NAME = -N00`（每个模块占用100个错误码空间）
+- 模块错误码枚举必须基于基值定义
+- 示例：
+  ```c
+  #define ERROR_BASE_LED -400
+  typedef enum {
+      LED_ERROR_OK = ERROR_OK,
+      LED_ERROR_INVALID_ID = ERROR_BASE_LED - 1,
+      LED_ERROR_NOT_INIT = ERROR_BASE_LED - 2,
+  } led_error_code_t;
+  ```
+
+---
+
+## 2. 命名规范（强制）
+
+### 2.1 函数命名
+- **格式**：`模块名_功能名()`
+- 模块名使用大写，功能名使用驼峰命名
+- 示例：
+  - `LED_On()` - LED模块，开启功能
+  - `GPIO_Config()` - GPIO模块，配置功能
+  - `UART_Send()` - UART模块，发送功能
+
+### 2.2 常量命名
+- 使用全大写，用下划线分隔
+- 示例：`LED_CONFIGS`、`ERROR_BASE_LED`、`CONFIG_MODULE_LED_ENABLED`
+
+### 2.3 类型命名
+- 使用驼峰命名，以`_t`结尾
+- 示例：`LED_ID_t`、`error_code_t`、`gpio_config_t`
+
+---
+
+## 3. 硬件配置规范（强制）
+
+### 3.1 配置表驱动
+- **所有硬件配置必须通过`BSP/board.h`统一管理**
+- 禁止在其他文件中硬编码硬件引脚、端口等配置
+- 错误示例：
+  ```c
+  GPIO_Config(GPIOA, GPIO_Pin_1, GPIO_MODE_OUTPUT_PP, GPIO_Speed_50MHz);
+  ```
+- 正确示例：
+  ```c
+  // 在BSP/board.h中定义
+  #define LED_CONFIGS { \
+      {GPIOA, GPIO_Pin_1, Bit_RESET, 1}, \
+  }
+  // 在代码中使用
+  GPIO_Config(LED_CONFIGS[0].port, LED_CONFIGS[0].pin, ...);
+  ```
+
+### 3.2 配置表要求
+- 配置表必须包含所有必要信息（端口、引脚、模式、参数等）
+- 同一硬件在不同配置表中保持一致
+- 配置表使用宏定义，便于编译时配置
+
+---
+
+## 4. 模块开关规范（强制）
+
+### 4.1 模块开关管理
+- 通过`System/config.h`控制模块编译
+- 使用`CONFIG_MODULE_XXX_ENABLED`宏控制模块开关
+- 示例：
+  ```c
+  #if CONFIG_MODULE_LED_ENABLED
+      // LED模块代码
+  #endif
+  ```
+
+### 4.2 功能开关
+- 使用`CONFIG_XXX_YYY_EN`宏控制功能开关
+- 示例：`CONFIG_ERROR_HANDLER_STATS_EN`
+
+---
+
+## 5. 错误处理规范（强制）
+
+### 5.1 统一错误码系统
+- 所有模块使用`error_code_t`类型
+- 错误码必须基于模块基值定义
+- 每个模块占用100个错误码空间
+- 错误码范围不要重叠
+
+### 5.2 错误处理要求
+- 错误处理要及时，不要忽略错误码
+- 至少记录错误日志
+- 使用`ErrorHandler_Report()`报告错误
+- 示例：
+  ```c
+  error_code_t result = LED_On(led_id);
+  if (result != ERROR_OK) {
+      ErrorHandler_Report(result, __FILE__, __LINE__);
+      return result;
+  }
+  ```
+
+---
+
+## 6. 防御性编程规范（强制）
+
+### 6.1 参数校验
+- 所有函数必须进行参数校验
+- 必须进行边界检查
+- 必须进行空指针保护
+- 示例：
+  ```c
+  error_code_t LED_On(LED_ID_t led_id) {
+      // 参数校验
+      if (led_id >= LED_COUNT) {
+          return LED_ERROR_INVALID_ID;
+      }
+      // 空指针检查
+      if (LED_CONFIGS == NULL) {
+          return LED_ERROR_NOT_INIT;
+      }
+      // 功能实现
+      // ...
+      return ERROR_OK;
+  }
+  ```
+
+### 6.2 边界检查
+- 数组索引必须检查边界
+- 指针解引用前必须检查空指针
+- 数值运算必须检查溢出
+
+---
+
+## 7. 中断服务程序（ISR）规范（强制）
+
+### 7.1 ISR实现位置
+- **所有ISR统一在`Core/stm32f10x_it.c`中实现**
+- 不要在驱动层或其他位置实现ISR
+
+### 7.2 职责划分
+- **Core层**：实现所有ISR（中断向量表对应的函数）
+- **驱动层**：提供`XXX_IRQHandler()`处理函数
+- **案例层**：只需要写回调函数，通过模块API注册
+
+### 7.3 ISR实现原则
+- ISR中统一调用驱动层的处理函数，保持简洁
+- ISR要尽可能短，快速处理，设置标志位
+- 避免在中断中调用阻塞函数
+- 保持中断服务函数的可重入性
+- 注意共享资源的保护，使用临界区保护（如需要）
+
+### 7.4 EXTI ISR实现示例
+- 独立中断向量（EXTI0-4）：直接调用`EXTI_IRQHandler(EXTI_LINE_X)`
+- 共享中断向量（EXTI5-9、EXTI10-15）：检查所有可能的线，然后调用对应的处理函数
+- 特殊功能中断（EXTI16-19）：PVD、RTC Alarm、USB Wakeup、Ethernet Wakeup
+
+---
+
+## 8. 驱动开发规范（强制）
+
+### 8.1 SPL库封装
+- **不要直接调用SPL库函数**
+- 错误示例：`GPIO_Init()`（直接调用SPL）
+- 正确示例：`GPIO_Config()`（使用封装函数）
+- 驱动函数应自动使能外设时钟
+
+### 8.2 接口一致性
+- 所有驱动模块使用相同的错误处理方式
+- 函数命名遵循统一规范
+- 所有公共函数都要进行参数校验
+
+### 8.3 线程安全
+- 注意多任务环境下的资源保护
+- 使用临界区保护共享资源（如需要）
+
+---
+
+## 9. 系统初始化规范（强制）
+
+### 9.1 初始化顺序
+- `System_Init()`必须在main()开始调用
+- 其他模块依赖系统初始化，不要跳过
+- 初始化顺序：
+  1. `System_InitClock()` - 时钟初始化
+  2. `GPIO_Init()` - GPIO初始化（通过board.h配置）
+  3. `LED_Init()` - LED初始化（通过board.h配置）
+  4. `Delay_Init()` - 延时模块初始化
+  5. `TIM2_TimeBase_Init()` - TIM2时间基准初始化（系统心跳）
+  6. `ClockManager_Init()` - 时钟管理初始化
+  7. `ModuleController_Init()` - 模块控制器初始化
+  8. `SystemMonitor_Init()` - 系统监控初始化（可选）
+
+### 9.2 初始化要求
+- 不要在main()中直接操作硬件
+- 错误示例：`GPIO_SetBits(GPIOA, GPIO_Pin_1);`
+- 正确示例：通过驱动模块 `LED_On(LED_1);`
+
+---
+
+## 10. 文件编码规范（强制）
+
+### 10.1 编码要求
+- `.md`文件使用UTF-8编码
+- `.c/.h`文件使用GB2312编码
+
+### 10.2 行尾符要求
+- 所有文件使用LF（`\n`）作为行尾符
+- 不使用CRLF（`\r\n`）
+
+---
+
+## 11. 模块依赖规范
+
+### 11.1 依赖关系
+- 所有驱动模块依赖`BSP/board.h`（硬件配置）
+- 大部分模块依赖GPIO（基础模块）
+- 中断模式模块依赖NVIC（中断管理）
+- 使用DMA的模块依赖DMA模块
+
+### 11.2 依赖管理
+- 模块依赖关系要清晰
+- 避免循环依赖
+- 使用模块控制器管理模块状态
+
+---
+
+## 12. 代码生成规范
+
+### 12.1 生成新模块时
+- 必须返回`error_code_t`类型
+- 必须在`Common/error_code.h`中定义模块错误码基值
+- 必须在模块头文件中定义错误码枚举
+- 必须进行参数校验和防御性编程
+- 硬件配置必须从`BSP/board.h`读取
+- 必须提供初始化函数和配置函数
+
+### 12.2 生成驱动函数时
+- 必须封装SPL库函数，不直接调用
+- 必须自动管理外设时钟
+- 必须进行参数校验
+- 必须返回错误码
+- 必须使用配置表而非硬编码
+
+### 12.3 生成ISR时
+- 必须在`Core/stm32f10x_it.c`中实现
+- 必须调用驱动层的处理函数
+- 必须保持简洁，快速处理
+- 必须注意线程安全
+

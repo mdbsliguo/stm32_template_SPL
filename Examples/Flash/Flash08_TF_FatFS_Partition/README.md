@@ -752,4 +752,4 @@ flowchart TD
 - **业务逻辑代码**：`flash08_app.c`（业务逻辑实现）
 - **业务逻辑头文件**：`flash08_app.h`（公共接口声明）
 - **模块配置**：`config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../../AI/README.md`（AI规则体系）

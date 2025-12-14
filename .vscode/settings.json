@@ -20,5 +20,12 @@
     "files.encoding": "utf8",
     "files.eol": "\n"
   },
+  "[mdc]": {
+    "files.encoding": "utf8",
+    "files.eol": "\n"
+  },
+  "files.associations": {
+    "*.mdc": "markdown"
+  },
   "C_Cpp.dimInactiveRegions": true
 }

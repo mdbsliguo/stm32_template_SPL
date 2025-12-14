@@ -1,0 +1,199 @@
+---
+description: 错误处理规则 - 错误必须明确说明原因，提供正确示例或修复建议，输出不能模糊或推责
+alwaysApply: false
+priority: medium
+globs:
+  - "**/*.c"
+  - "**/*.h"
+  - "Common/**"
+---
+
+<!-- 
+注意：本文件的实际内容存储在 AI/rules/1_topics/error.mdc
+此文件为 Cursor IDE 的规则入口，内容与 AI/rules/1_topics/error.mdc 同步
+如需修改规则，请编辑 AI/rules/1_topics/error.mdc，然后同步到此文件
+-->
+
+# 错误处理规则
+
+**错误必须明确说明原因，提供正确示例或修复建议，输出不能模糊或推责。**
+
+---
+
+## 1. 错误说明原则
+
+### 1.1 明确说明原因
+- 错误信息必须明确说明错误的原因
+- 避免使用模糊的错误信息
+- 提供具体的错误位置和上下文
+
+### 1.2 提供修复建议
+- 必须提供正确示例或修复建议
+- 说明如何避免该错误
+- 提供相关的文档链接
+
+### 1.3 不推责
+- 输出不能模糊或推责
+- 明确说明问题的根源
+- 提供可行的解决方案
+
+---
+
+## 2. 错误码定义规范
+
+### 2.1 错误码命名
+- 使用模块前缀：`MODULE_ERROR_XXX`
+- 错误码必须基于模块基值
+- 错误码要有明确的含义
+
+### 2.2 错误码分类
+- 参数错误：`MODULE_ERROR_INVALID_PARAM`
+- 状态错误：`MODULE_ERROR_NOT_INIT`
+- 硬件错误：`MODULE_ERROR_HARDWARE`
+- 超时错误：`MODULE_ERROR_TIMEOUT`
+
+---
+
+## 3. 错误处理代码规范
+
+### 3.1 参数校验
+```c
+error_code_t FunctionName(type param) {
+    // 参数校验
+    if (param == NULL) {
+        return MODULE_ERROR_INVALID_PARAM;
+    }
+    if (param->value < 0 || param->value > MAX_VALUE) {
+        return MODULE_ERROR_INVALID_PARAM;
+    }
+    // 功能实现
+    return ERROR_OK;
+}
+```
+
+### 3.2 状态检查
+```c
+error_code_t FunctionName(void) {
+    // 状态检查
+    if (!module_initialized) {
+        return MODULE_ERROR_NOT_INIT;
+    }
+    // 功能实现
+    return ERROR_OK;
+}
+```
+
+### 3.3 错误报告
+```c
+error_code_t result = SomeFunction(param);
+if (result != ERROR_OK) {
+    ErrorHandler_Report(result, __FILE__, __LINE__);
+    // 根据错误类型采取相应措施
+    return result;
+}
+```
+
+---
+
+## 4. 错误信息格式
+
+### 4.1 错误信息结构
+```
+[模块名] [错误类型] - [错误原因]
+位置：[文件]:[行号]
+建议：[修复建议]
+```
+
+### 4.2 错误信息示例
+```
+[LED] 参数错误 - LED ID超出范围
+位置：led.c:45
+建议：使用0 ~ LED_COUNT-1范围内的LED ID
+```
+
+---
+
+## 5. 错误处理最佳实践
+
+### 5.1 及时处理
+- 错误处理要及时，不要忽略错误码
+- 至少记录错误日志
+- 根据错误类型采取相应措施
+
+### 5.2 错误传播
+- 函数应该返回错误码，让调用者决定如何处理
+- 不要在函数内部静默处理所有错误
+- 提供错误回调机制（如适用）
+
+### 5.3 错误恢复
+- 提供错误恢复机制（如适用）
+- 说明错误恢复的条件和方法
+- 提供重试机制（如适用）
+
+---
+
+## 6. 错误文档规范
+
+### 6.1 错误说明文档
+- 必须说明可能的错误情况
+- 必须说明错误码的含义
+- 必须提供错误处理示例
+
+### 6.2 错误处理示例
+```c
+/**
+ * @brief 函数说明
+ * @param param 参数说明
+ * @return error_code_t 错误码
+ *   - ERROR_OK: 成功
+ *   - MODULE_ERROR_INVALID_PARAM: 参数错误
+ *   - MODULE_ERROR_NOT_INIT: 未初始化
+ * @example
+ *   error_code_t result = FunctionName(param);
+ *   if (result != ERROR_OK) {
+ *       ErrorHandler_Report(result, __FILE__, __LINE__);
+ *       return result;
+ *   }
+ */
+error_code_t FunctionName(type param);
+```
+
+---
+
+## 7. 错误测试规范
+
+### 7.1 错误测试要求
+- 必须测试所有错误情况
+- 必须验证错误码的正确性
+- 必须验证错误信息的准确性
+
+### 7.2 错误测试示例
+```c
+// 测试参数错误
+error_code_t result = FunctionName(INVALID_PARAM);
+assert(result == MODULE_ERROR_INVALID_PARAM);
+
+// 测试状态错误
+error_code_t result = FunctionName();
+assert(result == MODULE_ERROR_NOT_INIT);
+```
+
+---
+
+## 8. 错误统计规范
+
+### 8.1 错误统计功能
+- 可选功能：错误统计（通过`CONFIG_ERROR_HANDLER_STATS_EN`启用）
+- 统计错误发生次数
+- 统计错误类型分布
+
+### 8.2 错误统计使用
+```c
+// 启用错误统计
+#define CONFIG_ERROR_HANDLER_STATS_EN 1
+
+// 查询错误统计
+ErrorStats_t stats;
+ErrorHandler_GetStats(&stats);
+```
+

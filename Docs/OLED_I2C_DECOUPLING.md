@@ -375,7 +375,7 @@ SOFT_I2C_CONFIGS[1]  ←→  SOFT_I2C_INSTANCE_2  ←→  OLED_I2C_SOFT_INSTANCE
 
 - [用户指南](USER_GUIDE.md) - 标准使用工作流程
 - [模块配置教程](CONFIG_TUTORIAL.md) - 所有模块的使用配置说明
-- [AI规则与项目约束](../PROJECT_KEYWORDS.md) - 项目开发约束
+- [AI规则体系](../AI/README.md) - AI规则体系说明
 
 ---
 

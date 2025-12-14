@@ -666,7 +666,7 @@ flowchart TD
 - **主程序代码**：`Examples/DMA/DMA01_MemoryToMemory/main_example.c`
 - **硬件配置**：`Examples/DMA/DMA01_MemoryToMemory/board.h`
 - **模块配置**：`Examples/DMA/DMA01_MemoryToMemory/config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../AI/README.md`（AI规则体系）
 - **案例参考**：`Examples/README.md`
 
 ---

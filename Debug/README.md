@@ -38,7 +38,7 @@ Debug/
 1. **串口输出规范** `[案例]` `[P1]`
    - 串口输出详细日志，支持中文（GB2312编码）
    - 使用Log模块的分级输出（LOG_DEBUG/LOG_INFO/LOG_WARN/LOG_ERROR）
-   - 详见[PROJECT_KEYWORDS.md](../../PROJECT_KEYWORDS.md#串口与oled输出分工规范-案例-p1)
+   - 详见[AI规则体系](../../AI/README.md)
 
 2. **日志输出是阻塞式的**
    - 输出期间会占用CPU时间

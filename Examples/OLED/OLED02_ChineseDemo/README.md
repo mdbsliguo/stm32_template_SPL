@@ -639,4 +639,4 @@ flowchart TD
 
 ### 项目规范
 
-- **项目规范文档**：`PROJECT_KEYWORDS.md` - 项目开发规范和约束
+- **项目规范文档**：`../../AI/README.md`（AI规则体系） - 项目开发规范和约束

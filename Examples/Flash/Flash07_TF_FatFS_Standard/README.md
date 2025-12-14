@@ -580,7 +580,7 @@ flowchart TD
 - **主程序代码**：`main_example.c`
 - **硬件配置**：`board.h`
 - **模块配置**：`config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../../AI/README.md`（AI规则体系）
 
 ## 📝 更新日志
 

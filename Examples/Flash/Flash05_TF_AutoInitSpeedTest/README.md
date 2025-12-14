@@ -577,7 +577,7 @@ flowchart TD
 - **主程序代码**：`Examples/Flash/Flash05_TF_AutoInitSpeedTest/main_example.c`
 - **硬件配置**：`Examples/Flash/Flash05_TF_AutoInitSpeedTest/board.h`
 - **模块配置**：`Examples/Flash/Flash05_TF_AutoInitSpeedTest/config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md` - AI规则与项目约束
+- **项目规范**：`../../../AI/README.md`（AI规则体系） - AI规则与项目约束
 - **案例参考**：`Examples/README.md` - 案例参考文档
 
 ### 参考案例

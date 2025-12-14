@@ -698,7 +698,7 @@ flowchart TD
   - **硬件配置**：`board.h`
   - **模块配置**：`config.h`
   - **诊断测试文档**：`DIAGNOSTIC_TESTS.md`
-  - **项目规范文档**：`../../PROJECT_KEYWORDS.md`
+  - **项目规范文档**：`../../../AI/README.md`（AI规则体系）
   - **案例参考**：`../../Examples/README.md`
   - **Flash10案例**：`../Flash10_LittleFS_W25Q_ReadWrite/README.md`（基础LittleFS使用）
 

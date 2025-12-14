@@ -597,7 +597,7 @@ flowchart TD
 - **主程序代码**：`Examples/Flash/Flash03_TF_SPI_AutoInitReadWrite/main_example.c`
 - **硬件配置**：`BSP/board.h`
 - **模块配置**：`System/config.h`
-- **项目规范**：`PROJECT_KEYWORDS.md`
+- **项目规范**：`../../../AI/README.md`（AI规则体系）
 - **参考案例**：
   - `Examples/Flash/Flash04_TF_SPI_ManualInitReadWrite/` - TF卡手动初始化示例
   - `Examples/Flash/Flash01_W25Q_ReadWrite/` - W25Q Flash示例
