@@ -32,6 +32,8 @@ Examples/
 ├── EXTI/                         # EXTI外部中断相关案例
 │   ├── EXTI01_Infrared_Counter/  # 对射式红外传感器计次示例
 │   └── EXTI02_RotaryEncoder_Counter/  # 旋转编码器计次示例
+├── NPN/                          # NPN 开漏脉冲类案例
+│   └── NPN01_Flowmeter/          # 流量计 NPN 脉冲计数示例
 ├── I2C/                          # I2C通信相关案例
 │   ├── I2C01_DS3231_SoftwareI2C/  # DS3231软件I2C示例
 │   └── I2C02_DS3231_HardwareI2C/  # DS3231硬件I2C示例
@@ -102,6 +104,12 @@ Examples/
 |------|--------|------|------|
 | 01 | `EXTI01_Infrared_Counter` | 对射式红外传感器计次示例 | ✅ 已调试完成 |
 | 02 | `EXTI02_RotaryEncoder_Counter` | 旋转编码器计次示例 | ✅ 已调试完成 |
+
+### NPN（开漏脉冲）相关案例
+
+| 序号 | 目录名 | 说明 | 状态 |
+|------|--------|------|------|
+| 01 | `NPN01_Flowmeter` | 流量计 NPN 脉冲计数示例 | ⏳ 待调试 |
 
 ### I2C通信相关案例
 
