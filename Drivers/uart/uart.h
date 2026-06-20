@@ -149,6 +149,41 @@ uint8_t UART_IsInitialized(UART_Instance_t instance);
 USART_TypeDef* UART_GetPeriph(UART_Instance_t instance);
 
 /**
+ * @brief 清空UART接收缓冲区（丢弃RXNE/ORE中的残留数据）
+ * @param[in] instance UART实例索引
+ * @return UART_Status_t 错误码
+ * @note ModBus RTU发送前应调用，避免残留字节导致帧错位
+ */
+UART_Status_t UART_FlushRx(UART_Instance_t instance);
+
+/**
+ * @brief 重新配置UART线路参数（波特率、数据位、校验、停止位）
+ * @param[in] instance UART实例索引
+ * @param[in] baudrate 波特率
+ * @param[in] word_length USART_WordLength_8b / USART_WordLength_9b
+ * @param[in] parity USART_Parity_No / Even / Odd
+ * @param[in] stop_bits USART_StopBits_1 / USART_StopBits_2
+ * @return UART_Status_t 错误码
+ * @note 若UART未初始化则先执行完整初始化；已初始化则仅重配USART寄存器
+ */
+UART_Status_t UART_ReconfigureLine(UART_Instance_t instance, uint32_t baudrate,
+                                   uint16_t word_length, uint16_t parity, uint16_t stop_bits);
+
+/**
+ * @brief ModBus RTU帧接收（首字节超时 + 字节间间隔判帧结束）
+ * @param[in] instance UART实例
+ * @param[out] data 接收缓冲区
+ * @param[in] max_len 缓冲区最大长度
+ * @param[out] out_len 实际接收长度
+ * @param[in] first_byte_timeout_ms 等待首字节超时（毫秒）
+ * @param[in] inter_byte_gap_ms 字节间无数据判帧结束间隔（毫秒，建议≥4）
+ * @return UART_Status_t 错误码
+ */
+UART_Status_t UART_ReceiveRtuFrame(UART_Instance_t instance, uint8_t *data, uint16_t max_len,
+                                   uint16_t *out_len, uint32_t first_byte_timeout_ms,
+                                   uint32_t inter_byte_gap_ms);
+
+/**
  * @brief 动态修改UART波特率（不重新初始化）
  * @param[in] uart_periph UART外设指针（USART1/USART2/USART3）
  * @param[in] baudrate 目标波特率

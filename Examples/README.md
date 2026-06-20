@@ -61,7 +61,8 @@ Examples/
 ├── UART/                         # 串口通信相关案例
 │   └── UART01_Error_Log_Output/   # 错误日志输出示例
 ├── Bus/                          # 总线通信相关案例
-│   └── Bus01_ModBusRTU_GasSensor/  # ModBusRTU气体传感器读取示例
+│   ├── Bus01_ModBusRTU_GasSensor/  # ModBusRTU气体传感器读取示例
+│   └── Bus04_ModBusRTU_Invt_GD200A/  # ModBusRTU英威腾GD200A变频器485通讯与频率爬升测试
 └── README.md                     # 本文档
 ```
 
@@ -174,6 +175,7 @@ Examples/
 | 序号 | 目录名 | 说明 | 状态 |
 |------|--------|------|------|
 | 01 | `Bus01_ModBusRTU_GasSensor` | ModBusRTU气体传感器读取示例 | ✅ 已调试完成 |
+| 04 | `Bus04_ModBusRTU_Invt_GD200A` | ModBusRTU英威腾GD200A变频器485通讯与频率爬升正反转测试 | ✅ 已调试（485/监控/爬升） |
 
 ---
 

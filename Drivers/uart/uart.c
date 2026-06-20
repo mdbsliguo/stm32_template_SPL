@@ -148,10 +148,20 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
         }
         
         /* 检查错误标志 */
-        /* 注意：ORE、NE、FE、PE、IDLE标志需要通过读取SR寄存器然后读取DR寄存器来清除 */
-        /* 优化：直接读取SR寄存器，减少函数调用开销 */
         uint16_t sr = uart_periph->SR;
-        
+
+        /* 等待发送完成时，丢弃RS485回波/噪声，避免误报ORE */
+        if (flag != USART_FLAG_RXNE) {
+            if ((sr & USART_FLAG_RXNE) != RESET) {
+                (void)USART_ReceiveData(uart_periph);
+                continue;
+            }
+            if ((sr & USART_FLAG_ORE) != RESET) {
+                (void)USART_ReceiveData(uart_periph);
+                continue;
+            }
+        }
+
         if (sr & USART_FLAG_ORE)
         {
             /* 清除ORE标志：读取SR寄存器，然后读取DR寄存器 */
@@ -384,16 +394,15 @@ UART_Status_t UART_Transmit(UART_Instance_t instance, const uint8_t *data, uint1
             if (elapsed > actual_timeout) {
                 return UART_ERROR_TIMEOUT;
             }
-            
-            /* 检查错误标志（快速检查） */
-            uint16_t sr = uart_periph->SR;
-            if (sr & (USART_FLAG_ORE | USART_FLAG_NE | USART_FLAG_FE | USART_FLAG_PE)) {
-                /* 清除错误标志 */
-                (void)USART_ReceiveData(uart_periph);
-                if (sr & USART_FLAG_ORE) return UART_ERROR_ORE;
-                if (sr & USART_FLAG_NE) return UART_ERROR_NE;
-                if (sr & USART_FLAG_FE) return UART_ERROR_FE;
-                if (sr & USART_FLAG_PE) return UART_ERROR_PE;
+
+            /* 发送期间丢弃RX回波，避免RS485半双工误报ORE */
+            {
+                uint16_t sr = uart_periph->SR;
+                if ((sr & USART_FLAG_RXNE) != RESET) {
+                    (void)USART_ReceiveData(uart_periph);
+                } else if ((sr & USART_FLAG_ORE) != RESET) {
+                    (void)USART_ReceiveData(uart_periph);
+                }
             }
         }
         
@@ -465,6 +474,176 @@ UART_Status_t UART_Receive(UART_Instance_t instance, uint8_t *data, uint16_t len
         data[i] = (uint8_t)USART_ReceiveData(uart_periph);
     }
     
+    return UART_OK;
+}
+
+/**
+ * @brief 清空UART接收缓冲区
+ */
+UART_Status_t UART_FlushRx(UART_Instance_t instance)
+{
+    USART_TypeDef *uart_periph;
+    uint16_t sr;
+
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (!g_uart_initialized[instance]) {
+        return UART_ERROR_NOT_INITIALIZED;
+    }
+
+    uart_periph = g_uart_configs[instance].uart_periph;
+
+    while (1) {
+        sr = uart_periph->SR;
+        if ((sr & USART_FLAG_RXNE) != RESET) {
+            (void)USART_ReceiveData(uart_periph);
+            continue;
+        }
+        if ((sr & USART_FLAG_ORE) != RESET) {
+            (void)USART_ReceiveData(uart_periph);
+            continue;
+        }
+        break;
+    }
+
+    return UART_OK;
+}
+
+/**
+ * @brief 将配置表参数写入USART外设
+ */
+static UART_Status_t UART_ApplyPeriphConfig(UART_Instance_t instance)
+{
+    USART_InitTypeDef USART_InitStructure;
+
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+
+    USART_InitStructure.USART_BaudRate = g_uart_configs[instance].baudrate;
+    USART_InitStructure.USART_WordLength = g_uart_configs[instance].word_length;
+    USART_InitStructure.USART_StopBits = g_uart_configs[instance].stop_bits;
+    USART_InitStructure.USART_Parity = g_uart_configs[instance].parity;
+
+    switch (g_uart_hw_flow[instance]) {
+        case UART_HW_FLOW_RTS:
+            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS;
+            break;
+        case UART_HW_FLOW_CTS:
+            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_CTS;
+            break;
+        case UART_HW_FLOW_RTS_CTS:
+            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+            break;
+        default:
+            USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+            break;
+    }
+
+    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    USART_Cmd(g_uart_configs[instance].uart_periph, DISABLE);
+    USART_Init(g_uart_configs[instance].uart_periph, &USART_InitStructure);
+    USART_Cmd(g_uart_configs[instance].uart_periph, ENABLE);
+    (void)UART_FlushRx(instance);
+
+    return UART_OK;
+}
+
+/**
+ * @brief 重新配置UART线路参数
+ */
+UART_Status_t UART_ReconfigureLine(UART_Instance_t instance, uint32_t baudrate,
+                                   uint16_t word_length, uint16_t parity, uint16_t stop_bits)
+{
+    UART_Status_t status;
+
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+
+    g_uart_configs[instance].baudrate = baudrate;
+    g_uart_configs[instance].word_length = word_length;
+    g_uart_configs[instance].parity = parity;
+    g_uart_configs[instance].stop_bits = stop_bits;
+
+    if (!g_uart_initialized[instance]) {
+        return UART_Init(instance);
+    }
+
+    status = UART_ApplyPeriphConfig(instance);
+    return status;
+}
+
+/**
+ * @brief ModBus RTU帧接收（首字节超时 + 字节间间隔判帧结束）
+ * @note 19200bps下字节间隔约0.6ms，须紧凑轮询，禁止Delay_ms(1)以免ORE
+ */
+UART_Status_t UART_ReceiveRtuFrame(UART_Instance_t instance, uint8_t *data, uint16_t max_len,
+                                   uint16_t *out_len, uint32_t first_byte_timeout_ms,
+                                   uint32_t inter_byte_gap_ms)
+{
+    USART_TypeDef *uart_periph;
+    uint16_t count = 0;
+    uint32_t wait_start_tick;
+    uint32_t last_rx_tick = 0;
+    uint8_t got_first = 0;
+
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (data == NULL || out_len == NULL || max_len == 0) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (!g_uart_initialized[instance]) {
+        return UART_ERROR_NOT_INITIALIZED;
+    }
+
+    uart_periph = g_uart_configs[instance].uart_periph;
+    wait_start_tick = Delay_GetTick();
+
+    while (count < max_len) {
+        uint16_t sr = uart_periph->SR;
+
+        if ((sr & USART_FLAG_RXNE) != RESET) {
+            if (sr & (USART_FLAG_FE | USART_FLAG_PE | USART_FLAG_NE)) {
+                (void)USART_ReceiveData(uart_periph);
+                if (sr & USART_FLAG_FE) return UART_ERROR_FE;
+                if (sr & USART_FLAG_PE) return UART_ERROR_PE;
+                if (sr & USART_FLAG_NE) return UART_ERROR_NE;
+            }
+            data[count++] = (uint8_t)USART_ReceiveData(uart_periph);
+            if (!got_first) {
+                got_first = 1;
+            }
+            last_rx_tick = Delay_GetTick();
+            continue;
+        }
+
+        if ((sr & USART_FLAG_ORE) != RESET) {
+            /* ORE时DR中通常仍有有效字节，读出并继续 */
+            data[count++] = (uint8_t)USART_ReceiveData(uart_periph);
+            if (!got_first) {
+                got_first = 1;
+            }
+            last_rx_tick = Delay_GetTick();
+            continue;
+        }
+
+        if (!got_first) {
+            if (Delay_GetElapsed(Delay_GetTick(), wait_start_tick) >= first_byte_timeout_ms) {
+                *out_len = 0;
+                return UART_ERROR_TIMEOUT;
+            }
+        } else if (Delay_GetElapsed(Delay_GetTick(), last_rx_tick) >= inter_byte_gap_ms) {
+            break;
+        }
+    }
+
+    *out_len = count;
+    if (count == 0) {
+        return UART_ERROR_TIMEOUT;
+    }
     return UART_OK;
 }
 

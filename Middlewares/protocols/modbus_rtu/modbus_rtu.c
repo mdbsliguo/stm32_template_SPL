@@ -308,31 +308,25 @@ static ModBusRTU_Status_t ModBusRTU_MasterTransact(UART_Instance_t uart_instance
     if (status != ModBusRTU_OK) {
         return status;
     }
-    
-    /* ========== 发送请求帧 ========== */
+
+    /* ========== 清空接收缓冲区并发送请求帧 ========== */
+    (void)UART_FlushRx(uart_instance);
+
     uart_status = UART_Transmit(uart_instance, request_frame, request_length, actual_timeout);
     if (uart_status != UART_OK) {
         return ModBusRTU_ConvertUARTError(uart_status);
     }
-    
-    /* ========== 计算响应帧长度 ========== */
-    if (expected_response_length > 0) {
-        response_length = 4 + expected_response_length;  /* 地址(1) + 功能码(1) + 数据 + CRC(2) */
-    } else {
-        /* 动态计算：先接收最小帧，再确定总长度 */
-        response_length = 256;  /* 最大长度 */
-    }
-    
-    if (response_length > sizeof(response_frame)) {
-        return ModBusRTU_ERROR_INVALID_PARAM;
-    }
-    
-    /* ========== 接收响应帧 ========== */
-    uart_status = UART_Receive(uart_instance, response_frame, response_length, actual_timeout);
+
+    uart_status = UART_ReceiveRtuFrame(uart_instance, response_frame, sizeof(response_frame),
+                                       &response_length, actual_timeout, 4);
     if (uart_status != UART_OK) {
         return ModBusRTU_ConvertUARTError(uart_status);
     }
-    
+
+    if (response_length < 4) {
+        return ModBusRTU_ERROR_INVALID_RESPONSE;
+    }
+
     /* ========== 解析响应帧 ========== */
     *response_data_length = sizeof(response_frame);
     status = ModBusRTU_ParseResponseFrame(response_frame, response_length, slave_address,
@@ -413,19 +407,23 @@ ModBusRTU_Status_t ModBusRTU_ReadHoldingRegisters(UART_Instance_t uart_instance,
     for (retry = 0; retry <= retry_count; retry++) {
         status = ModBusRTU_ReadHoldingRegisters_Internal(uart_instance, slave_address,
                                                           start_address, register_count, data, timeout);
-        
-        /* 如果成功或非超时/CRC错误，直接返回 */
-        if (status == ModBusRTU_OK || 
-            (status != ModBusRTU_ERROR_TIMEOUT && status != ModBusRTU_ERROR_CRC)) {
+
+        if (status == ModBusRTU_OK) {
             return status;
         }
-        
-        /* 超时或CRC错误，重试前等待一小段时间 */
+
+        /* 超时/CRC/从站忙(异常响应)可重试 */
+        if (status != ModBusRTU_ERROR_TIMEOUT &&
+            status != ModBusRTU_ERROR_CRC &&
+            status != ModBusRTU_ERROR_EXCEPTION) {
+            return status;
+        }
+
         if (retry < retry_count) {
-            Delay_ms(10);  /* 等待10ms后重试 */
+            Delay_ms(100);
         }
     }
-    
+
     return status;  /* 返回最后一次的错误码 */
 }
 

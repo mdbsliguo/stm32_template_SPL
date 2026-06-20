@@ -1,0 +1,583 @@
+/**
+ * @file main_example.c
+ * @brief Bus04 - ModBusRTU英威腾GD200A变频器485通讯
+ * @details 阶段3：正转25→35Hz每5s加5Hz，再反转25→35Hz，最后停机
+ * @version 3.0.0
+ * @date 2026-06-20
+ *
+ * 硬件：UART1 Debug 115200 8N1；UART2 RS485 19200 8E1；GD200A 地址1
+ */
+
+#include "stm32f10x.h"
+#include "system_init.h"
+#include "uart.h"
+#include "debug.h"
+#include "log.h"
+#include "error_handler.h"
+#include "error_code.h"
+#include "delay.h"
+#include "oled_ssd1306.h"
+#include "modbus_rtu.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+/* ==================== GD200A ModBus配置 ==================== */
+
+#define INVT_SLAVE_ADDRESS          1
+
+#define INVT_REG_STATUS_BLOCK       0x2100  /**< 2100H~2103H 状态块 */
+#define INVT_REG_STATUS_BLOCK_CNT   4
+
+#define INVT_REG_MONITOR_BLOCK      0x3000  /**< 3000H~300FH 运行/IO/AI */
+#define INVT_REG_MONITOR_BLOCK_CNT  16
+
+#define INVT_REG_HDI_PULSE          0x3010  /**< 高速脉冲输入，0.01kHz */
+#define INVT_REG_MULTI_SEG          0x3012  /**< 多段速当前段 */
+
+#define INVT_DEVICE_ID_GD200A       0x0107
+
+#define INVT_REG_RUN_CMD            0x2000
+#define INVT_REG_FREQ_SET           0x2001
+#define INVT_CMD_FORWARD            0x0001
+#define INVT_CMD_REVERSE            0x0002
+#define INVT_CMD_STOP               0x0005
+
+#define INVT_TEST_FREQ_START_HZ     25      /**< 起始频率 Hz */
+#define INVT_TEST_FREQ_END_HZ       35      /**< 结束频率 Hz */
+#define INVT_TEST_FREQ_STEP_HZ      5       /**< 每档加频 Hz */
+#define INVT_TEST_STEP_MS           5000    /**< 每档保持时间 ms */
+#define INVT_TEST_MONITOR_MS        2000
+#define INVT_WRITE_GAP_MS           80
+
+#define INVT_POLL_INTERVAL_MS       2000
+#define INVT_MODBUS_TIMEOUT_MS      1000
+#define INVT_READ_RETRY_COUNT       3
+#define INVT_READ_RETRY_DELAY_MS    120
+#define INVT_BATCH_GAP_MS           50
+
+/* ==================== 数据结构 ==================== */
+
+typedef struct {
+    uint16_t status_word1;
+    uint16_t status_word2;
+    uint16_t fault_code;
+    uint16_t device_id;
+    uint16_t run_freq;
+    uint16_t set_freq;
+    uint16_t bus_voltage;
+    uint16_t out_voltage;
+    uint16_t out_current;
+    uint16_t run_rpm;
+    int16_t  out_power;
+    int16_t  out_torque;
+    int16_t  cloop_set;
+    int16_t  cloop_fb;
+    uint16_t input_io;
+    uint16_t output_io;
+    uint16_t ai1;
+    uint16_t ai2;
+    uint16_t ai3;
+    uint16_t ai4;
+    uint16_t hdi_pulse;
+    uint16_t multi_seg;
+} InvtSnapshot_t;
+
+static void DisplaySnapshotOnOLED(const InvtSnapshot_t *snap, uint8_t comm_ok,
+                                  ModBusRTU_Status_t last_status);
+static ModBusRTU_Status_t ReadInvtSnapshot(InvtSnapshot_t *snap);
+
+/* ==================== 私有函数 ==================== */
+
+static const char* GetModBusErrorString(ModBusRTU_Status_t status)
+{
+    switch (status) {
+        case ModBusRTU_OK: return "OK";
+        case ModBusRTU_ERROR_TIMEOUT: return "Timeout";
+        case ModBusRTU_ERROR_CRC: return "CRC";
+        case ModBusRTU_ERROR_INVALID_RESPONSE: return "BadRsp";
+        case ModBusRTU_ERROR_EXCEPTION: return "Exception";
+        default: return "Error";
+    }
+}
+
+static const char* GetStatusWord1Text(uint16_t sw1)
+{
+    switch (sw1) {
+        case 0x0001: return "正转运行";
+        case 0x0002: return "反转运行";
+        case 0x0003: return "停机";
+        case 0x0004: return "故障";
+        case 0x0005: return "POFF";
+        default: return "未知";
+    }
+}
+
+static const char* GetControlSourceText(uint16_t sw2)
+{
+    switch ((sw2 >> 5) & 0x03U) {
+        case 0: return "键盘";
+        case 1: return "端子";
+        case 2: return "通讯";
+        default: return "保留";
+    }
+}
+
+/** 母线电压：原始值单位 0.1V（5840→584.0V，符合手册0~1200V量程） */
+static float InvtBusVoltageV(uint16_t raw)
+{
+    return (float)raw / 10.0f;
+}
+
+/** 模拟量输入：0~1000=0.00~10.00V；0xFFFF等视为无效 */
+static uint8_t InvtAiValid(uint16_t raw)
+{
+    if (raw == 0xFFFFU || raw > 1000U) {
+        return 0;
+    }
+    return 1;
+}
+
+static void FormatAiVoltage(char *buf, uint16_t bufsize, uint16_t raw)
+{
+    if (buf == NULL || bufsize == 0) {
+        return;
+    }
+    if (!InvtAiValid(raw)) {
+        snprintf(buf, bufsize, "N/A");
+    } else {
+        snprintf(buf, bufsize, "%.2fV", (float)raw / 100.0f);
+    }
+}
+
+/**
+ * @brief 读连续保持寄存器（应用层重试）
+ */
+static ModBusRTU_Status_t ReadHoldingRegsRetry(uint16_t start_addr, uint16_t count,
+                                               uint16_t *buf)
+{
+    uint8_t retry;
+    ModBusRTU_Status_t status;
+
+    if (buf == NULL || count == 0) {
+        return ModBusRTU_ERROR_NULL_PTR;
+    }
+
+    for (retry = 0; retry < INVT_READ_RETRY_COUNT; retry++) {
+        status = ModBusRTU_ReadHoldingRegisters(UART_INSTANCE_2, INVT_SLAVE_ADDRESS,
+                                                start_addr, count, buf,
+                                                INVT_MODBUS_TIMEOUT_MS);
+        if (status == ModBusRTU_OK) {
+            return ModBusRTU_OK;
+        }
+        if (status != ModBusRTU_ERROR_TIMEOUT &&
+            status != ModBusRTU_ERROR_CRC &&
+            status != ModBusRTU_ERROR_EXCEPTION) {
+            return status;
+        }
+        Delay_ms(INVT_READ_RETRY_DELAY_MS);
+    }
+    return status;
+}
+
+/**
+ * @brief 写单个保持寄存器（应用层重试）
+ */
+static ModBusRTU_Status_t WriteRegRetry(uint16_t reg_addr, uint16_t value)
+{
+    uint8_t retry;
+    ModBusRTU_Status_t status;
+
+    for (retry = 0; retry < INVT_READ_RETRY_COUNT; retry++) {
+        status = ModBusRTU_WriteSingleRegister(UART_INSTANCE_2, INVT_SLAVE_ADDRESS,
+                                               reg_addr, value, INVT_MODBUS_TIMEOUT_MS);
+        if (status == ModBusRTU_OK) {
+            return ModBusRTU_OK;
+        }
+        if (status != ModBusRTU_ERROR_TIMEOUT &&
+            status != ModBusRTU_ERROR_CRC &&
+            status != ModBusRTU_ERROR_EXCEPTION) {
+            return status;
+        }
+        Delay_ms(INVT_READ_RETRY_DELAY_MS);
+    }
+    return status;
+}
+
+static ModBusRTU_Status_t InvtSetFrequencyHz(uint8_t freq_hz)
+{
+    uint16_t raw;
+
+    if (freq_hz == 0) {
+        return ModBusRTU_ERROR_INVALID_PARAM;
+    }
+    raw = (uint16_t)freq_hz * 100U;
+    return WriteRegRetry(INVT_REG_FREQ_SET, raw);
+}
+
+static ModBusRTU_Status_t InvtSendRunCmd(uint16_t cmd)
+{
+    Delay_ms(INVT_WRITE_GAP_MS);
+    return WriteRegRetry(INVT_REG_RUN_CMD, cmd);
+}
+
+/**
+ * @brief 在当前设定频率下等待指定时间，期间周期性读状态
+ */
+static ModBusRTU_Status_t WaitAtFrequency(const char *phase_name, uint8_t freq_hz,
+                                          uint32_t hold_ms)
+{
+    uint32_t start_tick;
+    uint32_t last_log_tick;
+    InvtSnapshot_t snap;
+
+    LOG_INFO("INVT", "   保持 %u Hz (%s) %u秒...", (unsigned int)freq_hz, phase_name,
+             (unsigned int)(hold_ms / 1000U));
+
+    start_tick = Delay_GetTick();
+    last_log_tick = start_tick;
+
+    while (!Delay_ms_nonblock(start_tick, hold_ms)) {
+        if (Delay_GetElapsed(Delay_GetTick(), last_log_tick) >= INVT_TEST_MONITOR_MS) {
+            if (ReadInvtSnapshot(&snap) == ModBusRTU_OK) {
+                LOG_INFO("INVT", "   %s %uHz | 运行%.2fHz | %s | I=%.1fA",
+                         phase_name, (unsigned int)freq_hz,
+                         (float)snap.run_freq / 100.0f,
+                         GetStatusWord1Text(snap.status_word1),
+                         (float)snap.out_current / 10.0f);
+                DisplaySnapshotOnOLED(&snap, 1, ModBusRTU_OK);
+            }
+            last_log_tick = Delay_GetTick();
+        }
+    }
+    return ModBusRTU_OK;
+}
+
+/**
+ * @brief 单方向频率爬升：25→30→35Hz，每档5秒；首档写2001H+2000H，后续只写2001H
+ */
+static ModBusRTU_Status_t RunFreqRampPhase(uint16_t run_cmd, const char *phase_name)
+{
+    uint8_t freq_hz;
+    ModBusRTU_Status_t status;
+    uint8_t is_first_step = 1;
+
+    LOG_INFO("MAIN", "--- %s %u→%u Hz 步进%u 每档%us ---",
+             phase_name,
+             (unsigned int)INVT_TEST_FREQ_START_HZ,
+             (unsigned int)INVT_TEST_FREQ_END_HZ,
+             (unsigned int)INVT_TEST_FREQ_STEP_HZ,
+             (unsigned int)(INVT_TEST_STEP_MS / 1000U));
+
+    for (freq_hz = INVT_TEST_FREQ_START_HZ;
+         freq_hz <= INVT_TEST_FREQ_END_HZ;
+         freq_hz = (uint8_t)(freq_hz + INVT_TEST_FREQ_STEP_HZ)) {
+
+        status = InvtSetFrequencyHz(freq_hz);
+        if (status != ModBusRTU_OK) {
+            LOG_ERROR("INVT", "设频%uHz失败: %s", (unsigned int)freq_hz,
+                      GetModBusErrorString(status));
+            return status;
+        }
+
+        if (is_first_step) {
+            status = InvtSendRunCmd(run_cmd);
+            if (status != ModBusRTU_OK) {
+                LOG_ERROR("INVT", "写运行命令失败: %s", GetModBusErrorString(status));
+                return status;
+            }
+            is_first_step = 0;
+            LOG_INFO("INVT", ">> %s 启动 %u Hz", phase_name, (unsigned int)freq_hz);
+        } else {
+            Delay_ms(INVT_WRITE_GAP_MS);
+            LOG_INFO("INVT", ">> %s 加频至 %u Hz", phase_name, (unsigned int)freq_hz);
+        }
+
+        status = WaitAtFrequency(phase_name, freq_hz, INVT_TEST_STEP_MS);
+        if (status != ModBusRTU_OK) {
+            return status;
+        }
+    }
+
+    LOG_INFO("INVT", "<< %s 爬升结束", phase_name);
+    return ModBusRTU_OK;
+}
+
+/**
+ * @brief 正转25→35Hz爬升，再反转25→35Hz爬升，最后停机
+ */
+static ModBusRTU_Status_t RunInvtFreqRampTest(void)
+{
+    ModBusRTU_Status_t status;
+
+    LOG_INFO("MAIN", "=== 频率爬升正反转测试开始 ===");
+    LOG_INFO("MAIN", "正转: %uHz起每%us+%uHz至%uHz → 反转同序 → 停机",
+             (unsigned int)INVT_TEST_FREQ_START_HZ,
+             (unsigned int)(INVT_TEST_STEP_MS / 1000U),
+             (unsigned int)INVT_TEST_FREQ_STEP_HZ,
+             (unsigned int)INVT_TEST_FREQ_END_HZ);
+    LOG_INFO("MAIN", "请确认 P00.01=2 P00.06=8，负载可安全正反转");
+
+    status = InvtSendRunCmd(INVT_CMD_STOP);
+    if (status != ModBusRTU_OK) {
+        LOG_WARN("MAIN", "预停机命令失败，继续测试");
+    }
+    Delay_ms(1000);
+
+    status = RunFreqRampPhase(INVT_CMD_FORWARD, "正转");
+    if (status != ModBusRTU_OK) {
+        return status;
+    }
+
+    status = RunFreqRampPhase(INVT_CMD_REVERSE, "反转");
+    if (status != ModBusRTU_OK) {
+        return status;
+    }
+
+    status = InvtSendRunCmd(INVT_CMD_STOP);
+    if (status != ModBusRTU_OK) {
+        LOG_ERROR("MAIN", "停机失败: %s", GetModBusErrorString(status));
+        return status;
+    }
+
+    LOG_INFO("MAIN", "=== 频率爬升测试完成，已停机 ===");
+    return ModBusRTU_OK;
+}
+
+/**
+ * @brief 读取变频器关键监控数据（官方手册10.5.2）
+ */
+static ModBusRTU_Status_t ReadInvtSnapshot(InvtSnapshot_t *snap)
+{
+    uint16_t status_blk[INVT_REG_STATUS_BLOCK_CNT];
+    uint16_t mon_blk[INVT_REG_MONITOR_BLOCK_CNT];
+    ModBusRTU_Status_t status;
+
+    if (snap == NULL) {
+        return ModBusRTU_ERROR_NULL_PTR;
+    }
+
+    memset(snap, 0, sizeof(*snap));
+
+    status = ReadHoldingRegsRetry(INVT_REG_STATUS_BLOCK, INVT_REG_STATUS_BLOCK_CNT, status_blk);
+    if (status != ModBusRTU_OK) {
+        return status;
+    }
+    snap->status_word1 = status_blk[0];
+    snap->status_word2 = status_blk[1];
+    snap->fault_code   = status_blk[2];
+    snap->device_id    = status_blk[3];
+
+    Delay_ms(INVT_BATCH_GAP_MS);
+
+    status = ReadHoldingRegsRetry(INVT_REG_MONITOR_BLOCK, INVT_REG_MONITOR_BLOCK_CNT, mon_blk);
+    if (status != ModBusRTU_OK) {
+        return status;
+    }
+    snap->run_freq    = mon_blk[0];
+    snap->set_freq    = mon_blk[1];
+    snap->bus_voltage = mon_blk[2];
+    snap->out_voltage = mon_blk[3];
+    snap->out_current = mon_blk[4];
+    snap->run_rpm     = mon_blk[5];
+    snap->out_power   = (int16_t)mon_blk[6];
+    snap->out_torque  = (int16_t)mon_blk[7];
+    snap->cloop_set   = (int16_t)mon_blk[8];
+    snap->cloop_fb    = (int16_t)mon_blk[9];
+    snap->input_io    = mon_blk[10];
+    snap->output_io   = mon_blk[11];
+    snap->ai1         = mon_blk[12];
+    snap->ai2         = mon_blk[13];
+    snap->ai3         = mon_blk[14];
+    snap->ai4         = mon_blk[15];
+
+    Delay_ms(INVT_BATCH_GAP_MS);
+
+    if (ReadHoldingRegsRetry(INVT_REG_HDI_PULSE, 1, &snap->hdi_pulse) != ModBusRTU_OK) {
+        snap->hdi_pulse = 0xFFFFU;
+    }
+
+    Delay_ms(INVT_BATCH_GAP_MS);
+
+    if (ReadHoldingRegsRetry(INVT_REG_MULTI_SEG, 1, &snap->multi_seg) != ModBusRTU_OK) {
+        snap->multi_seg = 0xFFFFU;
+    }
+
+    return ModBusRTU_OK;
+}
+
+/**
+ * @brief 串口输出监控快照（一参数一行）
+ */
+static void LogInvtSnapshot(const InvtSnapshot_t *snap, uint32_t ok_count)
+{
+    char ai1[12];
+    char ai2[12];
+    char ai3[12];
+    char ai4[12];
+
+    if (snap == NULL) {
+        return;
+    }
+
+    FormatAiVoltage(ai1, sizeof(ai1), snap->ai1);
+    FormatAiVoltage(ai2, sizeof(ai2), snap->ai2);
+    FormatAiVoltage(ai3, sizeof(ai3), snap->ai3);
+    FormatAiVoltage(ai4, sizeof(ai4), snap->ai4);
+
+    LOG_INFO("INVT", "---------- GD200A #%lu ----------", (unsigned long)ok_count);
+    LOG_INFO("INVT", "状态字1(2100H): 0x%04X %s",
+             (unsigned int)snap->status_word1, GetStatusWord1Text(snap->status_word1));
+    LOG_INFO("INVT", "状态字2(2101H): 0x%04X", (unsigned int)snap->status_word2);
+    LOG_INFO("INVT", "运行准备就绪: %s", (snap->status_word2 & 0x01U) ? "是" : "否");
+    LOG_INFO("INVT", "当前电机号: %u", (unsigned int)(((snap->status_word2 >> 1) & 0x03U) + 1U));
+    LOG_INFO("INVT", "控制源: %s", GetControlSourceText(snap->status_word2));
+    LOG_INFO("INVT", "识别码(2103H): 0x%04X%s",
+             (unsigned int)snap->device_id,
+             (snap->device_id == INVT_DEVICE_ID_GD200A) ? " GD200A" : "");
+    LOG_INFO("INVT", "故障码(2102H): %u", (unsigned int)snap->fault_code);
+    LOG_INFO("INVT", "运行频率(3000H): %.2f Hz", (float)snap->run_freq / 100.0f);
+    LOG_INFO("INVT", "设定频率(3001H): %.2f Hz", (float)snap->set_freq / 100.0f);
+    LOG_INFO("INVT", "运行转速(3005H): %u rpm", (unsigned int)snap->run_rpm);
+    LOG_INFO("INVT", "母线电压(3002H): %.1f V", InvtBusVoltageV(snap->bus_voltage));
+    LOG_INFO("INVT", "输出电压(3003H): %u V", (unsigned int)snap->out_voltage);
+    LOG_INFO("INVT", "输出电流(3004H): %.1f A", (float)snap->out_current / 10.0f);
+    LOG_INFO("INVT", "输出功率(3006H): %.1f %%", (float)snap->out_power / 10.0f);
+    LOG_INFO("INVT", "输出转矩(3007H): %.1f %%", (float)snap->out_torque / 10.0f);
+    LOG_INFO("INVT", "闭环给定(3008H): %.1f %%", (float)snap->cloop_set / 10.0f);
+    LOG_INFO("INVT", "闭环反馈(3009H): %.1f %%", (float)snap->cloop_fb / 10.0f);
+    LOG_INFO("INVT", "输入端子(300AH): 0x%04X", (unsigned int)snap->input_io);
+    LOG_INFO("INVT", "输出端子(300BH): 0x%04X", (unsigned int)snap->output_io);
+    if (snap->multi_seg != 0xFFFFU) {
+        LOG_INFO("INVT", "多段速段(3012H): %u", (unsigned int)snap->multi_seg);
+    } else {
+        LOG_INFO("INVT", "多段速段(3012H): N/A");
+    }
+    if (snap->hdi_pulse != 0xFFFFU) {
+        LOG_INFO("INVT", "高速脉冲(3010H): %.2f kHz", (float)snap->hdi_pulse / 100.0f);
+    } else {
+        LOG_INFO("INVT", "高速脉冲(3010H): N/A");
+    }
+    LOG_INFO("INVT", "模拟量AI1(300CH): %s", ai1);
+    LOG_INFO("INVT", "模拟量AI2(300DH): %s", ai2);
+    LOG_INFO("INVT", "模拟量AI3(300EH): %s", ai3);
+    LOG_INFO("INVT", "模拟量AI4(300FH): %s", ai4);
+    LOG_INFO("INVT", "--------------------------------");
+}
+
+static void DisplaySnapshotOnOLED(const InvtSnapshot_t *snap, uint8_t comm_ok,
+                                  ModBusRTU_Status_t last_status)
+{
+    char buffer[32];
+
+    OLED_Clear();
+    OLED_ShowString(1, 1, "Bus04 GD200A");
+
+    if (comm_ok && snap != NULL) {
+        OLED_ShowString(2, 1, "RS485: OK");
+        snprintf(buffer, sizeof(buffer), "Run:%.2fHz", (float)snap->run_freq / 100.0f);
+        OLED_ShowString(3, 1, buffer);
+        snprintf(buffer, sizeof(buffer), "Udc:%.0fV", InvtBusVoltageV(snap->bus_voltage));
+        OLED_ShowString(4, 1, buffer);
+    } else {
+        OLED_ShowString(2, 1, "RS485: FAIL");
+        snprintf(buffer, sizeof(buffer), "Err:%s", GetModBusErrorString(last_status));
+        OLED_ShowString(3, 1, buffer);
+        OLED_ShowString(4, 1, "Retrying...");
+    }
+}
+
+/* ==================== 主函数 ==================== */
+
+int main(void)
+{
+    UART_Status_t uart_status;
+    Log_Status_t log_status;
+    int debug_status;
+    log_config_t log_config;
+    OLED_Status_t oled_status;
+    ModBusRTU_Status_t modbus_status;
+    InvtSnapshot_t snapshot;
+    uint8_t comm_ok = 0;
+    uint32_t success_count = 0;
+    uint32_t fail_count = 0;
+
+    System_Init();
+
+    uart_status = UART_Init(UART_INSTANCE_1);
+    if (uart_status != UART_OK) {
+        while (1) { Delay_ms(1000); }
+    }
+
+    uart_status = UART_Init(UART_INSTANCE_2);
+    if (uart_status != UART_OK) {
+        while (1) { Delay_ms(1000); }
+    }
+
+    debug_status = Debug_Init(DEBUG_MODE_UART, 115200);
+    if (debug_status != 0) {
+        while (1) { Delay_ms(1000); }
+    }
+
+    memset(&log_config, 0, sizeof(log_config));
+    log_config.level = LOG_LEVEL_DEBUG;
+    log_config.enable_timestamp = 0;
+    log_config.enable_module = 1;
+    log_config.enable_color = 0;
+
+    log_status = Log_Init(&log_config);
+    if (log_status != LOG_OK) {
+        ErrorHandler_Handle(log_status, "LOG");
+    }
+
+    LOG_INFO("MAIN", "=== Bus04 GD200A 阶段3：频率爬升正反转 ===");
+    LOG_INFO("MAIN", "UART2: 19200 8E1 Addr=%d", INVT_SLAVE_ADDRESS);
+
+    oled_status = OLED_Init();
+    if (oled_status == OLED_OK) {
+        OLED_Clear();
+        OLED_ShowString(1, 1, "Bus04 GD200A");
+        OLED_ShowString(2, 1, "Monitor...");
+        LOG_INFO("MAIN", "OLED initialized");
+    } else {
+        LOG_ERROR("MAIN", "OLED init failed: %d", oled_status);
+        ErrorHandler_Handle(oled_status, "OLED");
+    }
+
+    Delay_ms(800);
+
+    modbus_status = ReadInvtSnapshot(&snapshot);
+    if (modbus_status != ModBusRTU_OK) {
+        LOG_ERROR("MAIN", "通讯预检失败: %s", GetModBusErrorString(modbus_status));
+        while (1) {
+            Delay_ms(2000);
+        }
+    }
+    LOG_INFO("MAIN", "485通讯预检通过");
+
+    modbus_status = RunInvtFreqRampTest();
+    if (modbus_status != ModBusRTU_OK) {
+        LOG_ERROR("MAIN", "测试中止: %s", GetModBusErrorString(modbus_status));
+        (void)InvtSendRunCmd(INVT_CMD_STOP);
+    }
+
+    LOG_INFO("MAIN", "进入停机监控模式");
+
+    while (1) {
+        modbus_status = ReadInvtSnapshot(&snapshot);
+        if (modbus_status == ModBusRTU_OK) {
+            comm_ok = 1;
+            success_count++;
+            LogInvtSnapshot(&snapshot, success_count);
+        } else {
+            comm_ok = 0;
+            fail_count++;
+            LOG_ERROR("INVT", "读取失败: %s (%d) FAIL:%lu",
+                      GetModBusErrorString(modbus_status), modbus_status,
+                      (unsigned long)fail_count);
+        }
+
+        DisplaySnapshotOnOLED(comm_ok ? &snapshot : NULL, comm_ok, modbus_status);
+        Delay_ms(INVT_POLL_INTERVAL_MS);
+    }
+}
