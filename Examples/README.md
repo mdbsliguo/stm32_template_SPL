@@ -26,7 +26,8 @@ Examples/
 鈹?  鈹溾攢鈹€ EXTI01_Infrared_Counter/  # 瀵瑰皠寮忕孩澶栦紶鎰熷櫒璁℃绀轰緥
 鈹?  鈹斺攢鈹€ EXTI02_RotaryEncoder_Counter/  # 鏃嬭浆缂栫爜鍣ㄨ娆＄ず渚?鈹溾攢鈹€ NPN/                          # NPN 寮€婕忚剦鍐茬被妗堜緥
 鈹?  鈹溾攢鈹€ NPN01_Flowmeter/          # 娴侀噺璁?NPN 鑴夊啿璁℃暟绀轰緥
-鈹?  鈹斺攢鈹€ NPN02_OGM/                # OGM 鍙岄€氶亾 NPN 鑴夊啿瑙ｇ爜绀轰緥
+鈹?  鈹溾攢鈹€ NPN02_OGM/                # OGM 鍙岄€氶亾 NPN 鑴夊啿瑙ｇ爜绀轰緥
+鈹?  鈹斺攢鈹€ NPN03_Preset_Pump_SwAlgo/       # OGM 计量 + GD200A 预设加油泵
 鈹溾攢鈹€ I2C/                          # I2C閫氫俊鐩稿叧妗堜緥
 鈹?  鈹溾攢鈹€ I2C01_DS3231_SoftwareI2C/  # DS3231杞欢I2C绀轰緥
 鈹?  鈹斺攢鈹€ I2C02_DS3231_HardwareI2C/  # DS3231纭欢I2C绀轰緥
@@ -95,6 +96,7 @@ Examples/
 |------|--------|------|------|
 | 01 | `NPN01_Flowmeter` | 娴侀噺璁?NPN 鑴夊啿璁℃暟绀轰緥 | 鈴?寰呰皟璇?|
 | 02 | `NPN02_OGM` | OGM 鍙岄€氶亾 NPN 鑴夊啿浜掗攣璁℃暟涓庢柟鍚戝垽瀹?| 鈴?寰呰皟璇?|
+| 03 | `NPN03_Preset_Pump_SwAlgo` | OGM 互锁计数 + GD200A 按键控泵（含 RS485/变频器安装说明） | ⏳ 待调试 |
 
 ### I2C閫氫俊鐩稿叧妗堜緥
 
