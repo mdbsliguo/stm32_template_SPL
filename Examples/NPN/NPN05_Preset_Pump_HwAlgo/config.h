@@ -1,7 +1,7 @@
 /**
  * @file config.h
  * @brief 模块开关配置文件（NPN05_Preset_Pump_HwAlgo 独立工程专用）
- * @details Bus04 ModBus + OGM TIM4 捕获 + PA6 分档测试（1000cnt/档，尾段5Hz）
+ * @details Bus04 ModBus + OGM TIM4 双边沿捕获四边沿互锁 + PA6 分档测试（2000cnt/档）
  */
 
 #ifndef EXAMPLE_CONFIG_H
@@ -49,5 +49,8 @@
 #define CONFIG_LOG_COLOR_EN                 0
 
 #define CONFIG_OGM_FLOW_IC_TEST_INJECT      0
+
+/** 1=TIM 双边沿捕获 + 四边沿互锁（同 NPN03）；0=仅下降沿 A/B 交替 */
+#define CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE   1
 
 #endif /* EXAMPLE_CONFIG_H */

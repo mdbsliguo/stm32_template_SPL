@@ -2,7 +2,7 @@
 
 整合 **Bus04_ModBusRTU_Invt_GD200A**（英威腾 GD200A RS485 控泵）与 **NPN02_OGM**（OGM 双通道四边沿互锁计数，**双信号线单圈 8 脉冲**）。
 
-**当前固件**：**d/1s 分档标定测试**——PA6 每按一次启动一档（5→50Hz），每档 **2000 cnt** 自动停机（四边沿约为 NPN04/05 的 2 倍）；10Hz 及以上尾段降 **5Hz**（尾段规则见下文）。PA4/PA5 无效。
+**当前固件**：**d/1s 分档标定测试**——PA6 每按一次启动一档（5→50Hz），每档 **2000 cnt** 自动停机（四边沿约为 NPN04 的 2 倍）；10Hz 及以上尾段降 **5Hz**（尾段规则见下文）。PA4/PA5 无效。
 
 ---
 
@@ -628,6 +628,8 @@ int main(void)
 
 | 案例 | 说明 |
 |------|------|
+| `Examples/NPN/NPN04_Preset_Pump_SwAlgo2` | 下降沿交替对照（1K cnt，同接线） |
+| `Examples/NPN/NPN05_Preset_Pump_HwAlgo` | **量产推荐**：同算法硬件捕获（2K cnt，同接线） |
 | `Examples/Bus/Bus04_ModBusRTU_Invt_GD200A` | GD200A ModBus 通讯与寄存器详解 |
 | `Examples/NPN/NPN02_OGM` | OGM 四边沿互锁计数（本案例计量算法同源） |
 | `Examples/NPN/NPN01_Flowmeter` | 单通道脉冲体积换算参考 |

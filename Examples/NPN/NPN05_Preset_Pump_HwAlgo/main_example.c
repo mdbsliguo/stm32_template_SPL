@@ -2,11 +2,11 @@
  * @file main_example.c
  * @brief NPN05 - 预设加油泵（OGM 硬件输入捕获 + GD200A ModBus 控泵）
  * @example Examples/NPN/NPN05_Preset_Pump_HwAlgo/main_example.c
- * @details TIM4 双通道下降沿捕获 + ISR 内 A/B 交替互锁
+ * @details TIM4 双通道双边沿硬件捕获 + ISR 四边沿互锁（同 NPN03 语义）
  *
  * 硬件：
  * - OGM A/B：PB6/PB7（TIM4 CH1/CH2）
- * - RS485：PA2/PA3；按键：PA4/PA5/PA6（PA6=测试启动，5~50Hz 每档 1000cnt）
+ * - RS485：PA2/PA3；按键 PA6=测试启动（5~50Hz 每档 2000cnt）
  * - OLED：PB8/PB9；LED：PB12；Debug UART1：PA9/PA10
  */
 
@@ -32,7 +32,7 @@
 /* ==================== 应用参数 ==================== */
 
 #define PULSES_PER_LITER            1000u
-#define OGM_PULSES_PER_REV          4u
+#define OGM_PULSES_PER_REV          8u
 #define OGM_RATE_WINDOW_MS          1000u
 #define OGM_FLOW_IDLE_MS            2000u
 #define PUMP_FREQ_MIN_HZ            0u
@@ -44,8 +44,10 @@
 #define TEST_FREQ_START_HZ          5u
 #define TEST_FREQ_STEP_HZ           5u
 #define TEST_FREQ_MAX_HZ            50u
-#define TEST_CNT_TARGET             1000u
-#define TEST_FREQ_TAIL_HZ           5u      /**< 尾段降频目标（10Hz 及以上档位） */
+#define TEST_CNT_TARGET             2000u   /**< 四边沿约为下降沿 2 倍，与 NPN03 一致 */
+#define TEST_FREQ_TAIL_HZ           5u
+#define TEST_TAIL_PULSE_STEP        40u
+#define TEST_TAIL_PULSE_BASE        40u
 
 #define INVT_SLAVE_ADDRESS          1
 #define INVT_REG_RUN_CMD            0x2000
@@ -558,7 +560,7 @@ static uint32_t Pump_TestGetTailPulseCount(uint8_t test_freq_hz)
     if (test_freq_hz <= TEST_FREQ_TAIL_HZ || test_freq_hz < 10u) {
         return 0u;
     }
-    return ((uint32_t)test_freq_hz - 10u) / TEST_FREQ_STEP_HZ * 20u + 20u;
+    return ((uint32_t)test_freq_hz - 10u) / TEST_FREQ_STEP_HZ * TEST_TAIL_PULSE_STEP + TEST_TAIL_PULSE_BASE;
 }
 
 static uint32_t Pump_TestGetTailSwitchCount(uint8_t test_freq_hz)
@@ -763,7 +765,7 @@ static void Pump_InitComm(void)
 
     LOG_INFO("MAIN", "=== NPN05 Preset Pump HwAlgo ===");
     LOG_INFO("MAIN", "UART2: 19200 8E1 Addr=%d", INVT_SLAVE_ADDRESS);
-    LOG_INFO("MAIN", "OGM: TIM4 IC fall A/B alt-lock PB6/PB7");
+    LOG_INFO("MAIN", "OGM: TIM4 IC 4-edge lock PB6/PB7");
     LOG_INFO("MAIN", "TEST: PA6 start 5~50Hz step5, %u cnt/auto stop",
              (unsigned int)TEST_CNT_TARGET);
 

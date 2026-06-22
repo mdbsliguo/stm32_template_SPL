@@ -1,6 +1,6 @@
 /**
  * @file ogm_flow_ic.c
- * @brief OGM 双脉冲线 — TIM 双通道输入捕获 + ISR A/B 交替状态机
+ * @brief OGM 双脉冲线 — TIM 双通道输入捕获 + 四边沿互锁或下降沿交替
  */
 
 #include "ogm_flow_ic.h"
@@ -37,13 +37,30 @@
 #define OGM_FLOW_IC_BOOT_MASK_MS  300u
 #endif
 
+#ifndef CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+#define CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE  0
+#endif
+
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+#define OGM_LOCK_A_RISE  0x01u
+#define OGM_LOCK_A_FALL  0x02u
+#define OGM_LOCK_B_RISE  0x04u
+#define OGM_LOCK_B_FALL  0x08u
+#define OGM_LOCK_A_MASK  (OGM_LOCK_A_RISE | OGM_LOCK_A_FALL)
+#define OGM_LOCK_B_MASK  (OGM_LOCK_B_RISE | OGM_LOCK_B_FALL)
+#endif
+
 #define OGM_FLOW_IC_PROCESS_MS    100u
 #define OGM_FLOW_IC_ZERO_MS       1000u
 
 /* ISR 与主循环共享 */
 static volatile uint32_t g_pulse_count;
-static volatile uint8_t  g_state;
 static volatile uint32_t g_last_pulse_ms;
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+static volatile uint8_t  g_edge_locks;
+#else
+static volatile uint8_t  g_state;
+#endif
 
 /* 主循环内部 */
 static float    s_flow_instant;
@@ -142,13 +159,14 @@ static void OGM_FlowIC_EnableCaptureIT(void)
     s_boot_mask_until_ms = 0u;
 }
 
-static void OGM_FlowIC_ConfigChannelIC(TIM_TypeDef *tim, uint16_t channel, uint8_t filter)
+static void OGM_FlowIC_ConfigChannelIC(TIM_TypeDef *tim, uint16_t channel,
+                                      uint16_t polarity, uint8_t filter)
 {
     TIM_ICInitTypeDef ic;
 
     TIM_ICStructInit(&ic);
     ic.TIM_Channel = channel;
-    ic.TIM_ICPolarity = TIM_ICPolarity_Falling;
+    ic.TIM_ICPolarity = polarity;
     ic.TIM_ICSelection = TIM_ICSelection_DirectTI;
     ic.TIM_ICPrescaler = TIM_ICPSC_DIV1;
     ic.TIM_ICFilter = filter;
@@ -192,8 +210,72 @@ static error_code_t OGM_FlowIC_InitTimeBaseStandalone(TIM_TypeDef *tim)
 static void OGM_FlowIC_OnValidEdge(void)
 {
     g_pulse_count++;
-    g_last_pulse_ms = g_task_tick;
+    g_last_pulse_ms = Delay_GetTick();
 }
+
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+
+static uint8_t OGM_FlowIC_ReadPinLevel(GPIO_TypeDef *port, uint16_t pin)
+{
+    return GPIO_ReadPin(port, pin) ? 1u : 0u;
+}
+
+static uint16_t OGM_FlowIC_PolarityForNextEdge(uint8_t level_high)
+{
+    return level_high ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising;
+}
+
+static uint8_t OGM_FlowIC_CCIsRisingCapture(uint16_t channel)
+{
+    if (g_tim == NULL) {
+        return 0u;
+    }
+    if (channel == TIM_Channel_1) {
+        return (g_tim->CCER & TIM_CCER_CC1P) == 0u ? 1u : 0u;
+    }
+    return (g_tim->CCER & TIM_CCER_CC2P) == 0u ? 1u : 0u;
+}
+
+static void OGM_FlowIC_ToggleCCPolarity(uint16_t channel)
+{
+    if (g_tim == NULL) {
+        return;
+    }
+    if (channel == TIM_Channel_1) {
+        g_tim->CCER ^= TIM_CCER_CC1P;
+    } else {
+        g_tim->CCER ^= TIM_CCER_CC2P;
+    }
+}
+
+static void OGM_FlowIC_FourEdgeProcess(uint8_t is_channel_a, uint8_t is_rising)
+{
+    uint8_t lock_bit;
+
+    if (is_channel_a) {
+        lock_bit = is_rising ? OGM_LOCK_A_RISE : OGM_LOCK_A_FALL;
+        g_edge_locks &= (uint8_t)(~OGM_LOCK_B_MASK);
+    } else {
+        lock_bit = is_rising ? OGM_LOCK_B_RISE : OGM_LOCK_B_FALL;
+        g_edge_locks &= (uint8_t)(~OGM_LOCK_A_MASK);
+    }
+
+    if ((g_edge_locks & lock_bit) == 0u) {
+        OGM_FlowIC_OnValidEdge();
+        g_edge_locks |= lock_bit;
+    }
+}
+
+static void OGM_FlowIC_ProcessCapture(uint16_t channel, uint8_t is_channel_a)
+{
+    uint8_t is_rising;
+
+    is_rising = OGM_FlowIC_CCIsRisingCapture(channel);
+    OGM_FlowIC_FourEdgeProcess(is_channel_a, is_rising);
+    OGM_FlowIC_ToggleCCPolarity(channel);
+}
+
+#else /* 仅下降沿 A/B 交替 */
 
 static void OGM_FlowIC_ProcessChannelA(void)
 {
@@ -210,6 +292,8 @@ static void OGM_FlowIC_ProcessChannelB(void)
         g_state = (uint8_t)OGM_FLOW_IC_STATE_WAIT_A;
     }
 }
+
+#endif /* CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE */
 
 OGM_FlowIC_Instance_t OGM_FlowIC_GetActiveInstance(void)
 {
@@ -271,10 +355,27 @@ error_code_t OGM_FlowIC_Init(void)
         }
     }
 
-    OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_1, filter);
-    OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_2, filter);
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+    {
+        uint8_t level_a;
+        uint8_t level_b;
+        uint16_t pol_a;
+        uint16_t pol_b;
 
+        level_a = OGM_FlowIC_ReadPinLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
+        level_b = OGM_FlowIC_ReadPinLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
+        pol_a = OGM_FlowIC_PolarityForNextEdge(level_a);
+        pol_b = OGM_FlowIC_PolarityForNextEdge(level_b);
+        OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_1, pol_a, filter);
+        OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_2, pol_b, filter);
+        g_edge_locks = 0u;
+    }
+#else
+    OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_1, TIM_ICPolarity_Falling, filter);
+    OGM_FlowIC_ConfigChannelIC(g_tim, TIM_Channel_2, TIM_ICPolarity_Falling, filter);
     g_state = (uint8_t)OGM_FLOW_IC_STATE_WAIT_A;
+#endif
+
     g_pulse_count = 0u;
     g_last_pulse_ms = 0u;
     s_flow_instant = 0.0f;
@@ -328,13 +429,21 @@ void OGM_FlowIC_IRQHandler(void)
     if (sr & TIM_SR_CC1IF) {
         (void)g_tim->CCR1;
         TIM_ClearITPendingBit(g_tim, TIM_IT_CC1);
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+        OGM_FlowIC_ProcessCapture(TIM_Channel_1, 1u);
+#else
         OGM_FlowIC_ProcessChannelA();
+#endif
     }
 
     if (sr & TIM_SR_CC2IF) {
         (void)g_tim->CCR2;
         TIM_ClearITPendingBit(g_tim, TIM_IT_CC2);
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+        OGM_FlowIC_ProcessCapture(TIM_Channel_2, 0u);
+#else
         OGM_FlowIC_ProcessChannelB();
+#endif
     }
 }
 
@@ -418,7 +527,11 @@ error_code_t OGM_FlowIC_GetState(uint8_t *state)
     if (!g_initialized) {
         return OGM_FLOW_IC_ERROR_NOT_INIT;
     }
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+    *state = g_edge_locks;
+#else
     *state = g_state;
+#endif
     return OGM_FLOW_IC_OK;
 }
 
@@ -430,7 +543,11 @@ error_code_t OGM_FlowIC_ResetCount(void)
 
     __disable_irq();
     g_pulse_count = 0u;
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+    g_edge_locks = 0u;
+#else
     g_state = (uint8_t)OGM_FLOW_IC_STATE_WAIT_A;
+#endif
     g_last_pulse_ms = 0u;
     s_last_count = 0u;
     s_count_1s_snap = 0u;
@@ -459,11 +576,21 @@ error_code_t OGM_FlowIC_IsFlowActive(uint32_t idle_ms, uint8_t *active)
 }
 
 #if defined(CONFIG_OGM_FLOW_IC_TEST_INJECT) && CONFIG_OGM_FLOW_IC_TEST_INJECT
-error_code_t OGM_FlowIC_InjectPulse(uint8_t channel)
+error_code_t OGM_FlowIC_InjectEdge(uint8_t channel, uint8_t is_rising)
 {
     if (!g_initialized) {
         return OGM_FLOW_IC_ERROR_NOT_INIT;
     }
+#if CONFIG_OGM_FLOW_IC_ALGO_FOUR_EDGE
+    if (channel == 0u) {
+        OGM_FlowIC_FourEdgeProcess(1u, is_rising);
+    } else if (channel == 1u) {
+        OGM_FlowIC_FourEdgeProcess(0u, is_rising);
+    } else {
+        return OGM_FLOW_IC_ERROR_INVALID_INSTANCE;
+    }
+#else
+    (void)is_rising;
     if (channel == 0u) {
         OGM_FlowIC_ProcessChannelA();
     } else if (channel == 1u) {
@@ -471,7 +598,13 @@ error_code_t OGM_FlowIC_InjectPulse(uint8_t channel)
     } else {
         return OGM_FLOW_IC_ERROR_INVALID_INSTANCE;
     }
+#endif
     return OGM_FLOW_IC_OK;
+}
+
+error_code_t OGM_FlowIC_InjectPulse(uint8_t channel)
+{
+    return OGM_FlowIC_InjectEdge(channel, 0u);
 }
 #endif
 

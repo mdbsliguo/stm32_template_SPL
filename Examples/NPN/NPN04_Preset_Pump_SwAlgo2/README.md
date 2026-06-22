@@ -727,7 +727,8 @@ int main(void)
 
 | 案例 / 文档 | 说明 |
 |-------------|------|
-| `Examples/NPN/NPN03_Preset_Pump_SwAlgo` | 四边沿互锁对照固件（同接线） |
+| `Examples/NPN/NPN03_Preset_Pump_SwAlgo` | 四边沿互锁对照固件（2K cnt，同接线） |
+| `Examples/NPN/NPN05_Preset_Pump_HwAlgo` | **量产推荐**：四边沿互锁 + TIM 硬件捕获（2K cnt） |
 | `Examples/NPN/NPN02_OGM` | OGM 四边沿互锁算法原型 |
 | `Examples/Bus/Bus04_ModBusRTU_Invt_GD200A` | GD200A ModBus 通讯与寄存器详解 |
 | `Examples/NPN/NPN01_Flowmeter` | 单通道脉冲体积换算参考 |

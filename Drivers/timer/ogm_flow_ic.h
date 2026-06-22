@@ -1,7 +1,7 @@
 /**
  * @file ogm_flow_ic.h
  * @brief OGM 双脉冲线流量计 — 单定时器双通道输入捕获 + A/B 交替状态机
- * @details TIM CH1(A) / CH2(B) 下降沿捕获，ISR 内严格 A->B->A->B 交替计数
+ * @details TIM CH1(A) / CH2(B) 输入捕获；默认下降沿 A/B 交替，可选四边沿互锁
  */
 
 #ifndef OGM_FLOW_IC_H
@@ -79,7 +79,8 @@ error_code_t OGM_FlowIC_GetInstantFlow(float *flow_lpm);
 error_code_t OGM_FlowIC_GetCount(uint32_t *count);
 
 /**
- * @brief 获取当前状态机状态（调试用）
+ * @brief 获取当前状态（调试）
+ * @note 下降沿交替：0=WAIT_A，1=WAIT_B；四边沿：返回锁位低 4 位
  */
 error_code_t OGM_FlowIC_GetState(uint8_t *state);
 
@@ -106,9 +107,10 @@ OGM_FlowIC_Instance_t OGM_FlowIC_GetActiveInstance(void);
 
 #if defined(CONFIG_OGM_FLOW_IC_TEST_INJECT) && CONFIG_OGM_FLOW_IC_TEST_INJECT
 /**
- * @brief 单元测试：模拟 A/B 通道下降沿（channel: 0=A, 1=B）
+ * @brief 单元测试：模拟边沿（下降沿交替：channel 0=A,1=B；四边沿：is_rising 0=降 1=升）
  */
 error_code_t OGM_FlowIC_InjectPulse(uint8_t channel);
+error_code_t OGM_FlowIC_InjectEdge(uint8_t channel, uint8_t is_rising);
 #endif
 
 #ifdef __cplusplus

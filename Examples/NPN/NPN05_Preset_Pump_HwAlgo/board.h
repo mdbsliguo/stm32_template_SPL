@@ -4,7 +4,7 @@
  * @details OGM TIM4 双通道输入捕获 PB6/PB7 + GD200A RS485
  *
  * 硬件连接：
- * - OGM A/B：PB6/PB7（TIM4 CH1/CH2 下降沿捕获）
+ * - OGM A/B：PB6/PB7（TIM4 CH1/CH2 双边沿输入捕获 + 四边沿互锁）
  * - UART2 RS485：PA2(TX)/PA3(RX)，19200 8E1
  * - UART1 Debug：PA9/PA10，115200 8N1
  * - 按键：PA4/PA5（本固件无效）/ PA6 测试启动
