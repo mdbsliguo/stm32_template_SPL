@@ -61,6 +61,10 @@
 #endif /* TIMER_ENCODER_H */
 #endif /* CONFIG_MODULE_TIMER_ENABLED */
 
+#if defined(CONFIG_MODULE_OGM_FLOW_IC_ENABLED) && CONFIG_MODULE_OGM_FLOW_IC_ENABLED
+#include "ogm_flow_ic.h"
+#endif
+
 /** @addtogroup STM32F10x_StdPeriph_Template
  * @{
  */
@@ -378,6 +382,16 @@ void TIM2_IRQHandler(void)
     }
     #endif /* TIMER_ENCODER_H */
     #endif /* CONFIG_MODULE_TIMER_ENABLED */
+
+    /* ========== OGM 双通道输入捕获（TIM2） ========== */
+    #if defined(CONFIG_MODULE_OGM_FLOW_IC_ENABLED) && CONFIG_MODULE_OGM_FLOW_IC_ENABLED
+    if (OGM_FlowIC_IsInitialized() && OGM_FlowIC_GetActiveInstance() == OGM_FLOW_IC_TIM2) {
+        if ((TIM_GetITStatus(TIM2, TIM_IT_CC1) != RESET) ||
+            (TIM_GetITStatus(TIM2, TIM_IT_CC2) != RESET)) {
+            OGM_FlowIC_IRQHandler();
+        }
+    }
+    #endif
 }
 
 /******************************************************************************/
@@ -386,6 +400,30 @@ void TIM2_IRQHandler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
+
+#if defined(CONFIG_MODULE_OGM_FLOW_IC_ENABLED) && CONFIG_MODULE_OGM_FLOW_IC_ENABLED
+
+void TIM3_IRQHandler(void)
+{
+    if (OGM_FlowIC_IsInitialized() && OGM_FlowIC_GetActiveInstance() == OGM_FLOW_IC_TIM3) {
+        if ((TIM_GetITStatus(TIM3, TIM_IT_CC1) != RESET) ||
+            (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)) {
+            OGM_FlowIC_IRQHandler();
+        }
+    }
+}
+
+void TIM4_IRQHandler(void)
+{
+    if (OGM_FlowIC_IsInitialized() && OGM_FlowIC_GetActiveInstance() == OGM_FLOW_IC_TIM4) {
+        if ((TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET) ||
+            (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)) {
+            OGM_FlowIC_IRQHandler();
+        }
+    }
+}
+
+#endif /* CONFIG_MODULE_OGM_FLOW_IC_ENABLED */
 
 /**
   * @brief  This function handles PPP interrupt request.

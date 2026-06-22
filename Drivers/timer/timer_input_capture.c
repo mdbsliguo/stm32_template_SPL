@@ -1222,11 +1222,6 @@ void IC_IRQHandler(IC_Instance_t instance)
 }
 
 
-/* 定时器中断服务程序入口 */
-void TIM1_CC_IRQHandler(void) {
-}
-
-
 /**
  * @brief 配置输入捕获预分频器
  */

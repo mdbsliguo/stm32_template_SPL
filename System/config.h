@@ -30,6 +30,7 @@
 #define CONFIG_MODULE_SOFT_SPI_ENABLED   1   /**< 软件SPI模块开关 */
 #define CONFIG_MODULE_UART_ENABLED       1   /**< UART模块开关 */
 #define CONFIG_MODULE_TIMER_ENABLED      1   /**< 定时器模块开关 */
+#define CONFIG_MODULE_OGM_FLOW_IC_ENABLED 0  /**< OGM双通道输入捕获流量计（默认关，案例config.h开启） */
 #define CONFIG_MODULE_CAN_ENABLED       1   /**< CAN模块开关 */
 #define CONFIG_MODULE_ADC_ENABLED       1   /**< ADC模块开关 */
 #define CONFIG_MODULE_DMA_ENABLED       1   /**< DMA模块开关 */
