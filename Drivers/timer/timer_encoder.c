@@ -19,6 +19,10 @@
 
 #if CONFIG_MODULE_TIMER_ENABLED
 
+#ifndef ENCODER_IC_FILTER
+#define ENCODER_IC_FILTER       0x0Fu
+#endif
+
 /* 定时器外设映射 */
 static TIM_TypeDef *encoder_tim_periphs[] = {
     TIM1,  /* ENCODER_INSTANCE_TIM1 */
@@ -284,12 +288,12 @@ ENCODER_Status_t ENCODER_Init(ENCODER_Instance_t instance, ENCODER_Mode_t mode)
     
     /* 配置通道1：设置滤波器，抗抖滤波 */
     TIM_ICInitStructure.TIM_Channel = TIM_Channel_1;
-    TIM_ICInitStructure.TIM_ICFilter = 0xF;  /* 滤波器值：0x0-0xF，0xF为最大滤波 */
+    TIM_ICInitStructure.TIM_ICFilter = ENCODER_IC_FILTER;
     TIM_ICInit(tim_periph, &TIM_ICInitStructure);
     
     /* 配置通道2：设置滤波器，抗抖滤波 */
     TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
-    TIM_ICInitStructure.TIM_ICFilter = 0xF;  /* 滤波器值：0x0-0xF，0xF为最大滤波 */
+    TIM_ICInitStructure.TIM_ICFilter = ENCODER_IC_FILTER;
     TIM_ICInit(tim_periph, &TIM_ICInitStructure);
     
     /* ========== 5. 配置编码器接口模式 ========== */

@@ -1,17 +1,17 @@
 /**
  * @file main_example.c
- * @brief NPN03 - 预设加油泵（OGM 计量 + GD200A ModBus 控泵）
- * @example Examples/NPN/NPN03_Preset_Pump_SwAlgo/main_example.c
- * @details 整合 Bus04 变频器 485 控泵与 NPN02 OGM 脉冲计量；
- *          三按键调频/启停，OLED 显示 Cnt 与 d/1s（体积标定待实现）
+ * @brief NPN04 - 预设加油泵（OGM SwAlgo2 下降沿交替 + GD200A ModBus 控泵）
+ * @example Examples/NPN/NPN04_Preset_Pump_SwAlgo2/main_example.c
+ * @details PA0/PA1 EXTI 下降沿 + A/B 交替互锁（硬件检沿，ISR 内状态机）
  *
  * 硬件：
- * - OGM A/B：PA0/PA1；RS485：PA2/PA3；按键：PA4/PA5/PA6
+ * - OGM A/B：PA0/PA1（EXTI0/EXTI1 双边沿，与 NPN03 同引脚）
  * - OLED：PB8/PB9；LED：PB12；Debug UART1：PA9/PA10
  */
 
 #include "stm32f10x.h"
 #include "system_init.h"
+#include "exti.h"
 #include "uart.h"
 #include "debug.h"
 #include "log.h"
@@ -20,7 +20,6 @@
 #include "delay.h"
 #include "oled_ssd1306.h"
 #include "modbus_rtu.h"
-#include "exti.h"
 #include "led.h"
 #include "gpio.h"
 #include "board.h"
@@ -31,9 +30,14 @@
 
 /* ==================== 应用参数 ==================== */
 
-#define PULSES_PER_LITER            1000u   /**< 标定：1000 脉冲 = 1L（与 OGM 规格一致时再启用 Vol） */
-#define OGM_PULSES_PER_REV          8u      /**< NPN02 四边沿互锁：齿轮一圈 8 次计数 */
-#define OGM_RATE_WINDOW_MS          1000u   /**< 速率显示窗口：1 秒 */
+#define PULSES_PER_LITER            1000u
+#define OGM_PULSES_PER_REV          4u      /**< A/B 下降沿交替，约 NPN03 一半（8=四边沿） */
+#define OGM_EXTI_LINE_A             EXTI_LINE_0
+#define OGM_EXTI_LINE_B             EXTI_LINE_1
+#define OGM_MIN_PULSE_INTERVAL_US   800u    /**< 有效脉冲最小间隔，滤毛刺 */
+#define OGM_DEBUG_LOG_1S            0u
+#define OGM_RATE_WINDOW_MS          1000u
+#define OGM_FLOW_IDLE_MS            2000u   /**< 此时间内无脉冲视为空闲（LED/OLED 刷新用） */
 #define PUMP_FREQ_MIN_HZ            0u
 #define PUMP_FREQ_MAX_HZ            50u
 #define PUMP_FREQ_STEP_HZ           5u
@@ -74,22 +78,18 @@ static uint8_t g_btn_pending_run = 0;
 static uint8_t g_modbus_busy = 0;
 static uint8_t g_pump_cmd_busy = 0;     /**< 启停序列进行中，暂缓再次启停 */
 
-/* ==================== OGM 四边沿互锁（与 NPN02 相同，已调试算法） ==================== */
-
-#define OGM_LOCK_A_RISE  0x01u
-#define OGM_LOCK_A_FALL  0x02u
-#define OGM_LOCK_B_RISE  0x04u
-#define OGM_LOCK_B_FALL  0x08u
-#define OGM_LOCK_A_MASK  (OGM_LOCK_A_RISE | OGM_LOCK_A_FALL)
-#define OGM_LOCK_B_MASK  (OGM_LOCK_B_RISE | OGM_LOCK_B_FALL)
+/* ==================== OGM EXTI 下降沿 + A/B 交替互锁 ==================== */
 
 static volatile uint32_t g_count = 0;
-static volatile uint8_t  g_last_a = 0;
-static volatile uint8_t  g_last_b = 0;
-static volatile uint8_t  g_edge_locks = 0;
-
+static volatile uint8_t  g_arm_a = 1u;
+static volatile uint8_t  g_arm_b = 0u;
+static volatile uint8_t  g_last_a = 1u;
+static volatile uint8_t  g_last_b = 1u;
+static volatile uint32_t g_last_valid_us = 0u;
 static volatile uint32_t g_count_snap = 0;
 static volatile uint32_t g_count_delta_1s = 0;
+static uint32_t          g_display_delta_1s = 0;
+static volatile uint32_t g_last_pulse_ms = 0;
 
 static uint8_t  g_set_freq_hz = PUMP_FREQ_DEFAULT_HZ;
 static volatile uint8_t  g_pump_running = 0;
@@ -111,7 +111,12 @@ static uint8_t Pump_Stop(void);
 
 static ModBusRTU_Status_t Pump_CommPreflight(void);
 
-static uint32_t OGM_SnapshotCount(void);
+static void OGM_ProcessChannel(uint8_t is_channel_a);
+static uint8_t OGM_InitExti(void);
+static void OGM_UpdateCountDelta(void);
+static void OGM_Tick1s(void);
+static uint8_t OGM_IsFlowActive(void);
+static uint32_t OGM_GetCount(void);
 static void OGM_ResetCount(void);
 
 /* ==================== ModBus 工具 ==================== */
@@ -134,7 +139,7 @@ static ModBusRTU_Status_t WriteRegOnce(uint16_t reg_addr, uint16_t value, uint32
                                          reg_addr, value, timeout_ms);
 }
 
-/** ModBus 等待间隙内扫描按键（忙时挂起、空闲补执行） */
+/** ModBus 等待间隙内仅扫描按键（400ms 锁定期内不会重复发 485） */
 static void Pump_DelayWithButtons(uint32_t ms)
 {
     uint32_t start;
@@ -282,41 +287,51 @@ static uint8_t Pump_Stop(void)
 
     g_pump_running = 0;
     g_pump_cmd_busy = 0;
+    g_oled_dirty = 1;
     LOG_INFO("PUMP", "泵停止");
     return 1;
 }
 
-/* ==================== OGM 计数 ==================== */
+/* ==================== OGM：EXTI 双边沿 + 仅下降沿交替互锁（同 NPN03 读电平） ==================== */
 
-static uint8_t OGM_ReadLevel(GPIO_TypeDef *port, uint16_t pin)
+static uint32_t OGM_GetTimeUs(void)
 {
-    return GPIO_ReadPin(port, pin) ? 1u : 0u;
+    return (g_task_tick * 1000u) + (uint32_t)TIM_GetCounter(TIM2);
 }
 
-static uint32_t OGM_SnapshotCount(void)
+static uint8_t OGM_AcceptInterval(void)
 {
-    uint32_t snap;
+    uint32_t now;
+    uint32_t elapsed;
 
-    __disable_irq();
-    snap = g_count;
-    __enable_irq();
-    return snap;
+    now = OGM_GetTimeUs();
+    if (g_last_valid_us == 0u) {
+        g_last_valid_us = now;
+        return 1u;
+    }
+    elapsed = now - g_last_valid_us;
+    if (elapsed >= OGM_MIN_PULSE_INTERVAL_US) {
+        g_last_valid_us = now;
+        return 1u;
+    }
+    return 0u;
 }
 
+/**
+ * @brief 读 GPIO 判真实边沿，仅下降沿参与 A/B 交替计数
+ * @details 同 NPN03 ProcessChannel；上升沿只更新 last，不计数
+ */
 static void OGM_ProcessChannel(uint8_t is_channel_a)
 {
     uint8_t level_new;
     uint8_t level_last;
-    uint8_t lock_bit;
 
     if (is_channel_a) {
-        level_new = OGM_ReadLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
+        level_new = GPIO_ReadPin(OGM_CH_A_PORT, OGM_CH_A_PIN) ? 1u : 0u;
         level_last = g_last_a;
-        lock_bit = level_new ? OGM_LOCK_A_RISE : OGM_LOCK_A_FALL;
     } else {
-        level_new = OGM_ReadLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
+        level_new = GPIO_ReadPin(OGM_CH_B_PORT, OGM_CH_B_PIN) ? 1u : 0u;
         level_last = g_last_b;
-        lock_bit = level_new ? OGM_LOCK_B_RISE : OGM_LOCK_B_FALL;
     }
 
     if (level_new == level_last) {
@@ -324,20 +339,38 @@ static void OGM_ProcessChannel(uint8_t is_channel_a)
     }
 
     if (is_channel_a) {
-        g_edge_locks &= (uint8_t)(~OGM_LOCK_B_MASK);
-    } else {
-        g_edge_locks &= (uint8_t)(~OGM_LOCK_A_MASK);
-    }
-
-    if ((g_edge_locks & lock_bit) == 0u) {
-        g_count++;
-        g_edge_locks |= lock_bit;
-    }
-
-    if (is_channel_a) {
         g_last_a = level_new;
     } else {
         g_last_b = level_new;
+    }
+
+    /* 仅下降沿（1→0） */
+    if (level_new != 0u) {
+        return;
+    }
+
+    if (is_channel_a) {
+        if (g_arm_a == 0u) {
+            return;
+        }
+    } else {
+        if (g_arm_b == 0u) {
+            return;
+        }
+    }
+
+    if (!OGM_AcceptInterval()) {
+        return;
+    }
+
+    g_count++;
+    g_last_pulse_ms = g_task_tick;
+    if (is_channel_a) {
+        g_arm_a = 0u;
+        g_arm_b = 1u;
+    } else {
+        g_arm_b = 0u;
+        g_arm_a = 1u;
     }
 }
 
@@ -387,33 +420,73 @@ static void OGM_UpdateCountDelta(void)
     __enable_irq();
 }
 
+static uint32_t OGM_GetCount(void)
+{
+    uint32_t snap;
+
+    __disable_irq();
+    snap = g_count;
+    __enable_irq();
+    return snap;
+}
+
+static void OGM_Tick1s(void)
+{
+    uint32_t delta_snap;
+
+    __disable_irq();
+    delta_snap = g_count_delta_1s;
+    g_count_delta_1s = 0u;
+    __enable_irq();
+    g_display_delta_1s = delta_snap;
+}
+
+static uint8_t OGM_IsFlowActive(void)
+{
+    if (g_last_pulse_ms == 0u) {
+        return 0u;
+    }
+    return (Delay_GetElapsed(Delay_GetTick(), g_last_pulse_ms) < OGM_FLOW_IDLE_MS) ? 1u : 0u;
+}
+
 static void OGM_ResetCount(void)
 {
     __disable_irq();
     g_count = 0u;
     g_count_snap = 0u;
     g_count_delta_1s = 0u;
-    g_edge_locks = 0u;
-    g_last_a = OGM_ReadLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
-    g_last_b = OGM_ReadLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
+    g_arm_a = 1u;
+    g_arm_b = 0u;
+    g_last_a = GPIO_ReadPin(OGM_CH_A_PORT, OGM_CH_A_PIN) ? 1u : 0u;
+    g_last_b = GPIO_ReadPin(OGM_CH_B_PORT, OGM_CH_B_PIN) ? 1u : 0u;
+    g_last_valid_us = 0u;
     __enable_irq();
+    g_display_delta_1s = 0u;
+    g_last_pulse_ms = 0u;
 }
 
-static uint8_t OGM_InitInputs(void)
+static uint8_t OGM_InitExti(void)
 {
-    g_last_a = OGM_ReadLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
-    g_last_b = OGM_ReadLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
-    g_edge_locks = 0u;
+    g_arm_a = 1u;
+    g_arm_b = 0u;
+    g_last_a = GPIO_ReadPin(OGM_CH_A_PORT, OGM_CH_A_PIN) ? 1u : 0u;
+    g_last_b = GPIO_ReadPin(OGM_CH_B_PORT, OGM_CH_B_PIN) ? 1u : 0u;
+    g_last_valid_us = 0u;
     g_count = 0u;
     g_count_snap = 0u;
     g_count_delta_1s = 0u;
 
-    if (!OGM_InitExtiChannel(EXTI_LINE_0, OGM_ChannelA_Callback, OGM_CH_A_PORT, OGM_CH_A_PIN)) {
+    if (!OGM_InitExtiChannel(OGM_EXTI_LINE_A, OGM_ChannelA_Callback,
+                             OGM_CH_A_PORT, OGM_CH_A_PIN)) {
         return 0u;
     }
-    if (!OGM_InitExtiChannel(EXTI_LINE_1, OGM_ChannelB_Callback, OGM_CH_B_PORT, OGM_CH_B_PIN)) {
+    if (!OGM_InitExtiChannel(OGM_EXTI_LINE_B, OGM_ChannelB_Callback,
+                             OGM_CH_B_PORT, OGM_CH_B_PIN)) {
         return 0u;
     }
+
+    LOG_INFO("OGM", "EXTI fall alt-lock + lvl chk, min=%uus",
+             (unsigned int)OGM_MIN_PULSE_INTERVAL_US);
     return 1u;
 }
 
@@ -486,6 +559,7 @@ static uint8_t Pump_ButtonCanAct(uint32_t now)
     return 1u;
 }
 
+/** 485/启停序列忙时：记下按下意图，不丢弃边沿 */
 static void Pump_ButtonLatchPending(uint8_t up, uint8_t dn, uint8_t run)
 {
     if (up && !g_btn_up.last_pressed) {
@@ -649,46 +723,28 @@ static void Pump_ShowPulseRate(uint32_t delta_1s)
     OLED_ShowNum(3, 6, delta_1s, 6);
 }
 
-static void Pump_ShowAbLevels(uint8_t level_a, uint8_t level_b)
+static void Pump_ShowCommLine(uint8_t comm_ok)
 {
-    OLED_ShowString(4, 1, "A:");
-    OLED_ShowString(4, 3, level_a ? "H" : "L");
-    OLED_ShowString(4, 5, "B:");
-    OLED_ShowString(4, 7, level_b ? "H" : "L");
+    if (comm_ok) {
+        OLED_ShowString(4, 1, "485:OK          ");
+    } else {
+        OLED_ShowString(4, 1, "485:ERR         ");
+    }
 }
 
 static void Pump_RefreshOLED(uint32_t delta_1s)
 {
     char buffer[20];
     uint32_t cnt;
-    uint8_t level_a;
-    uint8_t level_b;
 
-    cnt = OGM_SnapshotCount();
+    cnt = OGM_GetCount();
     Pump_ShowPulseCount(cnt);
 
-    snprintf(buffer, sizeof(buffer), "F:%02u ", (unsigned int)g_set_freq_hz);
+    snprintf(buffer, sizeof(buffer), "F:%02uHz          ", (unsigned int)g_set_freq_hz);
     OLED_ShowString(2, 1, buffer);
-    OLED_ShowString(2, 6, g_pump_running ? "RUN " : "STOP");
 
     Pump_ShowPulseRate(delta_1s);
-
-    level_a = OGM_ReadLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
-    level_b = OGM_ReadLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
-    Pump_ShowAbLevels(level_a, level_b);
-
-    if (g_comm_ok) {
-        snprintf(buffer, sizeof(buffer), " Set:%02uHz", (unsigned int)g_set_freq_hz);
-        OLED_ShowString(4, 9, buffer);
-    } else {
-        OLED_ShowString(4, 9, " 485:ERR");
-    }
-
-    /* 按键电平调试：L=按下 H=松开，便于现场确认接线 */
-    OLED_ShowString(3, 13, "K");
-    OLED_ShowString(3, 14, Pump_ButtonPressed(BTN_FREQ_UP_PORT, BTN_FREQ_UP_PIN) ? "0" : "1");
-    OLED_ShowString(3, 15, Pump_ButtonPressed(BTN_FREQ_DOWN_PORT, BTN_FREQ_DOWN_PIN) ? "0" : "1");
-    OLED_ShowString(3, 16, Pump_ButtonPressed(BTN_RUN_STOP_PORT, BTN_RUN_STOP_PIN) ? "0" : "1");
+    Pump_ShowCommLine(g_comm_ok);
 }
 
 static void Pump_UpdateLed(void)
@@ -710,7 +766,7 @@ static void Pump_UpdateLed(void)
         return;
     }
 
-    if (g_pump_running) {
+    if (OGM_IsFlowActive()) {
         if (Delay_GetElapsed(now, g_last_led_tick) >= LED_BLINK_MS) {
             g_last_led_tick = now;
             g_led_on = (uint8_t)!g_led_on;
@@ -762,7 +818,7 @@ static void Pump_InitComm(void)
         ErrorHandler_Handle(log_status, "LOG");
     }
 
-    LOG_INFO("MAIN", "=== NPN03 Preset Pump SwAlgo ===");
+    LOG_INFO("MAIN", "=== NPN04 Preset Pump SwAlgo2 ===");
     LOG_INFO("MAIN", "UART2: 19200 8E1 Addr=%d", INVT_SLAVE_ADDRESS);
     LOG_INFO("MAIN", "按键：忙时挂起、空闲补执行；防抖 %ums", (unsigned int)BTN_DEBOUNCE_MS);
     LOG_INFO("MAIN", "请确认 GD200A P00.01=2 P00.02=0 P00.06=8 P00.09=0");
@@ -781,7 +837,6 @@ static void Pump_InitComm(void)
 
 static uint32_t g_last_ogm_task_tick = 0;
 static uint32_t g_last_ogm_ui_tick = 0;
-static uint32_t g_display_delta_1s = 0;
 static uint32_t g_last_display_count = 0;
 
 #define OLED_REFRESH_IDLE_MS        200u
@@ -794,12 +849,12 @@ int main(void)
         OGM_ErrorBlink(80, 80);
     }
 
-    if (!OGM_InitInputs()) {
-        OGM_ErrorBlink(100, 100);
-    }
-
     Pump_InitComm();
     Pump_InitButtons();
+
+    if (!OGM_InitExti()) {
+        OGM_ErrorBlink(100, 100);
+    }
 
     /* 上电将本地默认频率（25Hz）写入 0x2001，避免 OLED 显示与变频器不一致 */
     if (g_comm_ok) {
@@ -818,8 +873,9 @@ int main(void)
     g_last_ogm_task_tick = g_task_tick;
     g_last_ogm_ui_tick = g_task_tick;
     g_count_snap = g_count;
+    g_last_display_count = OGM_GetCount();
 
-    LOG_INFO("MAIN", "OGM 计数同 NPN02 四边沿互锁，一圈 %u 计数", (unsigned int)OGM_PULSES_PER_REV);
+    LOG_INFO("MAIN", "OGM EXTI0/1 fall A/B alt-lock");
     LOG_INFO("MAIN", "485 无后台轮询；上电/按键/启停时写 0x2001 设频");
 
     while (1) {
@@ -829,15 +885,14 @@ int main(void)
         }
 
         if ((uint32_t)(g_task_tick - g_last_ogm_ui_tick) >= OGM_RATE_WINDOW_MS) {
-            uint32_t delta_snap;
-
             g_last_ogm_ui_tick = g_task_tick;
-            __disable_irq();
-            delta_snap = g_count_delta_1s;
-            g_count_delta_1s = 0u;
-            __enable_irq();
-            g_display_delta_1s = delta_snap;
+            OGM_Tick1s();
             g_oled_dirty = 1;
+#if OGM_DEBUG_LOG_1S
+            LOG_INFO("OGM", "Cnt=%u d/1s=%u",
+                     (unsigned int)OGM_GetCount(),
+                     (unsigned int)g_display_delta_1s);
+#endif
         }
 
         Pump_PollButtons();
@@ -845,7 +900,7 @@ int main(void)
         {
             uint32_t now_count;
 
-            now_count = OGM_SnapshotCount();
+            now_count = OGM_GetCount();
             if (now_count != g_last_display_count) {
                 g_last_display_count = now_count;
                 g_oled_dirty = 1;
@@ -854,7 +909,7 @@ int main(void)
 
         {
             uint32_t now = Delay_GetTick();
-            uint32_t refresh_ms = g_pump_running ? OLED_REFRESH_RUN_MS : OLED_REFRESH_IDLE_MS;
+            uint32_t refresh_ms = OGM_IsFlowActive() ? OLED_REFRESH_RUN_MS : OLED_REFRESH_IDLE_MS;
 
             if (g_oled_dirty ||
                 Delay_GetElapsed(now, g_last_oled_tick) >= refresh_ms) {

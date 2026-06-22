@@ -166,7 +166,7 @@ flowchart LR
 - 上电默认 **25Hz**；485 预检通过后会**自动写 0x2001H** 同步至变频器
 - 频率为 **0Hz** 时按启停无效，需先升频
 - 运行中调频**仅写 0x2001H**，不停机
-- 每次按键触发 485 后 **800ms** 内忽略重复按键（消抖 + 保护总线）
+- 每次按键触发 485 后 **80ms** 防抖；485 忙时按下会挂起，空闲后补执行
 - 降频至 0Hz 且泵在运行时，会自动发送停机命令
 - 本案例默认**反转**运行（`0x2000H = 0x0002`）
 
@@ -496,7 +496,7 @@ sequenceDiagram
 | `InvtSendRunCmd()` | 写 0x2000H 启停/换向 |
 | `Pump_ApplyFrequency()` | 按键调频 / 上电同步设频 |
 | `Pump_Start()` / `Pump_Stop()` | 启停序列与状态更新 |
-| `Pump_ScanButtons()` | 按下沿检测 + 800ms lockout |
+| `Pump_ScanButtons()` | 按下沿检测 + 忙时挂起 + 80ms 防抖 |
 | `Pump_RefreshOLED()` | Cnt / F / d/1s / AB / 485 状态 |
 
 **ISR 说明**：`EXTI0_IRQHandler` / `EXTI1_IRQHandler` 在 `Core/stm32f10x_it.c` 中实现，案例只注册 OGM 回调。
@@ -589,7 +589,7 @@ int main(void)
 ### 按键无反应
 
 - 观察 OLED 第 3 行 `K` 后三位：按下应为 0
-- 800ms  lockout 内重复按无效；485 忙时等待当前操作完成
+- 80ms 防抖内重复按无效；485 忙时按下会挂起，空闲后补执行
 
 ---
 
