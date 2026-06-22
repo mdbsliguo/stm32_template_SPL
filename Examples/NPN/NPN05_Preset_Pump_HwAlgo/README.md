@@ -4,7 +4,7 @@
 
 **当前固件定位**：**d/1s 标定分档自动测试**——PA6 每按一次启动一档（5→10→…→50Hz），每档计满 **1000 cnt** 自动停机；**10Hz 及以上**在接近目标前**尾段降为 5Hz**，避免高流量时 d/1s 超表。
 
-与 **NPN03 / NPN04** 共用泵控、按键、RS485、OLED 接线；**OGM 须改接到 PB6/PB7**（不再使用 PA0/PA1）。计量语义与 **NPN04 SwAlgo2** 一致（下降沿交替，双信号线单圈约 4 脉冲），边沿由 **TIM 硬件捕获** 触发中断。
+与 **NPN03 / NPN04 / NPN05** 共用泵控、按键、RS485、OLED 接线；**OGM 接 PB6/PB7**（NPN03/04 为 EXTI 软件计数，本案例为 TIM4 硬件捕获）。计量语义与 **NPN04 SwAlgo2** 一致（下降沿交替，双信号线单圈约 4 脉冲），边沿由 **TIM 硬件捕获** 触发中断。
 
 ---
 
@@ -25,7 +25,7 @@
 
 | 项目 | NPN03 SwAlgo | NPN04 SwAlgo2 | NPN05 HwAlgo |
 |------|-------------|---------------|--------------|
-| OGM 引脚 | PA0 / PA1 | PA0 / PA1 | **PB6 / PB7** |
+| OGM 引脚 | PB6 / PB7 | PB6 / PB7 | **PB6 / PB7** |
 | 检沿方式 | EXTI 双边沿 + 读 GPIO | EXTI 双边沿 + 读 GPIO | **TIM 硬件捕获下降沿** |
 | 计数边沿 | 四边沿（升+降） | 仅下降沿 | 仅下降沿 |
 | 互锁位置 | EXTI 回调四边沿锁 | EXTI 回调 A/B arm | **ISR 状态机** |
@@ -35,7 +35,7 @@
 | 定时器 | — | — | **TIM4**（TIM2 专用于 1ms 时基） |
 | 依赖模块 | `exti` | `exti` | **`ogm_flow_ic`** |
 | OLED 第 4 行 | A/B 电平 | 485 状态 | **485 + St（状态机）** |
-| 本固件操作 | 三键调频/启停 | 三键调频/启停 | **PA6 分档测试** |
+| 本固件操作 | **PA6 分档测试** | **PA6 分档测试** | **PA6 分档测试** |
 
 ### 学习重点
 
@@ -47,7 +47,7 @@
 ### 应用场景
 
 - OGM + 变频器控泵现场，**硬件捕获**路径验证与 d/1s 分档标定
-- 与 NPN03/NPN04 **同工况对照**（注意 OGM 引脚不同）
+- 与 NPN03/NPN04/NPN05 **同接线对照**（NPN03/04 为 EXTI 软件路径，本案例为 TIM 硬件捕获）
 - 按 PA6 自动跑 5~50Hz 各档，记录 d/1s 与 Cnt，填标定表
 - 为 **预设加油量停泵**（P2）积累 `PULSES_PER_LITER`
 
@@ -56,7 +56,7 @@
 | 方案 | 说明 |
 |------|------|
 | **本案例（NPN05）** | TIM 输入捕获 + ISR 交替互锁，算法同 NPN04，边沿硬件化 |
-| NPN04 SwAlgo2 | 纯软件 EXTI 路径，接线 PA0/PA1，作软件对照基线 |
+| NPN04 SwAlgo2 | 纯软件 EXTI 路径（PB6/PB7），作软件对照基线 |
 | `timer_encoder` TI12 | 正交四倍频硬件 CNT，对本 OGM 波形**不适用**（见 NPN04 README） |
 
 ---
@@ -172,13 +172,19 @@ OGM_GetCount() >= 目标升数 × PULSES_PER_LITER
 | PB12 | LED1 | 低电平点亮 |
 | GND | OGM + RS485 + GD200A SG | **必须共地** |
 
-**与 NPN03/NPN04 接线差异（重要）：**
+**NPN03/04/05 OGM 接线（已统一）：**
 
-| 信号 | NPN03/NPN04 | NPN05 |
-|------|-------------|-------|
-| OGM A | PA0 | **PB6** |
-| OGM B | PA1 | **PB7** |
-| 其余 | 相同 | 相同 |
+| 信号 | PB6 | PB7 |
+|------|-----|-----|
+| OGM A | 通道 A | — |
+| OGM B | — | 通道 B |
+
+**检沿方式差异：**
+
+| 案例 | PB6/PB7 用法 |
+|------|----------------|
+| NPN03 / NPN04 | GPIO + **EXTI6/7** 软件计数 |
+| NPN05（本案例） | **TIM4 CH1/CH2** 硬件输入捕获 |
 
 **OGM 补充：**
 
@@ -480,7 +486,7 @@ stateDiagram-v2
 
 ### 计量与对照
 
-- [ ] OGM 接 **PB6/PB7**（非 PA0/PA1）
+- [ ] OGM 接 **PB6/PB7**（与 NPN03/04 同线；本固件为 TIM4 捕获）
 - [ ] 各档主频段 `d/1s` 与参考表接近（±5%）；尾段 5Hz 时 d/1s 下降属正常
 - [ ] 启泵后 `Cnt` 清零；`St` 在 0/1 间随流量变化
 
@@ -544,8 +550,8 @@ OGM_FlowIC_InjectPulse(1); /* B */
 
 | 案例 | 说明 |
 |------|------|
-| `Examples/NPN/NPN03_Preset_Pump_SwAlgo` | 四边沿互锁（PA0/PA1 EXTI） |
-| `Examples/NPN/NPN04_Preset_Pump_SwAlgo2` | 下降沿交替软件对照（PA0/PA1） |
+| `Examples/NPN/NPN03_Preset_Pump_SwAlgo` | 四边沿互锁（PB6/PB7 EXTI） |
+| `Examples/NPN/NPN04_Preset_Pump_SwAlgo2` | 下降沿交替软件对照（PB6/PB7 EXTI） |
 | `Examples/Bus/Bus04_ModBusRTU_Invt_GD200A` | 变频器通讯 |
 | `Drivers/timer/ogm_flow_ic.c` | 本案例核心驱动 |
 

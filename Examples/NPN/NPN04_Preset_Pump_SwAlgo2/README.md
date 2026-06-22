@@ -1,8 +1,10 @@
 # NPN04 - 预设加油泵（OGM SwAlgo2 + GD200A 控泵）
 
-整合 **Bus04_ModBusRTU_Invt_GD200A**（英威腾 GD200A RS485 控泵）与 **OGM 软件计数 SwAlgo2**（PA0/PA1 EXTI 下降沿 A/B 交替互锁），通过三按键手动调频/启停，OLED 实时显示脉冲计数与速率。
+整合 **Bus04_ModBusRTU_Invt_GD200A**（英威腾 GD200A RS485 控泵）与 **OGM 软件计数 SwAlgo2**（PB6/PB7 EXTI 下降沿 A/B 交替互锁，**双信号线单圈 4 脉冲**）。
 
-与 **NPN03_Preset_Pump_SwAlgo** 共用同一套硬件接线（PA0/PA1 OGM、RS485、按键、OLED），**仅计量算法不同**：NPN03 为四边沿互锁（一圈约 8），本案例为 **仅计下降沿 + A/B 交替 arm**（一圈约 4）。烧录不同固件即可对照 d/1s 与 Cnt，无需改线。
+**当前固件**：**d/1s 分档标定测试**——PA6 每按一次启动一档（5→50Hz），每档 **1000 cnt** 自动停机；10Hz 及以上尾段降 **5Hz**（规则同 NPN05 README）。PA4/PA5 无效。
+
+与 **NPN03_Preset_Pump_SwAlgo** 共用同一套硬件接线（PB6/PB7 OGM、RS485、按键、OLED），**仅计量算法不同**：NPN03 为四边沿互锁（一圈约 8），本案例为 **仅计下降沿 + A/B 交替 arm**（一圈约 4）。烧录不同固件即可对照 d/1s 与 Cnt，无需改线。
 
 ---
 
@@ -10,19 +12,20 @@
 
 ### 功能说明
 
-- **OGM SwAlgo2 计量**：PA0/PA1 双通道 EXTI 双边沿触发，ISR 内读 GPIO 判真实边沿，**仅下降沿参与计数**
+- **OGM SwAlgo2 计量**：PB6/PB7 双通道 EXTI 双边沿触发，ISR 内读 GPIO 判真实边沿，**仅下降沿参与计数**
 - **A/B 交替 arm**：A 下降沿 +1 后 arm A=0、arm B=1；B 下降沿 +1 后反之；上升沿只更新电平缓存
 - **双信号线单圈 4 脉冲**：OGM 通道 A/B 双 NPN 输出，仅下降沿交替 arm 下一圈约计 4 次有效边沿
 - **脉冲间隔过滤**：`OGM_MIN_PULSE_INTERVAL_US=800` 滤毛刺（基于 TIM2 微秒时间戳）
-- **ModBus 控泵**：与 NPN03 相同，写 GD200A `0x2001H` 设频、`0x2000H` 启停（默认反转运行）
-- **三按键 / 485 策略**：与 NPN03 相同；上电同步设频、按键调频、启停时写寄存器
+- **ModBus 控泵**：写 GD200A `0x2001H` 设频、`0x2000H` 启停（PA6 启动时反转 `0x0002`）
+- **分档自动测试**：PA6 启动；每档 1000 cnt；尾段降 5Hz；上电读 `2100H` 若在运行则停机
+- **485 策略**：无后台轮询；上电预置 5Hz，不自动启泵
 - **体积标定**：`PULSES_PER_LITER` 占位（1000），待现场标定后启用升数显示
 
 ### 与 NPN03 算法对照
 
 | 项目 | NPN03 SwAlgo | NPN04 SwAlgo2 |
 |------|-------------|---------------|
-| OGM 引脚 | PA0 / PA1 | **PA0 / PA1**（相同） |
+| OGM 引脚 | PB6 / PB7 | **PB6 / PB7**（与 NPN03/NPN05 同接线） |
 | EXTI 触发 | 双边沿 | 双边沿（同左） |
 | 计数边沿 | 四边沿（升+降） | **仅下降沿** |
 | 互锁方式 | 四边沿独立锁位状态机 | **A/B 交替 arm** |
@@ -59,11 +62,11 @@
 | 设备 | 说明 |
 |------|------|
 | STM32F103C8T6 | 主控 |
-| OGM 流量计（双 NPN） | 通道 A/B，接 **PA0/PA1**（与 NPN03 相同） |
+| OGM 流量计（双 NPN） | 通道 A/B，接 **PB6/PB7**（与 NPN03 相同） |
 | RS485 模块 | 接 UART2（PA2/PA3），建议自动方向 |
 | 英威腾 GD200A 变频器 | 0.75kW 等，ModBus RTU 从站 |
 | SSD1306 OLED | 128×64，软件 I2C（PB8/PB9） |
-| 三按键 + LED | PA4/PA5/PA6 上拉输入；PB12 LED |
+| 三按键 + LED | PA4/PA5（测试模式无效）/ PA6 测试启动；PB12 LED |
 
 ### USART 参数（须与 GD200A P14 一致）
 
@@ -76,13 +79,13 @@
 
 | STM32F103C8T6 | 外设/模块 | 说明 |
 |---------------|----------|------|
-| PA0 | OGM 通道 A | EXTI0，双边沿，上拉输入 |
-| PA1 | OGM 通道 B | EXTI1，双边沿，上拉输入 |
+| PB6 | OGM 通道 A | EXTI6，双边沿，上拉输入 |
+| PB7 | OGM 通道 B | EXTI7，双边沿，上拉输入 |
 | PA2 | RS485 模块 TX | UART2 发送 |
 | PA3 | RS485 模块 RX | UART2 接收 |
-| PA4 | 升频键 | 上拉，按下接 GND |
-| PA5 | 降频键 | 上拉，按下接 GND |
-| PA6 | 启停键 | 上拉，按下接 GND |
+| PA4 | 升频键（测试模式无效） | 上拉，按下接 GND |
+| PA5 | 降频键（测试模式无效） | 上拉，按下接 GND |
+| PA6 | **测试启动键** | 上拉，按下接 GND |
 | PA9 | USB 转串口 RX | UART1 Debug TX |
 | PA10 | USB 转串口 TX | UART1 Debug RX |
 | PB8 | OLED SCL | 软件 I2C |
@@ -150,22 +153,47 @@ flowchart LR
 
 ---
 
-## 🎮 按键与操作
+## 🎮 按键与操作（分档自动测试模式）
+
+本案例固件为 **d/1s 标定分档测试**：PA6 为测试启动键，PA4/PA5 在本固件中**无效**（频率由测试序列自动控制）。规则与 [NPN05 README](../NPN05_Preset_Pump_HwAlgo/README.md#-按键与操作分档自动测试模式) 一致。
 
 | 按键 | 功能 |
 |------|------|
-| PA4 | 设定频率 +5Hz（最大 50Hz），按下沿立即写 0x2001H |
-| PA5 | 设定频率 -5Hz（最小 0Hz），按下沿立即写 0x2001H |
-| PA6 | 启停切换：停止→启动（485 成功后清零 Cnt）；运行→停止 |
+| PA4 | （测试模式无效） |
+| PA5 | （测试模式无效） |
+| **PA6** | **测试启动**：每按一次启动一档，达标自动停机，下一档须再按 |
 
-**行为说明：**
+### 测试流程
 
-- 上电默认 **25Hz**；485 预检通过后会**自动写 0x2001H** 同步至变频器
-- 频率为 **0Hz** 时按启停无效，需先升频
-- 运行中调频**仅写 0x2001H**，不停机
-- 每次按键触发 485 后 **80ms** 防抖（`BTN_DEBOUNCE_MS`）；485 写寄存器期间由 `g_modbus_busy` 保护，**忙时按下会挂起，空闲后立即补执行**
-- 降频至 0Hz 且泵在运行时，会自动发送停机命令
-- 本案例默认**反转**运行（`0x2000H = 0x0002`）
+1. 上电待机：读 `2100H`，若在运行则 `0x0005` 停机；预置 **5Hz**（**不自动启泵**）
+2. 按 **PA6** → 以 **5Hz** 启动，`Cnt` 清零，反转运行（`0x0002`）
+3. `Cnt` 达到 **1000** → 自动停机
+4. 再按 **PA6** → 以 **10Hz** 启动；**≥980** 时自动降为 **5Hz** 计完尾段 20 个脉冲
+5. 依次 **15 / 20 / … / 50Hz**，每档须 **再按一次 PA6**；**10Hz 及以上**在接近 1000 前按表降 5Hz 尾段
+6. **50Hz** 档完成后，下一档回到 **5Hz**（循环）
+
+**尾段降频（避免高 d/1s 超表）：**
+
+| 测试频率 | 尾段脉冲数 | Cnt 达到时改 5Hz |
+|:--------:|:----------:|:----------------:|
+| 5Hz | 0 | 无（全程 5Hz） |
+| 10Hz | 20 | ≥ 980 |
+| 15Hz | 40 | ≥ 960 |
+| 20Hz | 60 | ≥ 940 |
+| 25Hz | 80 | ≥ 920 |
+| 30Hz | 100 | ≥ 900 |
+| 35Hz | 120 | ≥ 880 |
+| 40Hz | 140 | ≥ 860 |
+| 45Hz | 160 | ≥ 840 |
+| 50Hz | 180 | ≥ **820** |
+
+规律（10~50Hz，步进 5Hz）：`尾段 = (频率 - 10) / 5 × 20 + 20`；`切换点 = 1000 - 尾段`。
+
+尾段仅写 **`0x2001H` 改为 5Hz**，**不停机、不清零**；`Cnt >= 1000` 时写 **`0x2000H = 0x0005`** 停机。
+
+可调宏（`main_example.c`）：`TEST_CNT_TARGET=1000`、`TEST_FREQ_START_HZ=5`、`TEST_FREQ_STEP_HZ=5`、`TEST_FREQ_MAX_HZ=50`、`TEST_FREQ_TAIL_HZ=5`。
+
+485 忙时按键挂起、空闲补执行；运行中按 PA6 **不会**手动停机（仅达标自动停）。
 
 ---
 
@@ -173,16 +201,18 @@ flowchart LR
 
 | 行 | 内容 | 示例 |
 |----|------|------|
-| 1 | 累计脉冲计数 | `Cnt:00001234` |
-| 2 | 设定频率 | `F:25Hz` |
-| 3 | 每秒计数增量 | `d/1s:000073` |
+| 1 | 累计脉冲计数 | `Cnt:00000820` |
+| 2 | 待机：下一档频率；运行：本档+目标；尾段 | `Nx:10Hz idle` / `F:50 T:1000` / `F:50>05 T:1000` |
+| 3 | 每秒计数增量 | `d/1s:000157` |
 | 4 | 485 通讯状态 | `485:OK` / `485:ERR` |
 
 **说明：**
 
-- `d/1s`：过去 1 秒内计数增量；同流量下约为 **NPN03 的一半**
-- `F:xxHz` 为本地设定频率；**以变频器面板通讯设定频率为准**复核
-- 485 预检失败时第 4 行显示 `485:ERR`，按键仍可用
+- `d/1s`：过去 1 秒内计数增量；同流量下约为 **NPN03 的一半**（下降沿交替，一圈约 4）
+- `Nx:xxHz idle`：待机，下一档待测频率
+- `F:xx T:1000`：本档运行中；`F:xx>05` 表示已进入尾段降频
+- 485 预检失败时第 4 行显示 `485:ERR`
+- OLED 输出须为 **ASCII 英文**（项目规范）
 
 ### LED 指示
 
@@ -196,9 +226,9 @@ flowchart LR
 
 ```
 ┌────────────────── 128×64 ──────────────────┐
-│ Cnt:00001234                               │  第1行
-│ F:25Hz                                     │  第2行
-│ d/1s:000073                                │  第3行
+│ Cnt:00000820                               │  第1行
+│ F:50>05 T:1000  (或 Nx:10Hz idle)          │  第2行
+│ d/1s:000015                                │  第3行（尾段时偏低）
 │ 485:OK                                     │  第4行
 └────────────────────────────────────────────┘
 ```
@@ -294,7 +324,7 @@ flowchart TB
 
 | 模块 | 用途 |
 |------|------|
-| `exti` | OGM 双通道双边沿中断（EXTI0/1） |
+| `exti` | OGM 双通道双边沿中断（EXTI6/7） |
 | `gpio` | 按键扫描、ISR 内读 OGM 电平 |
 | `modbus_rtu` + `uart` | GD200A RS485 通讯 |
 | `oled_ssd1306` + `soft_i2c` | 现场显示 |
@@ -311,7 +341,7 @@ flowchart TB
 | `CONFIG_MODULE_GPIO_ENABLED` | 1 | GPIO / 按键 |
 | `CONFIG_MODULE_DELAY_ENABLED` | 1 | 延时 |
 | `CONFIG_MODULE_BASE_TIMER_ENABLED` | 1 | TIM2 1ms 时基 |
-| `CONFIG_MODULE_EXTI_ENABLED` | 1 | OGM EXTI0/1 |
+| `CONFIG_MODULE_EXTI_ENABLED` | 1 | OGM EXTI6/7 |
 | `CONFIG_MODULE_TIMER_ENABLED` | 0 | 不使用 timer 驱动 |
 | `CONFIG_MODULE_LED_ENABLED` | 1 | LED |
 | `CONFIG_MODULE_OLED_ENABLED` | 1 | OLED |
@@ -330,10 +360,10 @@ flowchart TB
 ### 整体逻辑
 
 1. **初始化**：`System_Init()` → `OLED_Init()` → `Pump_InitComm()` → `Pump_InitButtons()` → `OGM_InitExti()`
-2. **上电同步**：485 预检通过后写 `0x2001H`，将默认 25Hz 同步至变频器
+2. **上电预置**：485 预检 → 读 `2100H` 停机（若在运行）→ 写 `0x2001H` 预置 **5Hz**（不启泵）
 3. **中断阶段**（自动）：OGM A/B 边沿 → EXTI 回调 → 读 GPIO → **仅下降沿** → arm 检查 → 间隔过滤 → `g_count++` → 切换 arm
-4. **主循环**：1ms 差分采样 `d/1s` → 按键扫描 → OLED/LED 刷新
-5. **按键触发 485**：升/降频写 `0x2001H`；启停写 `0x2001H` + `0x2000H`（先设频后运行）
+4. **主循环**：1ms 差分采样 `d/1s` → PA6 扫描 → `Pump_CheckTestAutoStop()` → OLED/LED 刷新
+5. **PA6 触发 485**：设频 + `0x0002` 启动并清零 Cnt；达标自动 `0x0005` 停机；尾段仅写 5Hz
 
 ### 系统架构示意
 
@@ -342,11 +372,11 @@ flowchart TB
 flowchart LR
     subgraph MCU[STM32F103C8T6]
         APP[主循环<br/>按键/OLED/485]
-        EXTI_ISR[EXTI0/1 ISR<br/>SwAlgo2 计数]
+        EXTI_ISR[EXTI6/7 ISR<br/>SwAlgo2 计数]
     end
 
-    OGM[OGM 流量计<br/>PA0 PA1]
-    BTN[三按键<br/>PA4 PA5 PA6]
+    OGM[OGM 流量计<br/>PB6 PB7]
+    BTN[PA6 测试键<br/>PA4/5 无效]
     RS485[RS485 模块<br/>PA2 PA3]
     INVT[GD200A<br/>ModBus 从站]
     OLED[OLED<br/>PB8 PB9]
@@ -373,7 +403,7 @@ flowchart LR
 
 ```mermaid
 graph LR
-    OGM[OGM A/B<br/>PA0 PA1]
+    OGM[OGM A/B<br/>PB6 PB7]
     EXTI[EXTI 双边沿中断]
     ISR[OGM_ProcessChannel<br/>下降沿 + arm 交替]
     MAIN[主循环<br/>Cnt / d/1s / 按键]
@@ -405,21 +435,22 @@ flowchart TD
         L1 --> L2 --> L3 --> L1
     end
 
-    SYNC -->|是| WR_FREQ[写 2001H 同步 25Hz]
+    SYNC -->|是| STOP_CHK[读 2100H 若在运行则停机]
     SYNC -->|否| L1
+    STOP_CHK --> WR_FREQ[写 2001H 预置 5Hz]
     WR_FREQ --> L1
 
-    L2 -->|升降频| FREQ[写 2001H]
-    L2 -->|启停| RUN{泵在运行?}
-    RUN -->|启动| START_SEQ[设频后写 2000H 反转<br/>清零 Cnt]
-    RUN -->|停止| STOP_SEQ[写 2000H 停机]
+    L2 -->|PA6 按下| TEST_START[设频 + 0x0002 启动<br/>Cnt 清零]
+    L2 -->|主循环| AUTO{Cnt>=切换点?}
+    AUTO -->|尾段| TAIL[写 2001H = 5Hz]
+    AUTO -->|达标| STOP_SEQ[0x0005 停机<br/>下一档 +5Hz]
 
-    FREQ --> L1
-    START_SEQ --> L1
+    TEST_START --> L1
+    TAIL --> L1
     STOP_SEQ --> L1
 
     subgraph INT[中断 与主循环并行]
-        I1[PA0 PA1 边沿] --> I2[读 GPIO 判下降沿]
+        I1[PB6 PB7 边沿] --> I2[读 GPIO 判下降沿]
         I2 --> I3[arm 交替 + 间隔过滤]
         I3 --> I4[count++]
     end
@@ -431,7 +462,7 @@ flowchart TD
 
 | 步骤 | 说明 |
 |------|------|
-| EXTI 触发 | PA0/PA1 配置为**双边沿**，上升/下降均进中断 |
+| EXTI 触发 | PB6/PB7 配置为**双边沿**，上升/下降均进中断 |
 | 读 GPIO | ISR 内读当前电平，与 `g_last_a/b` 比较；电平未变则返回（滤重复中断） |
 | 更新缓存 | 写入 `g_last_a` 或 `g_last_b` |
 | 仅下降沿 | 电平 1→0 才继续；上升沿只更新缓存，**不计数** |
@@ -457,7 +488,7 @@ flowchart TD
 | 寄存器 | 功能 | 本案例用法 |
 |--------|------|------------|
 | `0x2000` | 通讯运行命令 | `0x0002` 反转运行；`0x0005` 停机 |
-| `0x2001` | 通讯设定频率 | 值 = Hz × 100（25Hz → 2500） |
+| `0x2001` | 通讯设定频率 | 值 = Hz × 100（5Hz → 500） |
 
 ---
 
@@ -465,7 +496,7 @@ flowchart TD
 
 | 场景 | 操作 |
 |------|------|
-| 上电同步 / 按键调频 | 直接写 `0x2001H = 频率(Hz) × 100`（如 25Hz → 2500） |
+| 上电预置 / PA6 启动 / 尾段降频 | 直接写 `0x2001H = 频率(Hz) × 100`（如 5Hz → 500） |
 | 启动泵 | 写 `0x2001H` → 延时 80ms → 写 `0x2000H = 0x0002`（反转） |
 | 停止泵 | 立即写 `0x2000H = 0x0005`（停机） |
 
@@ -480,15 +511,14 @@ sequenceDiagram
     participant B as ModBusRTU
     participant V as GD200A
 
-    Note over M,V: 上电或按键调频 仅写 2001H
-    U->>M: 升降频或上电同步
-    M->>B: FC06 写 2001 Hz乘100
+    Note over M,V: 上电预置 5Hz 仅写 2001H
+    M->>B: FC06 写 2001 = 500
     B->>V: RS485 帧
     V-->>B: 应答
     B-->>M: OK / ERR
 
-    Note over M,V: 启动泵（先 2001H 再 2000H）
-    U->>M: PA6 启停（停止→运行）
+    Note over M,V: PA6 启动本档（先 2001H 再 2000H）
+    U->>M: PA6 测试启动
     M->>B: FC06 写 0x2001
     B->>V: 设频
     V-->>B: 应答
@@ -498,8 +528,12 @@ sequenceDiagram
     V-->>B: 应答
     M->>M: OGM_ResetCount()
 
-    Note over M,V: 停止泵
-    U->>M: PA6 启停（运行→停止）
+    Note over M,V: 尾段降频（仅 2001H）
+    M->>B: FC06 写 2001 = 500
+    B->>V: 5Hz
+    V-->>B: 应答
+
+    Note over M,V: Cnt 达标自动停机
     M->>B: FC06 写 2000 值 0005
     B->>V: 停机
     V-->>B: 应答
@@ -514,7 +548,7 @@ sequenceDiagram
 | 函数 | 说明 |
 |------|------|
 | `OGM_ProcessChannel()` | ISR 回调核心：读 GPIO、仅下降沿、arm 交替、间隔过滤后 `g_count++` |
-| `OGM_InitExti()` | 初始化 EXTI0/1、注册 A/B 回调、同步初始电平与 arm 状态 |
+| `OGM_InitExti()` | 初始化 EXTI6/7、注册 A/B 回调、同步初始电平与 arm 状态 |
 | `OGM_InitExtiChannel()` | 单通道 EXTI 配置（双边沿 + 上拉输入 + 使能） |
 | `OGM_AcceptInterval()` | 基于 TIM2 判断距上次有效脉冲是否 ≥ 800µs |
 | `OGM_GetCount()` | 关中断读取 `g_count` |
@@ -523,7 +557,7 @@ sequenceDiagram
 | `OGM_ResetCount()` | 启动成功后清零计数、差分与 arm 状态 |
 | `OGM_IsFlowActive()` | 判断近期是否有脉冲（LED/OLED 刷新策略） |
 
-**ISR 说明**：`EXTI0_IRQHandler` / `EXTI1_IRQHandler` 在 `Core/stm32f10x_it.c` 中实现，案例通过 `EXTI_SetCallback` 注册 `OGM_ChannelA/B_Callback`。
+**ISR 说明**：`EXTI9_5_IRQHandler` 在 `Core/stm32f10x_it.c` 中分发 EXTI6/7，案例通过 `EXTI_SetCallback` 注册 `OGM_ChannelA/B_Callback`。
 
 ### 控泵与通讯相关
 
@@ -555,11 +589,11 @@ int main(void)
     Pump_InitComm();                  /* 3. UART/Log + 485 预检 */
     Pump_InitButtons();               /* 4. PA4/5/6 按键 */
 
-    if (!OGM_InitExti()) { }          /* 5. OGM EXTI0/1 SwAlgo2 */
+    if (!OGM_InitExti()) { }          /* 5. OGM EXTI6/7 SwAlgo2 PB6/PB7 */
 
     if (g_comm_ok) {
         Delay_ms(80);
-        Pump_ApplyFrequency();        /* 6. 上电同步 25Hz → 0x2001H */
+        Pump_ApplyFrequency();        /* 6. 上电预置 5Hz → 0x2001H（不启泵） */
     }
 
     while (1) {
@@ -591,7 +625,7 @@ int main(void)
 
 - **无预设停泵**：当前仅显示 Cnt / d/1s，未实现目标升数自动停机
 - **无体积显示**：`PULSES_PER_LITER=1000` 为占位，须现场标定后启用
-- **无 485 后台读**：不读 0x3000H 运行频率；`g_pump_running` 为本地状态
+- **无 485 后台读**：不轮询 0x3000H；上电仅读 `2100H` 判断是否在运行
 - **无变频器故障联动**：通讯失败时 OLED 显示 `485:ERR`，不自动停机保护
 - **非硬件计数**：CPU 开销与 NPN03 相当（每沿进 EXTI ISR），非 TIM CNT 零 CPU 方案
 
@@ -605,8 +639,11 @@ int main(void)
 | `OGM_PULSES_PER_REV` | 4 | 一圈计数（SwAlgo2 典型值，待标定） |
 | `OGM_FLOW_IDLE_MS` | 2000 | 无脉冲判定空闲时长（LED/OLED 刷新） |
 | `PULSES_PER_LITER` | 1000 | 升数标定占位 |
-| `PUMP_FREQ_DEFAULT_HZ` | 25 | 上电默认频率 |
-| `PUMP_FREQ_STEP_HZ` | 5 | 按键调频步进 |
+| `TEST_CNT_TARGET` | 1000 | 每档目标计数 |
+| `TEST_FREQ_START_HZ` | 5 | 首档 / 循环回绕频率 |
+| `TEST_FREQ_STEP_HZ` | 5 | 档间步进 |
+| `TEST_FREQ_MAX_HZ` | 50 | 最高档 |
+| `TEST_FREQ_TAIL_HZ` | 5 | 尾段降频目标 |
 | `BTN_DEBOUNCE_MS` | 80 | 两次有效按键最小间隔（ms） |
 | `INVT_WRITE_GAP_MS` | 80 | 启停写寄存器间隔 |
 | `INVT_WRITE_RETRY_COUNT` | 3 | 写寄存器重试次数 |
@@ -628,12 +665,12 @@ int main(void)
 ## ✅ 验证步骤
 
 1. **接线与参数**：与 NPN03 相同；核对 P14 / P00 参数
-2. **上电**：OLED 显示 Cnt；485 正常时第 4 行 `485:OK`（非 `485:ERR`）
-3. **设频**：按 PA4/PA5 调节，观察 GD200A 通讯设定频率变化（默认 25Hz，步进 5Hz）
-4. **启停**：按 PA6 启动，OGM 有脉冲时 Cnt / d/1s 增加；再按 PA6 停止
+2. **上电**：OLED 第 2 行 `Nx:05Hz idle`；第 4 行 `485:OK`（非 `485:ERR`）；变频器通讯设定约 5Hz，不自动转
+3. **首档**：按 PA6 → 5Hz 启动，Cnt 从 0 增加；观察 `d/1s`（下降沿交替，5Hz 约 15–16）
+4. **自动停**：Cnt 达 1000 自动停机；再按 PA6 进入 10Hz 档（≥980 时尾段降为 5Hz）
 5. **对照 NPN03**：同流量同接线，NPN04 的 d/1s 约为 NPN03 **一半**
-6. **调频链**：升频后 d/1s 应增大，降频后应减小
-7. **串口**：UART1 115200 查看 LOG（含 SwAlgo2 初始化信息）
+6. **全档**：依次跑完 5~50Hz 各档，记录每档 `d/1s` 填标定表
+7. **串口**：UART1 115200 查看 LOG（含「上电设频 5 Hz」等）
 
 ---
 
@@ -663,10 +700,10 @@ int main(void)
 - 核对 P14.00=1、P14.01=4、P14.02=1 与代码 19200 8E1 一致
 - 长距离总线加 120Ω 终端电阻；不通时对调 A/B
 
-### 按键无反应
+### PA6 无反应
 
-- 80ms 防抖内重复按无效；485 写帧期间按键会挂起，完成后自动补执行
-- 485 忙（`g_modbus_busy`）时等待当前写操作完成
+- 运行中按 PA6 不会手动停机（仅达标自动停）；待机时再按
+- 485 忙时按下会挂起，空闲后补执行
 
 ---
 
@@ -703,12 +740,12 @@ int main(void)
 
 | 日期 | 说明 |
 |------|------|
+| 2026-06-22 | OGM 接线改为 PB6/PB7（EXTI6/7），与 NPN03/NPN05 统一；算法不变 |
 | 2026-06-21 | 按键优化：忙时挂起补执行、防抖 80ms（原 400ms 易丢边沿） |
-| 2026-06-21 | 目录更名 `NPN04_Preset_Pump_SwAlgo2`；算法定为下降沿 + A/B 交替 arm |
 | 2026-06-21 | 整合 Bus04 + OGM SwAlgo2；弃用 TIM4 硬件计数路径 |
 
 **测试状态**：✅ SwAlgo2 算法已验证（d/1s 约为 NPN03 一半；调频链正确）
 
 ---
 
-**最后更新**：2026-06-21
+**最后更新**：2026-06-22

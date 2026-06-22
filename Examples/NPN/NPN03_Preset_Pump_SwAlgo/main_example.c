@@ -6,7 +6,7 @@
  *          三按键调频/启停，OLED 显示 Cnt 与 d/1s（体积标定待实现）
  *
  * 硬件：
- * - OGM A/B：PA0/PA1；RS485：PA2/PA3；按键：PA4/PA5/PA6
+ * - OGM A/B：PB6/PB7；RS485：PA2/PA3；按键 PA6=测试启动（5~50Hz 每档 1000cnt）
  * - OLED：PB8/PB9；LED：PB12；Debug UART1：PA9/PA10
  */
 
@@ -37,14 +37,26 @@
 #define PUMP_FREQ_MIN_HZ            0u
 #define PUMP_FREQ_MAX_HZ            50u
 #define PUMP_FREQ_STEP_HZ           5u
-#define PUMP_FREQ_DEFAULT_HZ        25u
+#define PUMP_FREQ_DEFAULT_HZ        5u
+
+/** 分档自动测试：PA6 每按一次启动一档，达标自动停机，下一档须再按键 */
+#define TEST_FREQ_START_HZ          5u
+#define TEST_FREQ_STEP_HZ           5u
+#define TEST_FREQ_MAX_HZ            50u
+#define TEST_CNT_TARGET             2000u   /**< 四边沿计数约为 NPN04 2 倍，目标同比 ×2 */
+#define TEST_FREQ_TAIL_HZ           5u
+#define TEST_TAIL_PULSE_STEP        40u     /**< 尾段步进（对应 1000cnt 档的 20） */
+#define TEST_TAIL_PULSE_BASE        40u     /**< 10Hz 尾段脉冲数（对应 1000cnt 档的 20） */
 
 #define INVT_SLAVE_ADDRESS          1
 #define INVT_REG_RUN_CMD            0x2000
 #define INVT_REG_FREQ_SET           0x2001
+#define INVT_REG_STATUS_WORD1       0x2100
 #define INVT_CMD_REVERSE            0x0002
 #define INVT_CMD_STOP               0x0005
-#define INVT_CMD_RUN                INVT_CMD_REVERSE  /**< 本案例默认反转运行 */
+#define INVT_CMD_RUN                INVT_CMD_REVERSE
+#define INVT_STATUS_RUN_FORWARD     0x0001
+#define INVT_STATUS_RUN_REVERSE     0x0002
 
 #define INVT_WRITE_GAP_MS           80
 #define INVT_MODBUS_TIMEOUT_MS      1000
@@ -92,6 +104,9 @@ static volatile uint32_t g_count_snap = 0;
 static volatile uint32_t g_count_delta_1s = 0;
 
 static uint8_t  g_set_freq_hz = PUMP_FREQ_DEFAULT_HZ;
+static uint8_t  g_test_next_freq_hz = TEST_FREQ_START_HZ;
+static uint8_t  g_test_run_freq_hz = TEST_FREQ_START_HZ;
+static uint8_t  g_test_tail_applied = 0u;
 static volatile uint8_t  g_pump_running = 0;
 
 static uint8_t  g_comm_ok = 0;
@@ -105,11 +120,13 @@ static void Pump_FreqUp(void);
 static void Pump_FreqDown(void);
 static void Pump_ScanButtons(void);
 static uint8_t Pump_ApplyFrequency(void);
-static void Pump_ToggleRunOnPress(void);
+static void Pump_TestStartOnPress(void);
+static void Pump_CheckTestAutoStop(void);
 static uint8_t Pump_Start(void);
 static uint8_t Pump_Stop(void);
 
 static ModBusRTU_Status_t Pump_CommPreflight(void);
+static uint8_t Pump_EnsureInverterStopped(void);
 
 static uint32_t OGM_SnapshotCount(void);
 static void OGM_ResetCount(void);
@@ -205,6 +222,35 @@ static ModBusRTU_Status_t Pump_CommPreflight(void)
 
     return ModBusRTU_ReadHoldingRegisters(UART_INSTANCE_2, INVT_SLAVE_ADDRESS,
                                           INVT_REG_FREQ_SET, 1, &word, 300);
+}
+
+static uint8_t Pump_EnsureInverterStopped(void)
+{
+    uint16_t status_word1;
+    ModBusRTU_Status_t status;
+
+    status = ModBusRTU_ReadHoldingRegisters(UART_INSTANCE_2, INVT_SLAVE_ADDRESS,
+                                            INVT_REG_STATUS_WORD1, 1, &status_word1,
+                                            INVT_MODBUS_TIMEOUT_MS);
+    if (status != ModBusRTU_OK) {
+        LOG_WARN("PUMP", "读 2100H 失败: %s", GetModBusErrorString(status));
+        return 0u;
+    }
+
+    if (status_word1 == INVT_STATUS_RUN_FORWARD ||
+        status_word1 == INVT_STATUS_RUN_REVERSE) {
+        LOG_WARN("PUMP", "检测到变频器运行中(2100H=0x%04X)，执行停机",
+                 (unsigned int)status_word1);
+        if (!Pump_Stop()) {
+            LOG_ERROR("PUMP", "初始化强制停机失败");
+            return 0u;
+        }
+        LOG_INFO("PUMP", "初始化已强制停机");
+        return 1u;
+    }
+
+    LOG_INFO("PUMP", "变频器未运行(2100H=0x%04X)", (unsigned int)status_word1);
+    return 1u;
 }
 
 static uint8_t Pump_ApplyFrequency(void)
@@ -408,10 +454,10 @@ static uint8_t OGM_InitInputs(void)
     g_count_snap = 0u;
     g_count_delta_1s = 0u;
 
-    if (!OGM_InitExtiChannel(EXTI_LINE_0, OGM_ChannelA_Callback, OGM_CH_A_PORT, OGM_CH_A_PIN)) {
+    if (!OGM_InitExtiChannel(OGM_EXTI_LINE_A, OGM_ChannelA_Callback, OGM_CH_A_PORT, OGM_CH_A_PIN)) {
         return 0u;
     }
-    if (!OGM_InitExtiChannel(EXTI_LINE_1, OGM_ChannelB_Callback, OGM_CH_B_PORT, OGM_CH_B_PIN)) {
+    if (!OGM_InitExtiChannel(OGM_EXTI_LINE_B, OGM_ChannelB_Callback, OGM_CH_B_PORT, OGM_CH_B_PIN)) {
         return 0u;
     }
     return 1u;
@@ -547,7 +593,7 @@ static void Pump_ScanButtons(void)
         g_btn_pending_run = 0u;
         Pump_ButtonSyncState(up, dn, run);
         Pump_ButtonLockoutBegin(now);
-        Pump_ToggleRunOnPress();
+        Pump_TestStartOnPress();
         return;
     }
 
@@ -569,65 +615,109 @@ static void Pump_ScanButtons(void)
 
     if (edge_run) {
         Pump_ButtonLockoutBegin(now);
-        Pump_ToggleRunOnPress();
+        Pump_TestStartOnPress();
     }
 }
 
-static void Pump_ToggleRunOnPress(void)
+static void Pump_TestStartOnPress(void)
 {
     if (g_pump_running) {
-        (void)Pump_Stop();
-    } else {
-        (void)Pump_Start();
+        return;
     }
+    if (!g_comm_ok) {
+        LOG_WARN("TEST", "485 未就绪，无法启动测试");
+        return;
+    }
+
+    if (g_test_next_freq_hz < TEST_FREQ_START_HZ ||
+        g_test_next_freq_hz > TEST_FREQ_MAX_HZ) {
+        g_test_next_freq_hz = TEST_FREQ_START_HZ;
+    }
+
+    g_set_freq_hz = g_test_next_freq_hz;
+    g_test_run_freq_hz = g_test_next_freq_hz;
+    g_test_tail_applied = 0u;
     g_oled_dirty = 1;
+
+    if (!Pump_Start()) {
+        LOG_ERROR("TEST", "启动失败 freq=%u Hz", (unsigned int)g_set_freq_hz);
+        return;
+    }
+
+    LOG_INFO("TEST", "档位启动 %u Hz，目标 %u cnt", (unsigned int)g_set_freq_hz,
+             (unsigned int)TEST_CNT_TARGET);
+}
+
+static uint32_t Pump_TestGetTailPulseCount(uint8_t test_freq_hz)
+{
+    if (test_freq_hz <= TEST_FREQ_TAIL_HZ || test_freq_hz < 10u) {
+        return 0u;
+    }
+    return ((uint32_t)test_freq_hz - 10u) / TEST_FREQ_STEP_HZ * TEST_TAIL_PULSE_STEP + TEST_TAIL_PULSE_BASE;
+}
+
+static uint32_t Pump_TestGetTailSwitchCount(uint8_t test_freq_hz)
+{
+    uint32_t tail;
+
+    tail = Pump_TestGetTailPulseCount(test_freq_hz);
+    if (tail == 0u || tail >= TEST_CNT_TARGET) {
+        return TEST_CNT_TARGET;
+    }
+    return TEST_CNT_TARGET - tail;
+}
+
+static void Pump_CheckTestAutoStop(void)
+{
+    uint32_t cnt;
+    uint32_t switch_at;
+
+    if (!g_pump_running) {
+        return;
+    }
+
+    cnt = OGM_SnapshotCount();
+
+    if (!g_test_tail_applied) {
+        switch_at = Pump_TestGetTailSwitchCount(g_test_run_freq_hz);
+        if (switch_at < TEST_CNT_TARGET && cnt >= switch_at) {
+            g_set_freq_hz = TEST_FREQ_TAIL_HZ;
+            if (Pump_ApplyFrequency()) {
+                g_test_tail_applied = 1u;
+                g_oled_dirty = 1;
+                LOG_INFO("TEST", "Cnt>=%lu 尾段改 %u Hz (本档 %u Hz)",
+                         (unsigned long)switch_at,
+                         (unsigned int)TEST_FREQ_TAIL_HZ,
+                         (unsigned int)g_test_run_freq_hz);
+            }
+        }
+    }
+
+    if (cnt < TEST_CNT_TARGET) {
+        return;
+    }
+
+    (void)Pump_Stop();
+
+    g_test_tail_applied = 0u;
+    g_test_next_freq_hz = (uint8_t)(g_test_next_freq_hz + TEST_FREQ_STEP_HZ);
+    if (g_test_next_freq_hz > TEST_FREQ_MAX_HZ) {
+        g_test_next_freq_hz = TEST_FREQ_START_HZ;
+    }
+
+    g_oled_dirty = 1;
+    LOG_INFO("TEST", "已达 %u cnt 停机，下次按键启动 %u Hz",
+             (unsigned int)TEST_CNT_TARGET, (unsigned int)g_test_next_freq_hz);
 }
 
 static void Pump_FreqUp(void)
 {
-    uint8_t prev = g_set_freq_hz;
-
-    if (g_set_freq_hz + PUMP_FREQ_STEP_HZ <= PUMP_FREQ_MAX_HZ) {
-        g_set_freq_hz = (uint8_t)(g_set_freq_hz + PUMP_FREQ_STEP_HZ);
-    } else {
-        g_set_freq_hz = PUMP_FREQ_MAX_HZ;
-    }
-
-    if (g_set_freq_hz == prev) {
-        return;
-    }
-
-    g_oled_dirty = 1;
-    LED1_Toggle();
-    (void)Pump_ApplyFrequency();
+    (void)0;
 }
 
 static void Pump_FreqDown(void)
 {
-    uint8_t prev = g_set_freq_hz;
-
-    if (g_set_freq_hz == 0) {
-        return;
-    }
-
-    if (g_set_freq_hz <= PUMP_FREQ_STEP_HZ) {
-        g_set_freq_hz = PUMP_FREQ_MIN_HZ;
-    } else {
-        g_set_freq_hz = (uint8_t)(g_set_freq_hz - PUMP_FREQ_STEP_HZ);
-    }
-
-    if (g_set_freq_hz == prev) {
-        return;
-    }
-
-    g_oled_dirty = 1;
-    LED1_Toggle();
-
-    if (g_set_freq_hz == 0 && g_pump_running) {
-        (void)Pump_Stop();
-    }
-
-    (void)Pump_ApplyFrequency();
+    (void)0;
 }
 
 static void Pump_PollButtons(void)
@@ -649,46 +739,38 @@ static void Pump_ShowPulseRate(uint32_t delta_1s)
     OLED_ShowNum(3, 6, delta_1s, 6);
 }
 
-static void Pump_ShowAbLevels(uint8_t level_a, uint8_t level_b)
-{
-    OLED_ShowString(4, 1, "A:");
-    OLED_ShowString(4, 3, level_a ? "H" : "L");
-    OLED_ShowString(4, 5, "B:");
-    OLED_ShowString(4, 7, level_b ? "H" : "L");
-}
-
 static void Pump_RefreshOLED(uint32_t delta_1s)
 {
     char buffer[20];
     uint32_t cnt;
-    uint8_t level_a;
-    uint8_t level_b;
 
     cnt = OGM_SnapshotCount();
     Pump_ShowPulseCount(cnt);
 
-    snprintf(buffer, sizeof(buffer), "F:%02u ", (unsigned int)g_set_freq_hz);
+    if (g_pump_running) {
+        if (g_test_tail_applied) {
+            snprintf(buffer, sizeof(buffer), "F:%02u>%02u T:%04u",
+                     (unsigned int)g_test_run_freq_hz,
+                     (unsigned int)TEST_FREQ_TAIL_HZ,
+                     (unsigned int)TEST_CNT_TARGET);
+        } else {
+            snprintf(buffer, sizeof(buffer), "F:%02u T:%04u    ",
+                     (unsigned int)g_test_run_freq_hz,
+                     (unsigned int)TEST_CNT_TARGET);
+        }
+    } else {
+        snprintf(buffer, sizeof(buffer), "Nx:%02uHz idle    ",
+                 (unsigned int)g_test_next_freq_hz);
+    }
     OLED_ShowString(2, 1, buffer);
-    OLED_ShowString(2, 6, g_pump_running ? "RUN " : "STOP");
 
     Pump_ShowPulseRate(delta_1s);
 
-    level_a = OGM_ReadLevel(OGM_CH_A_PORT, OGM_CH_A_PIN);
-    level_b = OGM_ReadLevel(OGM_CH_B_PORT, OGM_CH_B_PIN);
-    Pump_ShowAbLevels(level_a, level_b);
-
     if (g_comm_ok) {
-        snprintf(buffer, sizeof(buffer), " Set:%02uHz", (unsigned int)g_set_freq_hz);
-        OLED_ShowString(4, 9, buffer);
+        OLED_ShowString(4, 1, "485:OK          ");
     } else {
-        OLED_ShowString(4, 9, " 485:ERR");
+        OLED_ShowString(4, 1, "485:ERR         ");
     }
-
-    /* 按键电平调试：L=按下 H=松开，便于现场确认接线 */
-    OLED_ShowString(3, 13, "K");
-    OLED_ShowString(3, 14, Pump_ButtonPressed(BTN_FREQ_UP_PORT, BTN_FREQ_UP_PIN) ? "0" : "1");
-    OLED_ShowString(3, 15, Pump_ButtonPressed(BTN_FREQ_DOWN_PORT, BTN_FREQ_DOWN_PIN) ? "0" : "1");
-    OLED_ShowString(3, 16, Pump_ButtonPressed(BTN_RUN_STOP_PORT, BTN_RUN_STOP_PIN) ? "0" : "1");
 }
 
 static void Pump_UpdateLed(void)
@@ -767,10 +849,14 @@ static void Pump_InitComm(void)
     LOG_INFO("MAIN", "按键：忙时挂起、空闲补执行；防抖 %ums", (unsigned int)BTN_DEBOUNCE_MS);
     LOG_INFO("MAIN", "请确认 GD200A P00.01=2 P00.02=0 P00.06=8 P00.09=0");
 
+    LOG_INFO("MAIN", "TEST: PA6 start 5~50Hz step5, %u cnt/auto stop",
+             (unsigned int)TEST_CNT_TARGET);
+
     status = Pump_CommPreflight();
     if (status == ModBusRTU_OK) {
         g_comm_ok = 1;
         LOG_INFO("MAIN", "485 通讯预检通过");
+        (void)Pump_EnsureInverterStopped();
     } else {
         g_comm_ok = 0;
         LOG_WARN("MAIN", "485 预检失败: %s，按键仍可用", GetModBusErrorString(status));
@@ -804,10 +890,13 @@ int main(void)
     /* 上电将本地默认频率（25Hz）写入 0x2001，避免 OLED 显示与变频器不一致 */
     if (g_comm_ok) {
         Pump_DelayWithButtons(INVT_WRITE_GAP_MS);
+        g_set_freq_hz = TEST_FREQ_START_HZ;
+        g_test_next_freq_hz = TEST_FREQ_START_HZ;
         if (Pump_ApplyFrequency()) {
-            LOG_INFO("MAIN", "上电已同步设频 %u Hz 至变频器 0x2001", (unsigned int)g_set_freq_hz);
+            LOG_INFO("MAIN", "上电设频 %u Hz（待机，按 PA6 开始首档测试）",
+                     (unsigned int)g_set_freq_hz);
         } else {
-            LOG_WARN("MAIN", "上电同步设频失败，请按键升/降频或启停重试");
+            LOG_WARN("MAIN", "上电设频失败，请检查 485 后按 PA6 重试");
         }
     }
 
@@ -818,9 +907,11 @@ int main(void)
     g_last_ogm_task_tick = g_task_tick;
     g_last_ogm_ui_tick = g_task_tick;
     g_count_snap = g_count;
+    g_last_display_count = OGM_SnapshotCount();
 
-    LOG_INFO("MAIN", "OGM 计数同 NPN02 四边沿互锁，一圈 %u 计数", (unsigned int)OGM_PULSES_PER_REV);
-    LOG_INFO("MAIN", "485 无后台轮询；上电/按键/启停时写 0x2001 设频");
+    LOG_INFO("MAIN", "OGM 四边沿互锁，单圈 %u 脉冲", (unsigned int)OGM_PULSES_PER_REV);
+    LOG_INFO("MAIN", "PA6=测试启动；每档 %u cnt 自动停，下一档须再按 PA6",
+             (unsigned int)TEST_CNT_TARGET);
 
     while (1) {
         while (g_last_ogm_task_tick != g_task_tick) {
@@ -841,6 +932,7 @@ int main(void)
         }
 
         Pump_PollButtons();
+        Pump_CheckTestAutoStop();
 
         {
             uint32_t now_count;

@@ -1,10 +1,10 @@
 /**
  * @file board.h
  * @brief 硬件配置头文件（NPN04_Preset_Pump_SwAlgo2 独立工程专用）
- * @details OGM EXTI 下降沿 A/B 交替互锁 PA0/PA1 + GD200A RS485
+ * @details OGM EXTI 下降沿 A/B 交替互锁 PB6/PB7 + GD200A RS485
  *
  * 硬件连接：
- * - OGM A/B：PA0/PA1（EXTI0/EXTI1 双边沿，与 NPN03 一致便于对照）
+ * - OGM A/B：PB6/PB7（EXTI6/EXTI7 双边沿，与 NPN03/NPN05 同接线）
  * - UART2 RS485：PA2(TX)/PA3(RX)，19200 8E1
  * - UART1 Debug：PA9/PA10，115200 8N1
  * - 按键：PA4 升频 / PA5 降频 / PA6 启停
@@ -23,16 +23,23 @@
 /* ==================== OGM 双通道脉冲引脚（与 NPN03 一致） ==================== */
 
 #ifndef OGM_CH_A_PORT
-#define OGM_CH_A_PORT GPIOA
+#define OGM_CH_A_PORT GPIOB
 #endif
 #ifndef OGM_CH_A_PIN
-#define OGM_CH_A_PIN GPIO_Pin_0
+#define OGM_CH_A_PIN GPIO_Pin_6
 #endif
 #ifndef OGM_CH_B_PORT
-#define OGM_CH_B_PORT GPIOA
+#define OGM_CH_B_PORT GPIOB
 #endif
 #ifndef OGM_CH_B_PIN
-#define OGM_CH_B_PIN GPIO_Pin_1
+#define OGM_CH_B_PIN GPIO_Pin_7
+#endif
+
+#ifndef OGM_EXTI_LINE_A
+#define OGM_EXTI_LINE_A EXTI_LINE_6
+#endif
+#ifndef OGM_EXTI_LINE_B
+#define OGM_EXTI_LINE_B EXTI_LINE_7
 #endif
 
 /* ==================== 按键引脚（上拉输入，按下=低电平） ==================== */
@@ -138,8 +145,8 @@ typedef struct
 } EXTI_Config_t;
 
 #define EXTI_CONFIGS {                                                                                            \
-    {EXTI_LINE_0, GPIOA, GPIO_Pin_0, EXTI_TRIGGER_RISING_FALLING, EXTI_MODE_INTERRUPT, 1},                        \
-    {EXTI_LINE_1, GPIOA, GPIO_Pin_1, EXTI_TRIGGER_RISING_FALLING, EXTI_MODE_INTERRUPT, 1},                        \
+    [EXTI_LINE_6] = {EXTI_LINE_6, GPIOB, GPIO_Pin_6, EXTI_TRIGGER_RISING_FALLING, EXTI_MODE_INTERRUPT, 1},        \
+    [EXTI_LINE_7] = {EXTI_LINE_7, GPIOB, GPIO_Pin_7, EXTI_TRIGGER_RISING_FALLING, EXTI_MODE_INTERRUPT, 1},        \
 }
 
 #endif /* BOARD_H */
