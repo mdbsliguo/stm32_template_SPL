@@ -24,6 +24,7 @@
 #endif
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_usart.h"
+#include "stm32f10x_gpio.h"
 #include "misc.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -247,7 +248,18 @@ UART_Status_t UART_Init(UART_Instance_t instance)
         }
         RCC_APB2PeriphClockCmd(gpio_clock, ENABLE);
     }
-    
+
+#if defined(UART3_USE_PC10_PC11_REMAP) && UART3_USE_PC10_PC11_REMAP
+    if (g_uart_configs[instance].uart_periph == USART3 &&
+        g_uart_configs[instance].tx_port == GPIOC &&
+        g_uart_configs[instance].tx_pin == GPIO_Pin_10 &&
+        g_uart_configs[instance].rx_port == GPIOC &&
+        g_uart_configs[instance].rx_pin == GPIO_Pin_11) {
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+        GPIO_PinRemapConfig(GPIO_PartialRemap_USART3, ENABLE);
+    }
+#endif
+
     /* 配置TX引脚为复用推挽输出 */
     GPIO_InitStructure.GPIO_Pin = g_uart_configs[instance].tx_pin;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;

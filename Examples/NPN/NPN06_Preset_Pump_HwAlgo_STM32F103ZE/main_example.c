@@ -1,13 +1,15 @@
 /**
  * @file main_example.c
- * @brief NPN05 - 预设加油泵（OGM 硬件输入捕获 + GD200A ModBus 控泵）
- * @example Examples/NPN/NPN05_Preset_Pump_HwAlgo/main_example.c
- * @details TIM4 双通道双边沿硬件捕获 + ISR 四边沿互锁（同 NPN03 语义）
+ * @brief NPN06 - 预设加油泵（小精灵 F103ZE，应用逻辑同 NPN05）
+ * @example Examples/NPN/NPN06_Preset_Pump_HwAlgo_STM32F103ZE/main_example.c
+ * @details TIM3 双通道硬件捕获 + ISR 四边沿互锁（语义同 NPN05 / NPN03）
  *
- * 硬件：
- * - OGM A/B：PB6/PB7（TIM4 CH1/CH2）
- * - RS485：PA2/PA3；按键 PA6=测试启动（5~50Hz 每档 2900+73cnt）
- * - OLED：PB8/PB9；LED：PB12；Debug UART1：PA9/PA10
+ * 与 NPN05 差异仅板级（见 board.h）：
+ * - OGM：TIM3 PA6/PA7（NPN05 为 TIM4 PB6/PB7）
+ * - 启动键：PA4（NPN05 为 PA6）
+ * - OLED：硬件 I2C2 PB10/PB11（NPN05 为软 I2C PB8/PB9）
+ * - LED：PC4（NPN05 为 PB12）
+ * - 上电多一步 Board_EarlyInit（释放 JTAG）
  */
 
 #include "stm32f10x.h"
@@ -23,13 +25,14 @@
 #include "led.h"
 #include "gpio.h"
 #include "board.h"
+#include "board_early_init.h"
 #include "ogm_flow_ic.h"
 #include "TIM2_TimeBase.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-/* ==================== 应用参数 ==================== */
+/* ==================== 应用参数（与 NPN05 一致：2900 标准 + 73 软管补偿） ==================== */
 
 #define PULSES_PER_LITER            1000u
 #define OGM_PULSES_PER_REV          8u
@@ -40,7 +43,7 @@
 #define PUMP_FREQ_STEP_HZ           5u
 #define PUMP_FREQ_DEFAULT_HZ        5u
 
-/** 分档自动测试：PA6 每按一次启动一档，达标自动停机，下一档须再按键 */
+/** 分档自动测试：PA4 每按一次启动一档，达标自动停机，下一档须再按键 */
 #define TEST_FREQ_START_HZ          5u
 #define TEST_FREQ_STEP_HZ           5u
 #define TEST_FREQ_MAX_HZ            50u
@@ -632,13 +635,11 @@ static void Pump_CheckTestAutoStop(void)
 
 static void Pump_FreqUp(void)
 {
-    /* 测试模式：频率由 PA6 分档序列控制，升频键无效 */
     (void)0;
 }
 
 static void Pump_FreqDown(void)
 {
-    /* 测试模式：频率由 PA6 分档序列控制，降频键无效 */
     (void)0;
 }
 
@@ -784,10 +785,10 @@ static void Pump_InitComm(void)
         ErrorHandler_Handle(log_status, "LOG");
     }
 
-    LOG_INFO("MAIN", "=== NPN05 Preset Pump HwAlgo ===");
+    LOG_INFO("MAIN", "=== NPN06 Preset Pump F103ZE ===");
     LOG_INFO("MAIN", "UART2: 19200 8E1 Addr=%d", INVT_SLAVE_ADDRESS);
-    LOG_INFO("MAIN", "OGM: TIM4 IC 4-edge lock PB6/PB7");
-    LOG_INFO("MAIN", "TEST: PA6 start 5~50Hz step5, %u cnt/auto stop",
+    LOG_INFO("MAIN", "OGM: TIM3 IC 4-edge lock PA6/PA7");
+    LOG_INFO("MAIN", "TEST: PA4 start 5~50Hz step5, %u cnt/auto stop",
              (unsigned int)TEST_CNT_TARGET);
 
     status = Pump_CommPreflight();
@@ -807,6 +808,10 @@ int main(void)
 {
     error_code_t ogm_ret;
 
+    if (Board_EarlyInit() != ERROR_OK) {
+        while (1) { }
+    }
+
     System_Init();
 
     if (OLED_Init() != OLED_OK) {
@@ -816,7 +821,6 @@ int main(void)
     Pump_InitComm();
     Pump_InitButtons();
 
-    /* 先刷新 OLED，避免 OGM 捕获初始化后长时间黑屏 */
     OLED_Clear();
     g_oled_dirty = 1;
     Pump_RefreshOLED(0);
@@ -832,10 +836,10 @@ int main(void)
         g_set_freq_hz = TEST_FREQ_START_HZ;
         g_test_next_freq_hz = TEST_FREQ_START_HZ;
         if (Pump_ApplyFrequency()) {
-            LOG_INFO("MAIN", "上电设频 %u Hz（待机，按 PA6 开始首档测试）",
+            LOG_INFO("MAIN", "上电设频 %u Hz（待机，按 PA4 开始首档测试）",
                      (unsigned int)g_set_freq_hz);
         } else {
-            LOG_WARN("MAIN", "上电设频失败，请检查 485 后按 PA6 重试");
+            LOG_WARN("MAIN", "上电设频失败，请检查 485 后按 PA4 重试");
         }
     }
 
@@ -847,7 +851,7 @@ int main(void)
     g_count_snap = OGM_GetCount();
     g_last_display_count = g_count_snap;
 
-    LOG_INFO("MAIN", "PA6=测试启动；每档 %u cnt 自动停，下一档须再按 PA6",
+    LOG_INFO("MAIN", "PA4=测试启动；每档 %u cnt 自动停，下一档须再按 PA4",
              (unsigned int)TEST_CNT_TARGET);
 
     while (1) {

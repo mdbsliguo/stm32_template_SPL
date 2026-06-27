@@ -1,13 +1,10 @@
 /**
  * @file main_example.c
- * @brief NPN05 - 预设加油泵（OGM 硬件输入捕获 + GD200A ModBus 控泵）
- * @example Examples/NPN/NPN05_Preset_Pump_HwAlgo/main_example.c
- * @details TIM4 双通道双边沿硬件捕获 + ISR 四边沿互锁（同 NPN03 语义）
+ * @brief NPN07 - 预设加油泵 4L（小精灵 F103ZE）
+ * @example Examples/NPN/NPN07_Preset_Pump_HwAlgo_STM32F103ZE_4L/main_example.c
+ * @details TIM3 双通道硬件捕获 + ISR 四边沿互锁；PA4 启动，加满 4L 自动停
  *
- * 硬件：
- * - OGM A/B：PB6/PB7（TIM4 CH1/CH2）
- * - RS485：PA2/PA3；按键 PA6=测试启动（5~50Hz 每档 2900+73cnt）
- * - OLED：PB8/PB9；LED：PB12；Debug UART1：PA9/PA10
+ * 板级（见 board.h）：OGM TIM3 PA6/PA7、启动键 PA4、硬 I2C2 OLED、LED PC4
  */
 
 #include "stm32f10x.h"
@@ -23,34 +20,22 @@
 #include "led.h"
 #include "gpio.h"
 #include "board.h"
+#include "board_early_init.h"
 #include "ogm_flow_ic.h"
 #include "TIM2_TimeBase.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-/* ==================== 应用参数 ==================== */
+/* ==================== 应用参数（4L 预设：145 脉冲/升 × 4 = 580 cnt） ==================== */
 
-#define PULSES_PER_LITER            1000u
+#define PULSES_PER_LITER            145u
+#define PRESET_LITERS               4u
+#define PRESET_CNT_TARGET           (PULSES_PER_LITER * PRESET_LITERS)
 #define OGM_PULSES_PER_REV          8u
 #define OGM_RATE_WINDOW_MS          1000u
 #define OGM_FLOW_IDLE_MS            2000u
-#define PUMP_FREQ_MIN_HZ            0u
-#define PUMP_FREQ_MAX_HZ            50u
-#define PUMP_FREQ_STEP_HZ           5u
 #define PUMP_FREQ_DEFAULT_HZ        5u
-
-/** 分档自动测试：PA6 每按一次启动一档，达标自动停机，下一档须再按键 */
-#define TEST_FREQ_START_HZ          5u
-#define TEST_FREQ_STEP_HZ           5u
-#define TEST_FREQ_MAX_HZ            50u
-/** 标定标准量（脉冲）；停机目标 = 标准 + 软管补偿 */
-#define TEST_CNT_STANDARD           2900u
-#define TEST_CNT_HOSE_COMP          73u    /**< 软管弹性/残余体积补偿 */
-#define TEST_CNT_TARGET             (TEST_CNT_STANDARD + TEST_CNT_HOSE_COMP)  /* 2973 */
-#define TEST_FREQ_TAIL_HZ           5u
-#define TEST_TAIL_PULSE_STEP        40u
-#define TEST_TAIL_PULSE_BASE        40u
 
 #define INVT_SLAVE_ADDRESS          1
 #define INVT_REG_RUN_CMD            0x2000
@@ -93,9 +78,6 @@ static volatile uint32_t g_count_delta_1s = 0;
 static uint32_t          g_display_delta_1s = 0;
 
 static uint8_t  g_set_freq_hz = PUMP_FREQ_DEFAULT_HZ;
-static uint8_t  g_test_next_freq_hz = TEST_FREQ_START_HZ;
-static uint8_t  g_test_run_freq_hz = TEST_FREQ_START_HZ;
-static uint8_t  g_test_tail_applied = 0u;
 static volatile uint8_t  g_pump_running = 0;
 static uint8_t  g_comm_ok = 0;
 static uint8_t  g_oled_dirty = 1;
@@ -112,8 +94,8 @@ static void Pump_FreqUp(void);
 static void Pump_FreqDown(void);
 static void Pump_ScanButtons(void);
 static uint8_t Pump_ApplyFrequency(void);
-static void Pump_TestStartOnPress(void);
-static void Pump_CheckTestAutoStop(void);
+static void Pump_PresetStartOnPress(void);
+static void Pump_CheckPresetAutoStop(void);
 static uint8_t Pump_Start(void);
 static uint8_t Pump_Stop(void);
 static ModBusRTU_Status_t Pump_CommPreflight(void);
@@ -515,7 +497,7 @@ static void Pump_ScanButtons(void)
         g_btn_pending_run = 0u;
         Pump_ButtonSyncState(up, dn, run);
         Pump_ButtonLockoutBegin(now);
-        Pump_TestStartOnPress();
+        Pump_PresetStartOnPress();
         return;
     }
 
@@ -535,110 +517,61 @@ static void Pump_ScanButtons(void)
     }
     if (edge_run) {
         Pump_ButtonLockoutBegin(now);
-        Pump_TestStartOnPress();
+        Pump_PresetStartOnPress();
     }
 }
 
-static void Pump_TestStartOnPress(void)
+static void Pump_PresetStartOnPress(void)
 {
     if (g_pump_running) {
         return;
     }
     if (!g_comm_ok) {
-        LOG_WARN("TEST", "485 未就绪，无法启动测试");
+        LOG_WARN("PUMP", "485 未就绪，无法启动");
         return;
     }
 
-    if (g_test_next_freq_hz < TEST_FREQ_START_HZ ||
-        g_test_next_freq_hz > TEST_FREQ_MAX_HZ) {
-        g_test_next_freq_hz = TEST_FREQ_START_HZ;
-    }
-
-    g_set_freq_hz = g_test_next_freq_hz;
-    g_test_run_freq_hz = g_test_next_freq_hz;
-    g_test_tail_applied = 0u;
+    g_set_freq_hz = PUMP_FREQ_DEFAULT_HZ;
     g_oled_dirty = 1;
 
     if (!Pump_Start()) {
-        LOG_ERROR("TEST", "启动失败 freq=%u Hz", (unsigned int)g_set_freq_hz);
+        LOG_ERROR("PUMP", "4L 启动失败 freq=%u Hz", (unsigned int)g_set_freq_hz);
         return;
     }
 
-    LOG_INFO("TEST", "档位启动 %u Hz，目标 %u cnt", (unsigned int)g_set_freq_hz,
-             (unsigned int)TEST_CNT_TARGET);
+    LOG_INFO("PUMP", "4L 预设启动 %u Hz，目标 %u cnt (%u/L x %uL)",
+             (unsigned int)g_set_freq_hz,
+             (unsigned int)PRESET_CNT_TARGET,
+             (unsigned int)PULSES_PER_LITER,
+             (unsigned int)PRESET_LITERS);
 }
 
-static uint32_t Pump_TestGetTailPulseCount(uint8_t test_freq_hz)
-{
-    if (test_freq_hz <= TEST_FREQ_TAIL_HZ || test_freq_hz < 10u) {
-        return 0u;
-    }
-    return ((uint32_t)test_freq_hz - 10u) / TEST_FREQ_STEP_HZ * TEST_TAIL_PULSE_STEP + TEST_TAIL_PULSE_BASE;
-}
-
-static uint32_t Pump_TestGetTailSwitchCount(uint8_t test_freq_hz)
-{
-    uint32_t tail;
-
-    tail = Pump_TestGetTailPulseCount(test_freq_hz);
-    if (tail == 0u || tail >= TEST_CNT_TARGET) {
-        return TEST_CNT_TARGET;
-    }
-    return TEST_CNT_TARGET - tail;
-}
-
-static void Pump_CheckTestAutoStop(void)
+static void Pump_CheckPresetAutoStop(void)
 {
     uint32_t cnt;
-    uint32_t switch_at;
 
     if (!g_pump_running) {
         return;
     }
 
     cnt = OGM_GetCount();
-
-    if (!g_test_tail_applied) {
-        switch_at = Pump_TestGetTailSwitchCount(g_test_run_freq_hz);
-        if (switch_at < TEST_CNT_TARGET && cnt >= switch_at) {
-            g_set_freq_hz = TEST_FREQ_TAIL_HZ;
-            if (Pump_ApplyFrequency()) {
-                g_test_tail_applied = 1u;
-                g_oled_dirty = 1;
-                LOG_INFO("TEST", "Cnt>=%lu 尾段改 %u Hz (本档 %u Hz)",
-                         (unsigned long)switch_at,
-                         (unsigned int)TEST_FREQ_TAIL_HZ,
-                         (unsigned int)g_test_run_freq_hz);
-            }
-        }
-    }
-
-    if (cnt < TEST_CNT_TARGET) {
+    if (cnt < PRESET_CNT_TARGET) {
         return;
     }
 
     (void)Pump_Stop();
-
-    g_test_tail_applied = 0u;
-    g_test_next_freq_hz = (uint8_t)(g_test_next_freq_hz + TEST_FREQ_STEP_HZ);
-    if (g_test_next_freq_hz > TEST_FREQ_MAX_HZ) {
-        g_test_next_freq_hz = TEST_FREQ_START_HZ;
-    }
-
     g_oled_dirty = 1;
-    LOG_INFO("TEST", "已达 %u cnt 停机，下次按键启动 %u Hz",
-             (unsigned int)TEST_CNT_TARGET, (unsigned int)g_test_next_freq_hz);
+    LOG_INFO("PUMP", "已达 %u cnt（4L），停机；再按 PA4 可重复",
+             (unsigned int)PRESET_CNT_TARGET);
 }
 
 static void Pump_FreqUp(void)
 {
-    /* 测试模式：频率由 PA6 分档序列控制，升频键无效 */
     (void)0;
 }
 
 static void Pump_FreqDown(void)
 {
-    /* 测试模式：频率由 PA6 分档序列控制，降频键无效 */
     (void)0;
 }
 
@@ -692,19 +625,12 @@ static void Pump_RefreshOLED(uint32_t delta_1s)
     Pump_ShowPulseCount(cnt);
 
     if (g_pump_running) {
-        if (g_test_tail_applied) {
-            snprintf(buffer, sizeof(buffer), "F:%02u>%02u T:%04u",
-                     (unsigned int)g_test_run_freq_hz,
-                     (unsigned int)TEST_FREQ_TAIL_HZ,
-                     (unsigned int)TEST_CNT_TARGET);
-        } else {
-            snprintf(buffer, sizeof(buffer), "F:%02u T:%04u    ",
-                     (unsigned int)g_test_run_freq_hz,
-                     (unsigned int)TEST_CNT_TARGET);
-        }
+        snprintf(buffer, sizeof(buffer), "4L F:%02u T:%04u",
+                 (unsigned int)g_set_freq_hz,
+                 (unsigned int)PRESET_CNT_TARGET);
     } else {
-        snprintf(buffer, sizeof(buffer), "Nx:%02uHz idle    ",
-                 (unsigned int)g_test_next_freq_hz);
+        snprintf(buffer, sizeof(buffer), "PA4:4L %3u/L idle",
+                 (unsigned int)PULSES_PER_LITER);
     }
     OLED_ShowString(2, 1, buffer);
 
@@ -784,11 +710,13 @@ static void Pump_InitComm(void)
         ErrorHandler_Handle(log_status, "LOG");
     }
 
-    LOG_INFO("MAIN", "=== NPN05 Preset Pump HwAlgo ===");
+    LOG_INFO("MAIN", "=== NPN07 Preset Pump 4L F103ZE ===");
     LOG_INFO("MAIN", "UART2: 19200 8E1 Addr=%d", INVT_SLAVE_ADDRESS);
-    LOG_INFO("MAIN", "OGM: TIM4 IC 4-edge lock PB6/PB7");
-    LOG_INFO("MAIN", "TEST: PA6 start 5~50Hz step5, %u cnt/auto stop",
-             (unsigned int)TEST_CNT_TARGET);
+    LOG_INFO("MAIN", "OGM: TIM3 IC 4-edge lock PA6/PA7");
+    LOG_INFO("MAIN", "PA4 start: %uL x %u/L = %u cnt",
+             (unsigned int)PRESET_LITERS,
+             (unsigned int)PULSES_PER_LITER,
+             (unsigned int)PRESET_CNT_TARGET);
 
     status = Pump_CommPreflight();
     if (status == ModBusRTU_OK) {
@@ -807,6 +735,10 @@ int main(void)
 {
     error_code_t ogm_ret;
 
+    if (Board_EarlyInit() != ERROR_OK) {
+        while (1) { }
+    }
+
     System_Init();
 
     if (OLED_Init() != OLED_OK) {
@@ -816,7 +748,6 @@ int main(void)
     Pump_InitComm();
     Pump_InitButtons();
 
-    /* 先刷新 OLED，避免 OGM 捕获初始化后长时间黑屏 */
     OLED_Clear();
     g_oled_dirty = 1;
     Pump_RefreshOLED(0);
@@ -829,13 +760,12 @@ int main(void)
 
     if (g_comm_ok) {
         Pump_DelayWithButtons(INVT_WRITE_GAP_MS);
-        g_set_freq_hz = TEST_FREQ_START_HZ;
-        g_test_next_freq_hz = TEST_FREQ_START_HZ;
+        g_set_freq_hz = PUMP_FREQ_DEFAULT_HZ;
         if (Pump_ApplyFrequency()) {
-            LOG_INFO("MAIN", "上电设频 %u Hz（待机，按 PA6 开始首档测试）",
+            LOG_INFO("MAIN", "上电设频 %u Hz（待机，按 PA4 加 4L）",
                      (unsigned int)g_set_freq_hz);
         } else {
-            LOG_WARN("MAIN", "上电设频失败，请检查 485 后按 PA6 重试");
+            LOG_WARN("MAIN", "上电设频失败，请检查 485 后按 PA4 重试");
         }
     }
 
@@ -847,8 +777,8 @@ int main(void)
     g_count_snap = OGM_GetCount();
     g_last_display_count = g_count_snap;
 
-    LOG_INFO("MAIN", "PA6=测试启动；每档 %u cnt 自动停，下一档须再按 PA6",
-             (unsigned int)TEST_CNT_TARGET);
+    LOG_INFO("MAIN", "PA4=启动 4L；%u cnt 自动停，可重复按键",
+             (unsigned int)PRESET_CNT_TARGET);
 
     while (1) {
         while (g_last_ogm_task_tick != g_task_tick) {
@@ -868,7 +798,7 @@ int main(void)
         }
 
         Pump_PollButtons();
-        Pump_CheckTestAutoStop();
+        Pump_CheckPresetAutoStop();
 
         {
             uint32_t now_count;
