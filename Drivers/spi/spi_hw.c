@@ -70,11 +70,13 @@ __attribute__((unused)) static uint32_t SPI_GetPeriphClock(SPI_TypeDef *spi_peri
  * @param[in] sck_pin SCK引脚号
  * @return SPI_Status_t 错误码
  */
-__attribute__((unused)) static SPI_Status_t SPI_ConfigRemap(SPI_TypeDef *spi_periph, GPIO_TypeDef *sck_port, uint16_t sck_pin)
+static SPI_Status_t SPI_ConfigRemap(SPI_TypeDef *spi_periph, GPIO_TypeDef *sck_port, uint16_t sck_pin)
 {
-    (void)spi_periph;
-    (void)sck_port;
-    (void)sck_pin;
+    if (spi_periph == SPI1 && sck_port == GPIOB && sck_pin == GPIO_Pin_3)
+    {
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+        GPIO_PinRemapConfig(GPIO_Remap_SPI1, ENABLE);
+    }
     return SPI_OK;
 }
 
@@ -166,6 +168,12 @@ SPI_Status_t SPI_HW_Init(SPI_Instance_t instance)
     
     /* 1.5. 复位SPI外设（清除之前的状态） */
     SPI_I2S_DeInit(config->spi_periph);
+
+    /* 1.6. SPI引脚重映射（如SPI1重映射到PB3/PB4/PB5） */
+    if (SPI_ConfigRemap(config->spi_periph, config->sck_port, config->sck_pin) != SPI_OK)
+    {
+        return SPI_ERROR_GPIO_FAILED;
+    }
     
     /* 2. 使能GPIO时钟并配置GPIO引脚为复用功能 */
     /* SCK引脚：复用推挽输出 */

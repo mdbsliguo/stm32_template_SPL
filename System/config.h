@@ -52,6 +52,7 @@
 #define CONFIG_MODULE_BTS7960_ENABLED 1   /**< BTS7960模块开关（大电流H桥电机驱动） */
 #define CONFIG_MODULE_W25Q_ENABLED   1   /**< W25Q模块开关（SPI Flash驱动） */
 #define CONFIG_MODULE_TF_SPI_ENABLED 1   /**< TF_SPI模块开关（TF卡SPI驱动） */
+#define CONFIG_MODULE_W5500_ENABLED  1   /**< W5500以太网模块开关 */
 
 /* 中间件层模块 */
 #define CONFIG_MODULE_FATFS_ENABLED       1   /**< FatFS文件系统模块开关 */

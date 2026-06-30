@@ -185,6 +185,34 @@ typedef struct
 #define TF_SPI_SPI_INSTANCE SPI_INSTANCE_1  /**< TF_SPI使用的SPI实例，默认SPI1 */
 #endif
 
+/* ==================== W5500以太网配置 ==================== */
+
+/**
+ * @brief W5500硬件配置结构体
+ * @note spi_instance: 0=SPI1, 1=SPI2, 2=SPI3（对应SPI_INSTANCE_x）
+ */
+typedef struct
+{
+    uint8_t spi_instance;       /**< SPI实例索引 */
+    GPIO_TypeDef *cs_port;      /**< CS引脚端口 */
+    uint16_t cs_pin;            /**< CS引脚号 */
+    GPIO_TypeDef *rst_port;     /**< RST引脚端口 */
+    uint16_t rst_pin;           /**< RST引脚号 */
+    GPIO_TypeDef *int_port;     /**< INT引脚端口（轮询模式预留） */
+    uint16_t int_pin;           /**< INT引脚号 */
+    uint8_t enabled;            /**< 使能标志：1=启用，0=禁用 */
+} W5500_Config_t;
+
+/* W5500默认配置：SPI1，PA4(CS)，PC15(RST)，PC14(INT) */
+#define W5500_CONFIG                                                                                       \
+    {                                                                                                      \
+        0, GPIOA, GPIO_Pin_4, GPIOC, GPIO_Pin_15, GPIOC, GPIO_Pin_14, 1                                    \
+    }
+
+#ifndef W5500_SPI_INSTANCE
+#define W5500_SPI_INSTANCE 0  /**< W5500使用的SPI实例索引，默认SPI1 */
+#endif
+
 /* ==================== UART配置 ==================== */
 
 /* UART配置结构体 */

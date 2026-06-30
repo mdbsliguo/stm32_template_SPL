@@ -20,6 +20,7 @@
 | [DMA传输](dma/) | DMA驱动 | ✅ 已实现 |
 | [系统外设](peripheral/) | EXTI、NVIC、RTC、WWDG、BKP、PWR、FLASH、CRC、DBGMCU、SDIO、FSMC、CEC驱动 | ✅ 已实现（EXTI、NVIC、RTC、WWDG、BKP、PWR、FLASH、CRC、DBGMCU、SDIO、FSMC、CEC） |
 | [USB设备](usb/) | USB 2.0全速设备接口 | ✅ 基础框架（需扩展协议栈） |
+| [网络驱动](network/) | W5500以太网控制器（SPI） | ✅ 已实现 |
 
 ---
 
