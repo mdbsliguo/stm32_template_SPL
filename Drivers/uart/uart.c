@@ -30,6 +30,26 @@
 #include <stddef.h>
 #include <string.h>
 
+__weak void UART_PollHook(void)
+{
+}
+
+static volatile uint8_t s_uart_abort_req;
+
+void UART_RequestAbort(void)
+{
+    s_uart_abort_req = 1u;
+}
+
+static uint8_t uart_take_abort(void)
+{
+    if (s_uart_abort_req != 0u) {
+        s_uart_abort_req = 0u;
+        return 1u;
+    }
+    return 0u;
+}
+
 /* 从board.h加载配置 */
 static UART_Config_t g_uart_configs[UART_INSTANCE_MAX] = UART_CONFIGS;
 
@@ -141,6 +161,10 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
     
     while (USART_GetFlagStatus(uart_periph, flag) == RESET)
     {
+        if (uart_take_abort()) {
+            return UART_ERROR_TIMEOUT;
+        }
+
         /* 检查超时（使用Delay_GetElapsed处理溢出） */
         uint32_t elapsed = Delay_GetElapsed(Delay_GetTick(), start_tick);
         if (elapsed > timeout_ms)
@@ -187,6 +211,8 @@ static UART_Status_t UART_WaitFlag(USART_TypeDef *uart_periph, uint16_t flag, ui
             (void)USART_ReceiveData(uart_periph);
             return UART_ERROR_PE;
         }
+
+        UART_PollHook();
     }
     
     return UART_OK;
@@ -615,6 +641,11 @@ UART_Status_t UART_ReceiveRtuFrame(UART_Instance_t instance, uint8_t *data, uint
     wait_start_tick = Delay_GetTick();
 
     while (count < max_len) {
+        if (uart_take_abort()) {
+            *out_len = count;
+            return UART_ERROR_TIMEOUT;
+        }
+
         uint16_t sr = uart_periph->SR;
 
         if ((sr & USART_FLAG_RXNE) != RESET) {
@@ -647,8 +678,11 @@ UART_Status_t UART_ReceiveRtuFrame(UART_Instance_t instance, uint8_t *data, uint
                 *out_len = 0;
                 return UART_ERROR_TIMEOUT;
             }
+            UART_PollHook();
         } else if (Delay_GetElapsed(Delay_GetTick(), last_rx_tick) >= inter_byte_gap_ms) {
             break;
+        } else {
+            UART_PollHook();
         }
     }
 
@@ -729,6 +763,40 @@ UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t
     /* 读取数据 */
     *byte = (uint8_t)USART_ReceiveData(uart_periph);
     
+    return UART_OK;
+}
+
+/**
+ * @brief UART 非阻塞收 1 字节
+ */
+UART_Status_t UART_TryReceiveByte(UART_Instance_t instance, uint8_t *byte)
+{
+    USART_TypeDef *uart_periph;
+    uint16_t sr;
+
+    if (instance >= UART_INSTANCE_MAX) {
+        return UART_ERROR_INVALID_INSTANCE;
+    }
+    if (byte == NULL) {
+        return UART_ERROR_NULL_PTR;
+    }
+    if (!g_uart_initialized[instance]) {
+        return UART_ERROR_NOT_INITIALIZED;
+    }
+
+    uart_periph = g_uart_configs[instance].uart_periph;
+    sr = uart_periph->SR;
+
+    if ((sr & USART_FLAG_ORE) != RESET) {
+        (void)USART_ReceiveData(uart_periph);
+        return UART_ERROR_ORE;
+    }
+
+    if ((sr & USART_FLAG_RXNE) == RESET) {
+        return UART_ERROR_TIMEOUT;
+    }
+
+    *byte = (uint8_t)USART_ReceiveData(uart_periph);
     return UART_OK;
 }
 

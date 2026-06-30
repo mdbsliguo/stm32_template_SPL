@@ -26,6 +26,8 @@ typedef enum {
     RTC_ERROR_BUSY = ERROR_BASE_RTC - 4,                 /**< RTC忙 */
     RTC_ERROR_TIMEOUT = ERROR_BASE_RTC - 5,              /**< 操作超时 */
     RTC_ERROR_ALREADY_INITIALIZED = ERROR_BASE_RTC - 6,  /**< 已初始化 */
+    RTC_ERROR_NOT_IMPLEMENTED = ERROR_BASE_RTC - 7,    /**< 功能未实现 */
+    RTC_ERROR_LSE_FAILED = ERROR_BASE_RTC - 8,         /**< LSE 起振失败 */
 } RTC_Status_t;
 
 /**
@@ -85,18 +87,14 @@ RTC_Status_t RTC_SetTime(const RTC_Time_t *time);
 RTC_Status_t RTC_GetTime(RTC_Time_t *time);
 
 /**
- * @brief 设置RTC闹钟
- * @param[in] time 闹钟时间结构体指针
- * @return RTC_Status_t 状态码
+ * @brief 设置 RTC 闹钟时间（高层接口）
  */
-RTC_Status_t RTC_SetAlarm(const RTC_Time_t *time);
+RTC_Status_t RTC_SetAlarmTime(const RTC_Time_t *time);
 
 /**
- * @brief 获取RTC闹钟时间
- * @param[out] time 闹钟时间结构体指针
- * @return RTC_Status_t 状态码
+ * @brief 获取 RTC 闹钟时间
  */
-RTC_Status_t RTC_GetAlarm(RTC_Time_t *time);
+RTC_Status_t RTC_GetAlarmTime(RTC_Time_t *time);
 
 /**
  * @brief 使能RTC闹钟
@@ -160,6 +158,19 @@ uint32_t RTC_GetCounterValue(void);
  * @return RTC_Status_t 状态码
  */
 RTC_Status_t RTC_SetCounterValue(uint32_t counter);
+
+/**
+ * @brief 获取当前 RTC 实际时钟源（初始化后有效）
+ */
+RTC_ClockSource_t RTC_GetActiveClockSource(void);
+
+uint16_t RTC_ReadBackupData(uint16_t bkp_dr);
+RTC_Status_t RTC_WriteBackupData(uint16_t bkp_dr, uint16_t data);
+
+/**
+ * @brief RTC 中断处理（由 stm32f10x_it.c 的 RTC_IRQHandler 调用）
+ */
+void RTC_ProcessIRQ(void);
 
 /* ========== RTC校准功能 ========== */
 

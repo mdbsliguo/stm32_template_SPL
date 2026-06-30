@@ -113,7 +113,7 @@ static const w25q_model_info_t w25q_model_table[] = {
     {W25Q_MODEL_W25Q32,  4,  3, 0},  /* W25Q32: 4MB, 3字节地址 */
     {W25Q_MODEL_W25Q64,  8,  3, 0},  /* W25Q64: 8MB, 3字节地址 */
     {W25Q_MODEL_GD25Q64, 8,  3, 0},  /* GD25Q64: 8MB, 3字节地址（兼容W25Q64） */
-    {W25Q_MODEL_W25Q128, 16, 4, 1},  /* W25Q128: 16MB, 4字节地址，需要4字节模式 */
+    {W25Q_MODEL_W25Q128, 16, 3, 0},  /* W25Q128: 16MB 可用 24 位地址，默认 3 字节模式 */
     {W25Q_MODEL_W25Q256, 32, 4, 1},  /* W25Q256: 32MB, 4字节地址，需要4字节模式 */
 };
 
@@ -305,6 +305,30 @@ static W25Q_Status_t w25q_write_enable(void)
 }
 
 /**
+ * @brief 退出4字节模式（回到上电默认 3 字节寻址）
+ */
+static W25Q_Status_t w25q_exit_4byte_mode(void)
+{
+    SPI_Instance_t spi_instance = W25Q_SPI_INSTANCE;
+    SPI_Status_t spi_status;
+
+    SPI_NSS_Low(spi_instance);
+
+    spi_status = SPI_MasterTransmitByte(spi_instance, W25Q_CMD_EXIT_4BYTE_MODE, 100);
+
+    SPI_NSS_High(spi_instance);
+
+    if (spi_status != SPI_OK)
+    {
+        return W25Q_ERROR_4BYTE_MODE_FAIL;
+    }
+
+    Delay_us(10);
+
+    return W25Q_OK;
+}
+
+/**
  * @brief 进入4字节模式
  * @return W25Q_Status_t 错误码
  */
@@ -463,8 +487,8 @@ W25Q_Status_t W25Q_Init(void)
         g_w25q_device.manufacturer_id = manufacturer_id;
         g_w25q_device.device_id = (memory_type << 8) | capacity_id;
         g_w25q_device.capacity_mb = 16;
-        g_w25q_device.addr_bytes = 4;
-        g_w25q_device.is_4byte_mode = 1;
+        g_w25q_device.addr_bytes = 3;
+        g_w25q_device.is_4byte_mode = 0;
     #elif W25Q_FIXED_MODEL == W25Q_MODEL_W25Q32
         g_w25q_device.manufacturer_id = manufacturer_id;
         g_w25q_device.device_id = (memory_type << 8) | capacity_id;
@@ -514,7 +538,7 @@ W25Q_Status_t W25Q_Init(void)
     g_w25q_device.is_4byte_mode = model_info->need_4byte_mode;
 #endif
     
-    /* 对于≥128Mb芯片，进入4字节模式 */
+    /* 4 字节模式：仅 W25Q256 等超过 24 位寻址范围的芯片需要 */
     if (g_w25q_device.is_4byte_mode)
     {
         w25q_status = w25q_enter_4byte_mode();
@@ -523,7 +547,7 @@ W25Q_Status_t W25Q_Init(void)
             g_w25q_device.state = W25Q_STATE_UNINITIALIZED;
             return W25Q_ERROR_4BYTE_MODE_FAIL;
         }
-        
+
         /* 再次验证4字节模式 */
         w25q_status = w25q_read_status_reg3(&status_reg3);
         if (w25q_status != W25Q_OK)
@@ -531,8 +555,18 @@ W25Q_Status_t W25Q_Init(void)
             g_w25q_device.state = W25Q_STATE_UNINITIALIZED;
             return W25Q_ERROR_4BYTE_MODE_FAIL;
         }
-        
+
         if ((status_reg3 & W25Q_STATUS_REG3_ADDR_MOD) == 0)
+        {
+            g_w25q_device.state = W25Q_STATE_UNINITIALIZED;
+            return W25Q_ERROR_4BYTE_MODE_FAIL;
+        }
+    }
+    else if (g_w25q_device.capacity_mb >= 16)
+    {
+        /* W25Q128：退出可能由旧固件残留的 4 字节模式，统一用 0x03/0x02/0x20 */
+        w25q_status = w25q_exit_4byte_mode();
+        if (w25q_status != W25Q_OK)
         {
             g_w25q_device.state = W25Q_STATE_UNINITIALIZED;
             return W25Q_ERROR_4BYTE_MODE_FAIL;
@@ -1004,27 +1038,42 @@ W25Q_Status_t W25Q_EraseSector(uint32_t addr)
     }
     
     SPI_NSS_High(spi_instance);
-    
-    /* 动态超时补偿：Gb级芯片使用更长超时时间 */
+
+    /* 动态超时：扇区擦除典型 45ms，最大 400ms（W25Q128JV） */
     sector_idx = addr / W25Q_SECTOR_SIZE;
-    timeout_ms = 100;  /* 基础超时100ms */
+    timeout_ms = 100;
     if (g_w25q_device.capacity_mb >= 16)
     {
-        /* Gb级芯片：timeout = sector_idx * 2ms + 100ms */
-        timeout_ms = sector_idx * 2 + 100;
-        if (timeout_ms > 200)
+        timeout_ms = sector_idx * 2u + 100u;
+        if (timeout_ms < 500u)
         {
-            timeout_ms = 200;  /* 最大200ms */
+            timeout_ms = 500u;
         }
     }
-    
+
     /* 等待擦除完成 */
-    w25q_status = W25Q_WaitReady(timeout_ms);
-    if (w25q_status != W25Q_OK)
     {
-        return w25q_status;
+        uint32_t erase_start = Delay_GetTick();
+
+        w25q_status = W25Q_WaitReady(timeout_ms);
+        if (w25q_status != W25Q_OK)
+        {
+            return w25q_status;
+        }
+
+        {
+            uint32_t erase_ms = Delay_GetElapsed(Delay_GetTick(), erase_start);
+
+            if (erase_ms < 2u)
+            {
+#if CONFIG_MODULE_LOG_ENABLED
+                LOG_WARN("W25Q", "Sector erase %lu ms (ignored? check WP#)", (unsigned long)erase_ms);
+#endif
+                return W25Q_ERROR_TIMEOUT;
+            }
+        }
     }
-    
+
     return W25Q_OK;
 }
 
@@ -1084,6 +1133,19 @@ W25Q_Status_t W25Q_EraseChip(void)
     }
     
     return W25Q_OK;
+}
+
+/**
+ * @brief 读取状态寄存器1（对外接口）
+ */
+W25Q_Status_t W25Q_ReadStatusReg1(uint8_t *status)
+{
+    if (g_w25q_device.state != W25Q_STATE_INITIALIZED)
+    {
+        return W25Q_ERROR_NOT_INIT;
+    }
+
+    return w25q_read_status_reg1(status);
 }
 
 #endif /* CONFIG_MODULE_SPI_ENABLED */

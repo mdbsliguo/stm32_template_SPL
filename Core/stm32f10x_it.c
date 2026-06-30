@@ -65,6 +65,11 @@
 #include "ogm_flow_ic.h"
 #endif
 
+#if defined(CONFIG_MODULE_FUEL_APP_ENABLED) && CONFIG_MODULE_FUEL_APP_ENABLED
+#include "fuel_key.h"
+#include "stm32f10x_exti.h"
+#endif
+
 /** @addtogroup STM32F10x_StdPeriph_Template
  * @{
  */
@@ -436,7 +441,21 @@ void TIM4_IRQHandler(void)
 
 /* ==================== EXTI外部中断处理 ==================== */
 
-#if defined(CONFIG_MODULE_EXTI_ENABLED) && CONFIG_MODULE_EXTI_ENABLED
+#if defined(CONFIG_MODULE_FUEL_APP_ENABLED) && CONFIG_MODULE_FUEL_APP_ENABLED
+
+void EXTI4_IRQHandler(void)
+{
+    FuelKey_EXTI_IRQHandler(4u);
+}
+
+void EXTI9_5_IRQHandler(void)
+{
+    if (EXTI_GetITStatus(EXTI_Line5) != RESET) {
+        FuelKey_EXTI_IRQHandler(5u);
+    }
+}
+
+#elif defined(CONFIG_MODULE_EXTI_ENABLED) && CONFIG_MODULE_EXTI_ENABLED
 #include "exti.h"
 #include "stm32f10x_exti.h"
 
@@ -643,6 +662,15 @@ void USART3_IRQHandler(void)
 
 #endif /* UART_H */
 #endif /* CONFIG_MODULE_UART_ENABLED */
+
+#if defined(CONFIG_MODULE_RTC_ENABLED) && CONFIG_MODULE_RTC_ENABLED
+#include "rtc.h"
+
+void RTC_IRQHandler(void)
+{
+    RTC_ProcessIRQ();
+}
+#endif /* CONFIG_MODULE_RTC_ENABLED */
 
 /* ==================== DMA中断服务程序 ==================== */
 

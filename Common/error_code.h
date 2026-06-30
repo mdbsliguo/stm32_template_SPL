@@ -75,6 +75,9 @@ typedef int32_t error_code_t;
 #define ERROR_BASE_FS_WRAPPER -4000        /**< FS_WRAPPER模块错误码基值 */
 #define ERROR_BASE_MODBUS_RTU -4100        /**< ModBusRTU模块错误码基值 */
 #define ERROR_BASE_BTS7960 -4200            /**< BTS7960模块错误码基值 */
+#define ERROR_BASE_LITER_RING -4300         /**< LITER_RING模块错误码基值 */
+#define ERROR_BASE_STORAGE_GUARD -4400      /**< STORAGE_GUARD模块错误码基值 */
+#define ERROR_BASE_FUEL -4500               /**< FUEL加油应用模块错误码基值 */
 /** @} */
 
 #endif /* ERROR_CODE_H */

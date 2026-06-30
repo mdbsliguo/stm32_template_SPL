@@ -165,7 +165,7 @@ static error_code_t OLED_HardI2C_Transmit(uint8_t slave_addr, const uint8_t *dat
     I2C_Status_t status;
     I2C_Instance_t instance = (I2C_Instance_t)OLED_I2C_HARD_INSTANCE;
     
-    status = I2C_MasterTransmit(instance, slave_addr, data, length, 1000);
+    status = I2C_MasterTransmit(instance, slave_addr, data, length, 80u);
     
     if (status == I2C_OK)
     {
@@ -347,10 +347,7 @@ static OLED_Status_t OLED_InitSequence(void)
     OLED_WriteCommand(0x14);  /* 0x14=启用，0x10=禁用 */
     
     OLED_WriteCommand(0xAF);  /* 开启显示 */
-    
-    /* 清屏（失败不影响初始化成功） */
-    (void)OLED_Clear();
-    
+
     return OLED_OK;
 }
 
@@ -362,19 +359,14 @@ static OLED_Status_t OLED_InitSequence(void)
  */
 OLED_Status_t OLED_Init(void)
 {
-    uint32_t i, j;
-    
     /* 防止重复初始化 */
     if (g_oled_initialized)
     {
         return OLED_OK;
     }
-    
-    /* 上电延时（约1秒，使用空循环，保持用户代码的延时方式） */
-    for (i = 0; i < 1000; i++)
-    {
-        for (j = 0; j < 1000; j++);
-    }
+
+    /* SSD1306 上电稳定（原空循环随主频变化可达数秒，改用毫秒延时） */
+    Delay_ms(80);
     
     /* 根据配置选择I2C接口 */
     if (OLED_I2C_TYPE == OLED_I2C_TYPE_SOFTWARE)

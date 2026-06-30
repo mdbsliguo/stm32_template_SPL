@@ -140,6 +140,13 @@ W25Q_Status_t W25Q_EraseChip(void);
  */
 W25Q_Status_t W25Q_WaitReady(uint32_t timeout_ms);
 
+/**
+ * @brief ¶ÁÈ¡×´Ì¬¼Ä´æÆ÷1£¨BUSY/WEL/BP£©
+ * @param[out] status ×´Ì¬¼Ä´æÆ÷Öµ
+ * @return W25Q_Status_t ´íÎóÂë
+ */
+W25Q_Status_t W25Q_ReadStatusReg1(uint8_t *status);
+
 #endif /* CONFIG_MODULE_W25Q_ENABLED */
 #endif /* CONFIG_MODULE_W25Q_ENABLED */
 

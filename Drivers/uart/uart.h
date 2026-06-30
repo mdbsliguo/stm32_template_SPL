@@ -126,6 +126,11 @@ UART_Status_t UART_TransmitByte(UART_Instance_t instance, uint8_t byte, uint32_t
 UART_Status_t UART_ReceiveByte(UART_Instance_t instance, uint8_t *byte, uint32_t timeout);
 
 /**
+ * @brief UART 非阻塞收 1 字节（无数据立即返回 UART_ERROR_TIMEOUT）
+ */
+UART_Status_t UART_TryReceiveByte(UART_Instance_t instance, uint8_t *byte);
+
+/**
  * @brief UART发送字符串（阻塞式）
  * @param[in] instance UART实例索引
  * @param[in] str 要发送的字符串（以'\0'结尾）
@@ -530,6 +535,17 @@ UART_Status_t UART_EnableOverSampling8(UART_Instance_t instance);
  * @return UART_Status_t 错误码
  */
 UART_Status_t UART_DisableOverSampling8(UART_Instance_t instance);
+
+/**
+ * @brief 阻塞收发等待期间弱回调（按键等在 ModBus 轮询中响应）
+ * @note 默认空实现；fuel 等模块可重载
+ */
+void UART_PollHook(void);
+
+/**
+ * @brief 请求中止当前阻塞收发（如用户按暂停键）
+ */
+void UART_RequestAbort(void);
 
 #ifdef __cplusplus
 }
