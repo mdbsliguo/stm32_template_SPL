@@ -80,6 +80,7 @@ typedef int32_t error_code_t;
 #define ERROR_BASE_FUEL -4500               /**< FUEL加油应用模块错误码基值 */
 #define ERROR_BASE_W5500 -4600              /**< W5500以太网模块错误码基值 */
 #define ERROR_BASE_MQTT_CLIENT -4700        /**< MQTT客户端模块错误码基值 */
+#define ERROR_BASE_PAHO_MQTT_CLIENT -4800   /**< Paho MQTT客户端模块错误码基值 */
 /** @} */
 
 #endif /* ERROR_CODE_H */

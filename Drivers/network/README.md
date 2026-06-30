@@ -296,6 +296,7 @@ sequenceDiagram
 | Net03 EXTI Client | `Examples/Net/Net03_W5500_Client/` | TCP Client 自动重连 |
 | Net04 UDP | `Examples/Net/Net04_W5500_UDP/` | UDP 收发回显 |
 | Net05 MQTT | `Examples/Net/Net05_W5500_MQTT_C/` | MQTT-C 客户端 |
+| Net06 Paho MQTT | `Examples/Net/Net06_W5500_Paho_Embedded_C/` | Paho Embedded C |
 
 ---
 
