@@ -381,14 +381,14 @@ EXTI_Status_t EXTI_Enable(EXTI_Line_t line)
     }
     else if (line == EXTI_LINE_19)
     {
-        /* EXTI19 (Ethernet Wakeup) 有独立的中断向量，仅在HD/XL型号上可用 */
-        #if defined(STM32F10X_HD) || defined(STM32F10X_XL) || defined(STM32F10X_HD_VL)
+        /* EXTI19 (Ethernet Wakeup)：仅 Connectivity Line 定义 ETH_WKUP_IRQn */
+#ifdef ETH_WKUP_IRQn
         NVIC_InitStructure.NVIC_IRQChannel = ETH_WKUP_IRQn;
         NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
         NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
-        #endif
+#endif
     }
     
     return EXTI_OK;

@@ -28,6 +28,7 @@
 #define W5500_IR_MP          0x10U
 
 #define W5500_IMR          0x0016U
+#define W5500_SIMR         0x0018U
 #define W5500_SIR          0x0017U
 #define W5500_S0_INT         0x01U
 
@@ -65,6 +66,7 @@
 #define W5500_SOCK_INIT        0x13U
 #define W5500_SOCK_LISTEN      0x14U
 #define W5500_SOCK_ESTABLISHED 0x17U
+#define W5500_SOCK_CLOSE_WAIT  0x1CU
 #define W5500_SOCK_UDP         0x22U
 
 #define W5500_Sn_PORT        0x0004U
@@ -78,6 +80,7 @@
 #define W5500_Sn_TX_WR       0x0024U
 #define W5500_Sn_RX_RSR      0x0026U
 #define W5500_Sn_RX_RD       0x0028U
+#define W5500_Sn_IMR         0x002cU
 
 /* ==================== SPI¿ØÖÆ×Ö½Ú ==================== */
 

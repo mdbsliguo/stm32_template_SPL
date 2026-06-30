@@ -23,6 +23,8 @@
 #define W5500_RESET_WAIT_MS     200U
 #define W5500_LINK_TIMEOUT_MS   5000U
 #define W5500_SOCKET_DELAY_MS   5U
+#define W5500_CLOSE_RETRY_MAX     20U
+#define W5500_EVENT_DRAIN_MAX     8U
 #define W5500_GATEWAY_PROBE_MS  5U
 
 static const W5500_Config_t g_w5500_cfg = W5500_CONFIG;
@@ -391,6 +393,56 @@ static W5500_Status_t w5500_socket_reinit(W5500_Socket_t socket)
     return w5500_write_sock_4byte(socket, W5500_Sn_DIPR, g_socket_cfg[socket].dest_ip);
 }
 
+/**
+ * @brief 强制关闭 Socket 并等待进入 CLOSED，再恢复端口等配置
+ */
+static W5500_Status_t w5500_socket_force_close(W5500_Socket_t socket)
+{
+    W5500_Status_t st;
+    uint8_t sr = 0U;
+    uint8_t retry;
+
+    if (socket != W5500_SOCKET_0)
+    {
+        return W5500_ERROR_NOT_IMPLEMENTED;
+    }
+
+    st = w5500_read_sock_1byte(socket, W5500_Sn_SR, &sr);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    if (sr == W5500_SOCK_CLOSED)
+    {
+        return w5500_socket_reinit(socket);
+    }
+
+    st = w5500_write_sock_1byte(socket, W5500_Sn_CR, W5500_Sn_CR_CLOSE);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    for (retry = 0U; retry < W5500_CLOSE_RETRY_MAX; retry++)
+    {
+        Delay_ms(1U);
+        st = w5500_read_sock_1byte(socket, W5500_Sn_SR, &sr);
+        if (st != W5500_OK)
+        {
+            return st;
+        }
+        if (sr == W5500_SOCK_CLOSED)
+        {
+            break;
+        }
+    }
+    if (sr != W5500_SOCK_CLOSED)
+    {
+        return W5500_ERROR_SOCKET;
+    }
+    return w5500_socket_reinit(socket);
+}
+
 /* ==================== 公共API ==================== */
 
 W5500_Status_t W5500_Init(void)
@@ -415,6 +467,13 @@ W5500_Status_t W5500_Init(void)
         return W5500_ERROR_INIT_FAILED;
     }
     GPIO_SetPin(g_w5500_cfg.cs_port, g_w5500_cfg.cs_pin);
+    if (g_w5500_cfg.int_port != NULL && g_w5500_cfg.int_pin != 0U)
+    {
+        if (GPIO_Config(g_w5500_cfg.int_port, g_w5500_cfg.int_pin, GPIO_MODE_INPUT_PULLUP, GPIO_SPEED_50MHz) != GPIO_OK)
+        {
+            return W5500_ERROR_INIT_FAILED;
+        }
+    }
     if (g_w5500_cfg.rst_port != NULL && g_w5500_cfg.rst_pin != 0U)
     {
         if (GPIO_Config(g_w5500_cfg.rst_port, g_w5500_cfg.rst_pin, GPIO_MODE_OUTPUT_PP, GPIO_SPEED_10MHz) != GPIO_OK)
@@ -709,6 +768,54 @@ W5500_Status_t W5500_ReadVersion(uint8_t *version)
     return w5500_read_common_1byte(W5500_VERR, version);
 }
 
+W5500_Status_t W5500_EnableChipInterrupt(void)
+{
+    W5500_Status_t st;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    /* IMR=0：取消屏蔽通用中断；SIMR bit0：使能 Socket0 中断 */
+    st = w5500_write_common_1byte(W5500_IMR, 0x00U);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    st = w5500_write_common_1byte(W5500_SIMR, W5500_S0_INT);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    /* Sn_IMR=0：仅 Socket0 使能全部 Socket 中断 */
+    return w5500_write_sock_1byte(W5500_SOCKET_0, W5500_Sn_IMR, 0x00U);
+}
+
+W5500_Status_t W5500_ConfigureIntPin(void)
+{
+    W5500_Status_t st;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    if (g_w5500_cfg.int_port == NULL || g_w5500_cfg.int_pin == 0U)
+    {
+        return W5500_OK;
+    }
+    /* EXTI 初始化会把引脚配成浮空输入，W5500 INTn 开漏需上拉 */
+    if (GPIO_Config(g_w5500_cfg.int_port, g_w5500_cfg.int_pin,
+                    GPIO_MODE_INPUT_PULLUP, GPIO_SPEED_50MHz) != GPIO_OK)
+    {
+        return W5500_ERROR_INIT_FAILED;
+    }
+    return W5500_OK;
+}
+
 W5500_Status_t W5500_SocketInit(W5500_Socket_t socket, const W5500_SocketConfig_t *config)
 {
     W5500_Status_t st;
@@ -799,6 +906,20 @@ W5500_Status_t W5500_SocketListen(W5500_Socket_t socket)
     if (socket != W5500_SOCKET_0)
     {
         return W5500_ERROR_NOT_IMPLEMENTED;
+    }
+
+    st = w5500_read_sock_1byte(socket, W5500_Sn_SR, &sr);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    if ((sr != W5500_SOCK_CLOSED) && (sr != W5500_SOCK_INIT))
+    {
+        st = w5500_socket_force_close(socket);
+        if (st != W5500_OK)
+        {
+            return st;
+        }
     }
 
     st = w5500_write_sock_1byte(socket, W5500_Sn_MR, W5500_Sn_MR_TCP);
@@ -1165,12 +1286,15 @@ static void w5500_sync_socket_state(W5500_Socket_t socket)
     {
         g_socket_status[socket].flags = W5500_SOCK_FLAG_INIT;
     }
+    else if (sr == W5500_SOCK_CLOSE_WAIT)
+    {
+        g_socket_status[socket].flags = 0U;
+        g_socket_status[socket].events = 0U;
+    }
     else if (sr == W5500_SOCK_CLOSED)
     {
-        if ((g_socket_status[socket].flags & W5500_SOCK_FLAG_CONN) != 0U)
-        {
-            g_socket_status[socket].flags &= (uint8_t)(~W5500_SOCK_FLAG_CONN);
-        }
+        g_socket_status[socket].flags = 0U;
+        g_socket_status[socket].events = 0U;
     }
 }
 
@@ -1179,8 +1303,16 @@ W5500_Status_t W5500_InterruptProcess(void)
     W5500_Status_t st;
     uint8_t sir;
     uint8_t sock_ir;
+    uint8_t ir;
 
     st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    /* 读 IR 清除通用中断，释放 INTn（若有） */
+    st = w5500_read_common_1byte(W5500_IR, &ir);
     if (st != W5500_OK)
     {
         return st;
@@ -1210,12 +1342,12 @@ W5500_Status_t W5500_InterruptProcess(void)
 
         if ((sock_ir & W5500_Sn_IR_CON) != 0U)
         {
-            g_socket_status[W5500_SOCKET_0].flags |= W5500_SOCK_FLAG_CONN;
+            g_socket_status[W5500_SOCKET_0].flags =
+                (uint8_t)(W5500_SOCK_FLAG_INIT | W5500_SOCK_FLAG_CONN);
         }
         if ((sock_ir & W5500_Sn_IR_DISCON) != 0U)
         {
-            w5500_write_sock_1byte(W5500_SOCKET_0, W5500_Sn_CR, W5500_Sn_CR_CLOSE);
-            w5500_socket_reinit(W5500_SOCKET_0);
+            (void)w5500_socket_force_close(W5500_SOCKET_0);
             g_socket_status[W5500_SOCKET_0].flags = 0U;
             g_socket_status[W5500_SOCKET_0].events = 0U;
         }
@@ -1229,8 +1361,7 @@ W5500_Status_t W5500_InterruptProcess(void)
         }
         if ((sock_ir & W5500_Sn_IR_TIMEOUT) != 0U)
         {
-            w5500_write_sock_1byte(W5500_SOCKET_0, W5500_Sn_CR, W5500_Sn_CR_CLOSE);
-            w5500_socket_reinit(W5500_SOCKET_0);
+            (void)w5500_socket_force_close(W5500_SOCKET_0);
             g_socket_status[W5500_SOCKET_0].flags = 0U;
             g_socket_status[W5500_SOCKET_0].events = 0U;
         }
@@ -1238,6 +1369,65 @@ W5500_Status_t W5500_InterruptProcess(void)
 
     w5500_sync_socket_state(W5500_SOCKET_0);
     return W5500_OK;
+}
+
+W5500_Status_t W5500_ProcessEvents(uint8_t exti_hint)
+{
+    W5500_Status_t st;
+    uint8_t drain;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    if ((exti_hint == 0U) && (W5500_IsInterruptActive() == 0U))
+    {
+        return W5500_SyncSocketState(W5500_SOCKET_0);
+    }
+
+    drain = 0U;
+    while ((drain < W5500_EVENT_DRAIN_MAX) &&
+           ((exti_hint != 0U) || (W5500_IsInterruptActive() != 0U)))
+    {
+        exti_hint = 0U;
+        st = W5500_InterruptProcess();
+        if (st != W5500_OK)
+        {
+            return st;
+        }
+        drain++;
+    }
+    return W5500_OK;
+}
+
+W5500_Status_t W5500_SyncSocketState(W5500_Socket_t socket)
+{
+    W5500_Status_t st;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    st = w5500_check_socket(socket);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    w5500_sync_socket_state(socket);
+    return W5500_OK;
+}
+
+uint8_t W5500_IsInterruptActive(void)
+{
+    if (g_w5500_cfg.int_port == NULL || g_w5500_cfg.int_pin == 0U)
+    {
+        return 0U;
+    }
+    /* W5500 INTn 低电平有效 */
+    return (GPIO_ReadPin(g_w5500_cfg.int_port, g_w5500_cfg.int_pin) == Bit_RESET) ? 1U : 0U;
 }
 
 W5500_Status_t W5500_GetSocketStatus(W5500_Socket_t socket, W5500_SocketStatus_t *status)

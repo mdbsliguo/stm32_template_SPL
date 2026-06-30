@@ -10,6 +10,7 @@
 - 演示 **SPI1 重映射 PB3/4/5** + **无 RST GPIO** 的 W5500 接线
 - 演示轮询 `W5500_InterruptProcess()`，不依赖 EXTI
 - 提供 Net 类案例模板（`board.h` / `config.h` / `main_example.c`）
+- 进阶可参考 [Net02](../Net02_W5500_Server_EXTI/README.md)（EXTI 中断模式）
 
 ---
 
@@ -365,9 +366,10 @@ flowchart LR
 
 ## 🔗 相关参考
 
+- [Net 案例索引](../README.md) — Net01 / Net02 对照与复制说明
+- [Net02 EXTI 中断版](../Net02_W5500_Server_EXTI/README.md) — PF9/EXTI9 模式
 - [`Drivers/network/README.md`](../../../Drivers/network/README.md) — 驱动 API
 - [`Drivers/network/w5500.h`](../../../Drivers/network/w5500.h) — 接口
-- [`Examples/NPN/NPN07_.../board.h`](../../NPN/NPN07_Preset_Pump_HwAlgo_STM32F103ZE_4L/board.h) — 小精灵 W5500 引脚
 
 ---
 

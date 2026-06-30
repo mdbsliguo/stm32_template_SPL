@@ -1,8 +1,8 @@
 /**
  * @file main_example.c
- * @brief Net01 - W5500 TCP Server 轮询回显示例（小精灵 F103ZE）
- * @example Examples/Net/Net01_W5500_Server_polling/main_example.c
- * @details Socket0 TCP Listen 8080，收包回显，连接后每 500ms 推送问候字符串
+ * @brief Net02 - W5500 TCP Server EXTI 中断回显示例（小精灵 F103ZE）
+ * @example Examples/Net/Net02_W5500_Server_EXTI/main_example.c
+ * @details Socket0 TCP Listen 8080，PF9/EXTI9 触发 W5500_InterruptProcess()
  */
 
 #include "stm32f10x.h"
@@ -18,6 +18,7 @@
 #include "config.h"
 #include "led.h"
 #include "w5500.h"
+#include "exti.h"
 #if CONFIG_MODULE_OLED_ENABLED
 #include "oled_ssd1306.h"
 #endif
@@ -58,6 +59,7 @@ static Net_AppCtx_t g_app;
 static const uint8_t g_greeting_msg[] = "\r\nW5500 TCP Server OK\r\n";
 static uint8_t g_rx_buffer[NET_RX_BUF_SIZE];
 static uint32_t g_last_push_tick;
+static volatile uint8_t g_w5500_irq_pending;
 
 /* ==================== 基础工具 ==================== */
 
@@ -200,7 +202,7 @@ static void Net_InitOled(void)
         return;
     }
     g_app.oled_ready = 1U;
-    Net_OledShowLinePadded(1, "Net01 W5500");
+    Net_OledShowLinePadded(1, "Net02 W5500");
     Net_OledShowLinePadded(2, "Init...");
     Net_OledShowLinePadded(3, "L:-- P:----");
     Net_OledShowLinePadded(4, "Boot...");
@@ -242,7 +244,7 @@ static void Net_UpdateOledFull(uint8_t flags)
         return;
     }
 
-    Net_OledShowLinePadded(1, "Net01 W5500");
+    Net_OledShowLinePadded(1, "Net02 W5500");
     (void)snprintf(line, sizeof(line), "%u.%u.%u.%u",
                    g_app.net.ip[0], g_app.net.ip[1],
                    g_app.net.ip[2], g_app.net.ip[3]);
@@ -319,6 +321,44 @@ static void Net_NotifyClientState(const W5500_SocketStatus_t *status)
     }
 }
 
+/* ==================== W5500 EXTI ==================== */
+
+static void Net_W5500ExtiCallback(EXTI_Line_t line, void *user_data)
+{
+    (void)line;
+    (void)user_data;
+    g_w5500_irq_pending = 1U;
+}
+
+static error_code_t Net_InitW5500Exti(void)
+{
+    EXTI_Status_t st;
+
+    g_w5500_irq_pending = 0U;
+
+    st = EXTI_HW_Init(W5500_EXTI_LINE, EXTI_TRIGGER_RISING_FALLING, EXTI_MODE_INTERRUPT);
+    if (st != EXTI_OK)
+    {
+        LOG_ERROR("NET", "EXTI init fail: %d", (int)st);
+        return (error_code_t)st;
+    }
+
+    st = EXTI_SetCallback(W5500_EXTI_LINE, Net_W5500ExtiCallback, NULL);
+    if (st != EXTI_OK)
+    {
+        return (error_code_t)st;
+    }
+
+    st = EXTI_Enable(W5500_EXTI_LINE);
+    if (st != EXTI_OK)
+    {
+        return (error_code_t)st;
+    }
+
+    LOG_INFO("NET", "W5500 EXTI PF9 edge OK");
+    return ERROR_OK;
+}
+
 /* ==================== 网络业务 ==================== */
 
 static void Net_EnsureSocketListening(void)
@@ -352,6 +392,21 @@ static void Net_EnsureSocketListening(void)
     }
 }
 
+static void Net_ServiceW5500(void)
+{
+    W5500_Status_t st;
+    uint8_t hint;
+
+    hint = g_w5500_irq_pending;
+    g_w5500_irq_pending = 0U;
+
+    st = W5500_ProcessEvents(hint);
+    if (st != W5500_OK)
+    {
+        LOG_WARN("NET", "ProcessEvents: %d", (int)st);
+    }
+}
+
 static void Net_ProcessReceive(void)
 {
     W5500_Status_t st;
@@ -371,7 +426,7 @@ static void Net_ProcessReceive(void)
         return;
     }
 
-    /* 轮询 Sn_RX_RSR，不依赖 RECV 软件事件 */
+    /* 轮询 Sn_RX_RSR，不依赖 RECV 软件事件（避免 EXTI 漏检收不到） */
     for (;;)
     {
         read_len = 0U;
@@ -392,6 +447,7 @@ static void Net_ProcessReceive(void)
         if (st != W5500_OK)
         {
             LOG_WARN("NET", "SocketWrite echo fail: %d", (int)st);
+            return;
         }
     }
 }
@@ -522,25 +578,39 @@ static W5500_Status_t Net_InitW5500(void)
         return st;
     }
 
+    st = W5500_EnableChipInterrupt();
+    if (st != W5500_OK)
+    {
+        LOG_ERROR("NET", "EnableChipInterrupt fail: %d", (int)st);
+        return st;
+    }
+
+    /* 清除使能中断后可能残留的 INTn，再配置 EXTI */
+    (void)W5500_ProcessEvents(1U);
+    if (Net_InitW5500Exti() != ERROR_OK)
+    {
+        return W5500_ERROR_INIT_FAILED;
+    }
+    (void)W5500_ConfigureIntPin();
+    (void)EXTI_ClearPending(W5500_EXTI_LINE);
+    if (W5500_IsInterruptActive() != 0U)
+    {
+        g_w5500_irq_pending = 1U;
+    }
+
     g_last_push_tick = Delay_GetTick();
     g_app.client_on = 0U;
     Net_UpdateOledFull(NET_UI_FLAG_LISTEN | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
     return W5500_OK;
 }
 
-static void Net_PollOnce(void)
+static void Net_ProcessOnce(void)
 {
     W5500_Status_t st;
     W5500_SocketStatus_t status;
 
+    Net_ServiceW5500();
     Net_EnsureSocketListening();
-
-    st = W5500_InterruptProcess();
-    if (st != W5500_OK)
-    {
-        LOG_WARN("NET", "InterruptProcess: %d", (int)st);
-        return;
-    }
 
     st = W5500_GetSocketStatus(W5500_SOCKET_0, &status);
     if (st != W5500_OK)
@@ -569,7 +639,7 @@ int main(void)
     Net_InitDebug();
     Net_InitOled();
 
-    LOG_INFO("MAIN", "=== Net01 W5500 TCP Server polling ===");
+    LOG_INFO("MAIN", "=== Net02 W5500 TCP Server EXTI ===");
 
     st = Net_InitW5500();
     if (st != W5500_OK)
@@ -583,6 +653,6 @@ int main(void)
 
     while (1)
     {
-        Net_PollOnce();
+        Net_ProcessOnce();
     }
 }

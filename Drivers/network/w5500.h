@@ -104,6 +104,8 @@ W5500_Status_t W5500_GetNetConfig(W5500_NetConfig_t *config);
 W5500_Status_t W5500_DetectGateway(void);
 W5500_Status_t W5500_GetLinkStatus(uint8_t *linked);
 W5500_Status_t W5500_ReadVersion(uint8_t *version);
+W5500_Status_t W5500_EnableChipInterrupt(void);
+W5500_Status_t W5500_ConfigureIntPin(void);
 
 W5500_Status_t W5500_SocketInit(W5500_Socket_t socket, const W5500_SocketConfig_t *config);
 W5500_Status_t W5500_SocketConnect(W5500_Socket_t socket);
@@ -114,6 +116,9 @@ W5500_Status_t W5500_SocketRead(W5500_Socket_t socket, uint8_t *buffer, uint16_t
 W5500_Status_t W5500_SocketWrite(W5500_Socket_t socket, const uint8_t *data, uint16_t size);
 
 W5500_Status_t W5500_InterruptProcess(void);
+W5500_Status_t W5500_ProcessEvents(uint8_t exti_hint);
+W5500_Status_t W5500_SyncSocketState(W5500_Socket_t socket);
+uint8_t W5500_IsInterruptActive(void);
 W5500_Status_t W5500_GetSocketStatus(W5500_Socket_t socket, W5500_SocketStatus_t *status);
 W5500_Status_t W5500_ClearSocketEvents(W5500_Socket_t socket, uint8_t event_mask);
 
