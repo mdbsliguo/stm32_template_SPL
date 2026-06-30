@@ -1,8 +1,8 @@
 /**
  * @file main_example.c
- * @brief Net03 - W5500 TCP Client EXTI 示例（小精灵 F103ZE）
- * @example Examples/Net/Net03_W5500_Client/main_example.c
- * @details 连接 Net01/Net02 Server（默认 192.168.101.101:8080），EXTI 处理事件
+ * @brief Net04 - W5500 UDP EXTI 示例（小精灵 F103ZE）
+ * @example Examples/Net/Net04_W5500_UDP/main_example.c
+ * @details 绑定本地 UDP 端口，周期发往对端，收包串口打印并回显
  */
 
 #include "stm32f10x.h"
@@ -31,13 +31,14 @@
 #define NET_IP_ADDR             { 192, 168, 101, 201 }   /* 本机 IP */
 #define NET_GATEWAY             { 192, 168, 101, 1 }
 #define NET_SUBNET              { 255, 255, 255, 0 }
-#define NET_SERVER_ADDR         { 192, 168, 101, 101 }   /* 目标 Server */
-#define NET_SERVER_PORT         8080U
+#define NET_PEER_ADDR           { 192, 168, 101, 101 }   /* 默认对端 */
 #define NET_LOCAL_PORT          50000U
+#define NET_PEER_PORT           8080U
 
 #define NET_SEND_INTERVAL_MS    500U
-#define NET_RECONNECT_MS        3000U
+#define NET_REOPEN_MS           3000U
 #define NET_RX_BUF_SIZE         1460U
+#define NET_UDP_HDR_SIZE        8U
 #define NET_GATEWAY_DETECT_EN   0U
 
 #define STM32_UID_BASE          0x1FFFF7E8UL
@@ -47,24 +48,23 @@
 typedef struct
 {
     W5500_NetConfig_t net;
-    uint8_t server_ip[4];
-    uint16_t server_port;
+    uint8_t peer_ip[4];
+    uint16_t peer_port;
     uint8_t phy_linked;
     uint8_t gw_ok;
     uint8_t oled_ready;
     uint8_t ui_flags;
-    uint8_t server_on;      /* 已连上 Server */
+    uint8_t udp_on;         /* UDP Socket 已打开 */
 } Net_AppCtx_t;
 
-#define NET_UI_FLAG_TRYING   0x01U
 #define NET_UI_FLAG_GW       0x02U
-#define NET_UI_FLAG_CONN     0x04U
+#define NET_UI_FLAG_UDP      0x04U
 
 static Net_AppCtx_t g_app;
-static const uint8_t g_client_msg[] = "\r\nW5500 TCP Client hello\r\n";
+static const uint8_t g_udp_msg[] = "\r\nW5500 UDP hello\r\n";
 static uint8_t g_rx_buffer[NET_RX_BUF_SIZE];
 static uint32_t g_last_send_tick;
-static uint32_t g_last_reconnect_tick;
+static uint32_t g_last_reopen_tick;
 static uint32_t g_last_rx_idle_log_tick;
 static volatile uint8_t g_w5500_irq_pending;
 static W5500_PhyMonitor_t g_phy_mon;
@@ -104,7 +104,7 @@ static W5500_Status_t Net_BuildNetConfig(W5500_NetConfig_t *cfg)
     static const uint8_t ip[] = NET_IP_ADDR;
     static const uint8_t gw[] = NET_GATEWAY;
     static const uint8_t mask[] = NET_SUBNET;
-    static const uint8_t srv[] = NET_SERVER_ADDR;
+    static const uint8_t peer[] = NET_PEER_ADDR;
 
     if (cfg == NULL)
     {
@@ -114,14 +114,13 @@ static W5500_Status_t Net_BuildNetConfig(W5500_NetConfig_t *cfg)
     memcpy(cfg->ip, ip, 4U);
     memcpy(cfg->gateway, gw, 4U);
     memcpy(cfg->subnet, mask, 4U);
-    memcpy(g_app.server_ip, srv, 4U);
-    g_app.server_port = NET_SERVER_PORT;
+    memcpy(g_app.peer_ip, peer, 4U);
+    g_app.peer_port = NET_PEER_PORT;
     Net_GenerateMacFromUid(cfg->mac);
     return W5500_OK;
 }
 
-/* 将收到的数据原样输出到 UART（printf 重定向） */
-static void Net_UartDumpRx(uint16_t len)
+static void Net_UartDumpPayload(uint16_t len)
 {
     uint16_t i;
 
@@ -130,7 +129,6 @@ static void Net_UartDumpRx(uint16_t len)
         return;
     }
 
-    LOG_INFO("NET", "RX %u bytes from server:", (unsigned int)len);
     for (i = 0U; i < len; i++)
     {
         (void)Debug_PutChar((int)g_rx_buffer[i]);
@@ -214,9 +212,9 @@ static void Net_InitOled(void)
         return;
     }
     g_app.oled_ready = 1U;
-    Net_OledShowLinePadded(1, "Net03 Client");
+    Net_OledShowLinePadded(1, "Net04 UDP");
     Net_OledShowLinePadded(2, "Init...");
-    Net_OledShowLinePadded(3, "L:-- S:----");
+    Net_OledShowLinePadded(3, "P:----:----");
     Net_OledShowLinePadded(4, "Boot...");
 #endif
 }
@@ -229,17 +227,13 @@ static void Net_OledShowLine4(uint8_t flags)
         return;
     }
 
-    if ((flags & NET_UI_FLAG_CONN) != 0U)
+    if ((flags & NET_UI_FLAG_UDP) != 0U)
     {
-        Net_OledShowLinePadded(4, "Srv ON");
-    }
-    else if ((flags & NET_UI_FLAG_TRYING) != 0U)
-    {
-        Net_OledShowLinePadded(4, "Connect...");
+        Net_OledShowLinePadded(4, "UDP OK");
     }
     else
     {
-        Net_OledShowLinePadded(4, "Srv OFF");
+        Net_OledShowLinePadded(4, "UDP OFF");
     }
 #else
     (void)flags;
@@ -256,14 +250,14 @@ static void Net_UpdateOledFull(uint8_t flags)
         return;
     }
 
-    Net_OledShowLinePadded(1, "Net03 Client");
+    Net_OledShowLinePadded(1, "Net04 UDP");
     (void)snprintf(line, sizeof(line), "%u.%u.%u.%u",
                    g_app.net.ip[0], g_app.net.ip[1],
                    g_app.net.ip[2], g_app.net.ip[3]);
     Net_OledShowLinePadded(2, line);
-    (void)snprintf(line, sizeof(line), "S:%u.%u.%u.%u",
-                   g_app.server_ip[0], g_app.server_ip[1],
-                   g_app.server_ip[2], g_app.server_ip[3]);
+    (void)snprintf(line, sizeof(line), "P:%u.%u.%u.%u",
+                   g_app.peer_ip[0], g_app.peer_ip[1],
+                   g_app.peer_ip[2], g_app.peer_ip[3]);
     Net_OledShowLinePadded(3, line);
     Net_OledShowLine4(flags);
     g_app.ui_flags = flags;
@@ -290,49 +284,43 @@ static void Net_UpdateOledLine4Only(uint8_t flags)
 #endif
 }
 
-static uint8_t Net_BuildUiFlags(const W5500_SocketStatus_t *status)
+static uint8_t Net_BuildUiFlags(void)
 {
-    uint8_t flags = NET_UI_FLAG_TRYING;
+    uint8_t flags = 0U;
 
     if (g_app.gw_ok != 0U)
     {
         flags |= NET_UI_FLAG_GW;
     }
-    if ((status->flags & W5500_SOCK_FLAG_CONN) != 0U)
+    if (g_app.udp_on != 0U)
     {
-        flags |= NET_UI_FLAG_CONN;
+        flags |= NET_UI_FLAG_UDP;
     }
     return flags;
 }
 
-static void Net_NotifyServerState(const W5500_SocketStatus_t *status)
+static void Net_NotifyUdpState(uint8_t on)
 {
-    uint8_t on;
     uint8_t flags;
 
-    if (status == NULL)
+    if (on == g_app.udp_on)
     {
         return;
     }
 
-    on = ((status->flags & W5500_SOCK_FLAG_CONN) != 0U) ? 1U : 0U;
-    flags = Net_BuildUiFlags(status);
-
-    if (on != g_app.server_on)
+    g_app.udp_on = on;
+    flags = Net_BuildUiFlags();
+    if (on != 0U)
     {
-        g_app.server_on = on;
-        if (on != 0U)
-        {
-            LOG_INFO("NET", "Server connected");
-            g_last_send_tick = Delay_GetTick();
-        }
-        else
-        {
-            LOG_INFO("NET", "Server disconnected");
-            g_last_reconnect_tick = Delay_GetTick();
-        }
-        Net_UpdateOledLine4Only(flags);
+        LOG_INFO("NET", "UDP socket open :%u", (unsigned int)NET_LOCAL_PORT);
+        g_last_send_tick = Delay_GetTick();
     }
+    else
+    {
+        LOG_INFO("NET", "UDP socket closed");
+        g_last_reopen_tick = Delay_GetTick();
+    }
+    Net_UpdateOledLine4Only(flags);
 }
 
 /* ==================== W5500 EXTI ==================== */
@@ -375,15 +363,15 @@ static error_code_t Net_InitW5500Exti(void)
 
 /* ==================== 网络业务 ==================== */
 
-static W5500_Status_t Net_StartTcpClient(void);
+static W5500_Status_t Net_StartUdpSocket(void);
 
 static void Net_OnPhyLinkDown(void *ctx)
 {
     (void)ctx;
 
     (void)W5500_SocketClose(W5500_SOCKET_0);
-    g_app.server_on = 0U;
-    g_last_reconnect_tick = 0U;
+    g_app.udp_on = 0U;
+    g_last_reopen_tick = 0U;
     Net_UpdateOledFull(g_app.gw_ok ? NET_UI_FLAG_GW : 0U);
 }
 
@@ -391,9 +379,12 @@ static void Net_OnPhyLinkUp(void *ctx)
 {
     (void)ctx;
 
-    g_last_reconnect_tick = 0U;
-    (void)Net_StartTcpClient();
-    Net_UpdateOledFull(NET_UI_FLAG_TRYING | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
+    g_last_reopen_tick = 0U;
+    if (Net_StartUdpSocket() == W5500_OK)
+    {
+        g_app.udp_on = 1U;
+    }
+    Net_UpdateOledFull(Net_BuildUiFlags());
 }
 
 static void Net_OnSocketLost(void *ctx)
@@ -401,9 +392,9 @@ static void Net_OnSocketLost(void *ctx)
     (void)ctx;
 
     (void)W5500_SocketClose(W5500_SOCKET_0);
-    g_app.server_on = 0U;
-    g_last_reconnect_tick = 0U;
-    (void)Net_StartTcpClient();
+    g_app.udp_on = 0U;
+    g_last_reopen_tick = 0U;
+    (void)Net_StartUdpSocket();
 }
 
 static void Net_ServiceW5500(void)
@@ -421,15 +412,15 @@ static void Net_ServiceW5500(void)
     }
 }
 
-static W5500_Status_t Net_StartTcpClient(void)
+static W5500_Status_t Net_StartUdpSocket(void)
 {
     W5500_SocketConfig_t sock_cfg;
     W5500_Status_t st;
 
     memset(&sock_cfg, 0, sizeof(sock_cfg));
     sock_cfg.local_port = NET_LOCAL_PORT;
-    memcpy(sock_cfg.dest_ip, g_app.server_ip, 4U);
-    sock_cfg.dest_port = g_app.server_port;
+    memcpy(sock_cfg.dest_ip, g_app.peer_ip, 4U);
+    sock_cfg.dest_port = g_app.peer_port;
 
     st = W5500_SocketInit(W5500_SOCKET_0, &sock_cfg);
     if (st != W5500_OK)
@@ -437,62 +428,24 @@ static W5500_Status_t Net_StartTcpClient(void)
         return st;
     }
 
-    st = W5500_SocketConnect(W5500_SOCKET_0);
+    st = W5500_SocketOpenUdp(W5500_SOCKET_0);
     if (st != W5500_OK)
     {
         return st;
     }
 
-    LOG_INFO("NET", "TCP Client connecting %u.%u.%u.%u:%u",
-             g_app.server_ip[0], g_app.server_ip[1],
-             g_app.server_ip[2], g_app.server_ip[3],
-             (unsigned int)g_app.server_port);
+    LOG_INFO("NET", "UDP bind :%u -> peer %u.%u.%u.%u:%u",
+             (unsigned int)NET_LOCAL_PORT,
+             g_app.peer_ip[0], g_app.peer_ip[1],
+             g_app.peer_ip[2], g_app.peer_ip[3],
+             (unsigned int)g_app.peer_port);
     return W5500_OK;
 }
 
-static void Net_EnsureSocketConnected(void)
+static void Net_EnsureUdpOpen(void)
 {
     W5500_Status_t st;
     W5500_SocketStatus_t status;
-    uint32_t now;
-
-    st = W5500_GetSocketStatus(W5500_SOCKET_0, &status);
-    if (st != W5500_OK)
-    {
-        return;
-    }
-
-    if ((status.flags & W5500_SOCK_FLAG_INIT) != 0U)
-    {
-        return;
-    }
-
-    now = Delay_GetTick();
-    if (g_last_reconnect_tick != 0U)
-    {
-        if (Delay_GetElapsed(now, g_last_reconnect_tick) < NET_RECONNECT_MS)
-        {
-            return;
-        }
-    }
-    g_last_reconnect_tick = now;
-
-    st = Net_StartTcpClient();
-    if (st == W5500_OK)
-    {
-        Net_UpdateOledLine4Only(NET_UI_FLAG_TRYING | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
-    }
-    else
-    {
-        LOG_WARN("NET", "SocketConnect fail: %d", (int)st);
-    }
-}
-
-static void Net_ProcessReceive(void)
-{
-    W5500_Status_t st;
-    W5500_SocketStatus_t status;
-    uint16_t read_len;
     uint32_t now;
 
     (void)W5500_SyncSocketState(W5500_SOCKET_0);
@@ -502,14 +455,59 @@ static void Net_ProcessReceive(void)
     {
         return;
     }
-    /* 与周期发送相同：INIT+CONN 时才读 RX */
-    if ((status.flags & (W5500_SOCK_FLAG_INIT | W5500_SOCK_FLAG_CONN)) !=
-        (W5500_SOCK_FLAG_INIT | W5500_SOCK_FLAG_CONN))
+
+    if ((status.flags & W5500_SOCK_FLAG_INIT) != 0U)
+    {
+        Net_NotifyUdpState(1U);
+        return;
+    }
+
+    Net_NotifyUdpState(0U);
+
+    now = Delay_GetTick();
+    if (g_last_reopen_tick != 0U)
+    {
+        if (Delay_GetElapsed(now, g_last_reopen_tick) < NET_REOPEN_MS)
+        {
+            return;
+        }
+    }
+    g_last_reopen_tick = now;
+
+    st = Net_StartUdpSocket();
+    if (st != W5500_OK)
+    {
+        LOG_WARN("NET", "SocketOpenUdp fail: %d", (int)st);
+    }
+}
+
+static void Net_ProcessReceive(void)
+{
+    W5500_Status_t st;
+    W5500_SocketStatus_t status;
+    uint16_t read_len;
+    uint16_t payload_len;
+    uint8_t peer_ip[4];
+    uint16_t peer_port;
+    uint32_t now;
+
+    if (g_app.udp_on == 0U)
     {
         return;
     }
 
-    /* 轮询 Sn_RX_RSR，不依赖 RECV 软件事件（避免 EXTI 漏检收不到） */
+    (void)W5500_SyncSocketState(W5500_SOCKET_0);
+
+    st = W5500_GetSocketStatus(W5500_SOCKET_0, &status);
+    if (st != W5500_OK)
+    {
+        return;
+    }
+    if ((status.flags & W5500_SOCK_FLAG_INIT) == 0U)
+    {
+        return;
+    }
+
     for (;;)
     {
         read_len = 0U;
@@ -519,7 +517,7 @@ static void Net_ProcessReceive(void)
             LOG_WARN("NET", "SocketRead fail: %d", (int)st);
             return;
         }
-        if (read_len == 0U)
+        if (read_len <= NET_UDP_HDR_SIZE)
         {
             now = Delay_GetTick();
             if (g_last_rx_idle_log_tick == 0U)
@@ -529,24 +527,54 @@ static void Net_ProcessReceive(void)
             else if (Delay_GetElapsed(now, g_last_rx_idle_log_tick) >= 10000U)
             {
                 g_last_rx_idle_log_tick = now;
-                LOG_DEBUG("NET", "RX idle: server must send data (use Net01/02 echo or PC tool reply)");
+                LOG_DEBUG("NET", "RX idle: peer must send UDP to :%u",
+                          (unsigned int)NET_LOCAL_PORT);
             }
             return;
         }
 
         g_last_rx_idle_log_tick = 0U;
         (void)W5500_ClearSocketEvents(W5500_SOCKET_0, W5500_SOCK_EVT_RECEIVE);
-        Net_UartDumpRx(read_len);
+
+        memcpy(peer_ip, g_rx_buffer, 4U);
+        peer_port = (uint16_t)((uint16_t)g_rx_buffer[4] << 8) | g_rx_buffer[5];
+        payload_len = (uint16_t)((uint16_t)g_rx_buffer[6] << 8) | g_rx_buffer[7];
+        if ((uint16_t)(NET_UDP_HDR_SIZE + payload_len) > read_len)
+        {
+            payload_len = (uint16_t)(read_len - NET_UDP_HDR_SIZE);
+        }
+
+        LOG_INFO("NET", "RX %u bytes from %u.%u.%u.%u:%u",
+                 (unsigned int)payload_len,
+                 peer_ip[0], peer_ip[1], peer_ip[2], peer_ip[3],
+                 (unsigned int)peer_port);
+        memmove(g_rx_buffer, g_rx_buffer + NET_UDP_HDR_SIZE, payload_len);
+        Net_UartDumpPayload(payload_len);
+
+        st = W5500_SocketSetPeer(W5500_SOCKET_0, peer_ip, peer_port);
+        if (st != W5500_OK)
+        {
+            LOG_WARN("NET", "SocketSetPeer fail: %d", (int)st);
+            continue;
+        }
+        st = W5500_SocketWrite(W5500_SOCKET_0, g_rx_buffer, payload_len);
+        if (st != W5500_OK)
+        {
+            LOG_WARN("NET", "UDP echo fail: %d", (int)st);
+        }
+        else
+        {
+            LOG_INFO("NET", "UDP echo %u bytes", (unsigned int)payload_len);
+        }
     }
 }
 
-static void Net_ProcessPeriodicSend(const W5500_SocketStatus_t *status)
+static void Net_ProcessPeriodicSend(void)
 {
     W5500_Status_t st;
     uint32_t now;
 
-    if ((status->flags & (W5500_SOCK_FLAG_INIT | W5500_SOCK_FLAG_CONN)) !=
-        (W5500_SOCK_FLAG_INIT | W5500_SOCK_FLAG_CONN))
+    if (g_app.udp_on == 0U)
     {
         return;
     }
@@ -558,17 +586,27 @@ static void Net_ProcessPeriodicSend(const W5500_SocketStatus_t *status)
     }
     g_last_send_tick = now;
 
-    (void)W5500_ClearSocketEvents(W5500_SOCKET_0, W5500_SOCK_EVT_TX_OK);
-    st = W5500_SocketWrite(W5500_SOCKET_0, g_client_msg,
-                           (uint16_t)(sizeof(g_client_msg) - 1U));
+    st = W5500_SocketSetPeer(W5500_SOCKET_0, g_app.peer_ip, g_app.peer_port);
     if (st != W5500_OK)
     {
-        LOG_WARN("NET", "send fail: %d", (int)st);
+        LOG_WARN("NET", "SocketSetPeer fail: %d", (int)st);
+        return;
+    }
+
+    (void)W5500_ClearSocketEvents(W5500_SOCKET_0, W5500_SOCK_EVT_TX_OK);
+    st = W5500_SocketWrite(W5500_SOCKET_0, g_udp_msg,
+                           (uint16_t)(sizeof(g_udp_msg) - 1U));
+    if (st != W5500_OK)
+    {
+        LOG_WARN("NET", "UDP send fail: %d", (int)st);
     }
     else
     {
-        LOG_INFO("NET", "TX %u bytes to server",
-                 (unsigned int)(sizeof(g_client_msg) - 1U));
+        LOG_INFO("NET", "TX %u bytes to %u.%u.%u.%u:%u",
+                 (unsigned int)(sizeof(g_udp_msg) - 1U),
+                 g_app.peer_ip[0], g_app.peer_ip[1],
+                 g_app.peer_ip[2], g_app.peer_ip[3],
+                 (unsigned int)g_app.peer_port);
     }
 }
 
@@ -593,10 +631,11 @@ static W5500_Status_t Net_InitW5500(void)
              g_app.net.mac[3], g_app.net.mac[4], g_app.net.mac[5]);
     LOG_INFO("NET", "IP  %u.%u.%u.%u",
              g_app.net.ip[0], g_app.net.ip[1], g_app.net.ip[2], g_app.net.ip[3]);
-    LOG_INFO("NET", "Server %u.%u.%u.%u:%u",
-             g_app.server_ip[0], g_app.server_ip[1],
-             g_app.server_ip[2], g_app.server_ip[3],
-             (unsigned int)g_app.server_port);
+    LOG_INFO("NET", "Peer %u.%u.%u.%u:%u local :%u",
+             g_app.peer_ip[0], g_app.peer_ip[1],
+             g_app.peer_ip[2], g_app.peer_ip[3],
+             (unsigned int)g_app.peer_port,
+             (unsigned int)NET_LOCAL_PORT);
 
     st = W5500_Init();
     if (st != W5500_OK)
@@ -644,7 +683,7 @@ static W5500_Status_t Net_InitW5500(void)
     g_app.gw_ok = 0U;
 #endif
 
-    st = Net_StartTcpClient();
+    st = Net_StartUdpSocket();
     if (st != W5500_OK)
     {
         return st;
@@ -670,8 +709,8 @@ static W5500_Status_t Net_InitW5500(void)
     }
 
     g_last_send_tick = Delay_GetTick();
-    g_app.server_on = 0U;
-    Net_UpdateOledFull(NET_UI_FLAG_TRYING | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
+    g_app.udp_on = 1U;
+    Net_UpdateOledFull(Net_BuildUiFlags());
 
     W5500_PhyMonitor_Init(&g_phy_mon, &g_app.net, g_app.phy_linked,
                           Net_OnPhyLinkDown, Net_OnPhyLinkUp, Net_OnSocketLost, NULL);
@@ -680,9 +719,6 @@ static W5500_Status_t Net_InitW5500(void)
 
 static void Net_ProcessOnce(void)
 {
-    W5500_Status_t st;
-    W5500_SocketStatus_t status;
-
     Net_ServiceW5500();
     W5500_PhyMonitor_Process(&g_phy_mon);
     if (W5500_PhyMonitor_IsLinked(&g_phy_mon) == 0U)
@@ -690,19 +726,10 @@ static void Net_ProcessOnce(void)
         return;
     }
 
-    Net_EnsureSocketConnected();
-
-    st = W5500_GetSocketStatus(W5500_SOCKET_0, &status);
-    if (st != W5500_OK)
-    {
-        return;
-    }
-
-    Net_NotifyServerState(&status);
-    W5500_PhyMonitor_SetSocketWatch(&g_phy_mon, W5500_PHY_WATCH_TCP_CONN, g_app.server_on);
+    Net_EnsureUdpOpen();
+    W5500_PhyMonitor_SetSocketWatch(&g_phy_mon, W5500_PHY_WATCH_SOCKET_INIT, g_app.udp_on);
     Net_ProcessReceive();
-    Net_ProcessPeriodicSend(&status);
-    /* 发送 hello 后立刻再读一次，便于捕获 Net01/02 回显 */
+    Net_ProcessPeriodicSend();
     Net_ProcessReceive();
 }
 
@@ -721,7 +748,7 @@ int main(void)
     Net_InitDebug();
     Net_InitOled();
 
-    LOG_INFO("MAIN", "=== Net03 W5500 TCP Client EXTI ===");
+    LOG_INFO("MAIN", "=== Net04 W5500 UDP EXTI ===");
 
     st = Net_InitW5500();
     if (st != W5500_OK)

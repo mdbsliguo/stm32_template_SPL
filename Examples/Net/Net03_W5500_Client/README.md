@@ -1,6 +1,6 @@
 # Net03 - W5500 TCP Client EXTI
 
-小精灵 **STM32F103ZE** + **W5500**，TCP **Client**，通过 EXTI 处理 Socket 事件。默认主动连接 Server **`192.168.101.101:8080`**，本机 IP **`192.168.101.202`**。
+小精灵 **STM32F103ZE** + **W5500**，TCP **Client**，通过 EXTI 处理 Socket 事件。默认主动连接 Server **`192.168.101.101:8080`**，本机 IP **`192.168.101.201`**。
 
 ---
 
@@ -18,13 +18,13 @@
 | 项目 | 说明 |
 |------|------|
 | 工作模式 | Socket0 **TCP Client**，主动连接远端 Server |
-| 本机 IP | 静态 `192.168.101.202` / 网关 `.1` / 掩码 `255.255.255.0` |
+| 本机 IP | 静态 `192.168.101.201` / 网关 `.1` / 掩码 `255.255.255.0` |
 | 目标 Server | `192.168.101.101:8080`（`main_example.c` 可改） |
 | 本地端口 | `50000`（`SocketInit` 时绑定） |
 | MAC | STM32 UID 算法（`0x02` 前缀，每片唯一） |
 | 发送 | 已连接每 **500ms** 发 `\r\nW5500 TCP Client hello\r\n` |
 | 接收 | 轮询 `Sn_RX_RSR`，原样打印到 **UART1**（115200） |
-| 重连 | 断开后 **3s** 再 `SocketConnect` |
+| 重连 | 断开后 **3s** 再 `SocketConnect`；拔网线由 `W5500_PhyMonitor` 立即恢复 |
 | 中断 | W5500 INTn → PF9 EXTI9；`W5500_ProcessEvents(exti_hint)` |
 | 调试 | USART1 **115200**（PA9/PA10） |
 | 显示 | OLED 4 行；PC4 LED 常亮=运行 |
@@ -56,7 +56,7 @@ Client：我去找你（Connect）
 | 对比项 | Net01 轮询 Server | Net02 EXTI Server | **Net03 EXTI Client** |
 |--------|-------------------|-------------------|------------------------|
 | 角色 | `SocketListen` | `SocketListen` | **`SocketConnect`** |
-| 本机 IP | `.201` | `.201` | **`.202`** |
+| 本机 IP | `.201` | `.201` | **`.201`** |
 | 断线恢复 | `re-Listen` | `re-Listen` | **`re-Connect`（3s）** |
 | 周期任务 | Server 推送问候 | 同左 | **Client 主动发 hello** |
 | 收包处理 | 回显给 Client | 回显 + 串口打印 | **串口打印（不回显）** |
@@ -99,7 +99,7 @@ flowchart LR
     subgraph SRV["Server 192.168.101.101:8080"]
         N01["Net01 轮询\n或 Net02 EXTI\n或 PC 网络助手"]
     end
-    subgraph CLI["Client 192.168.101.202"]
+    subgraph CLI["Client 192.168.101.201"]
         N03["Net03 main"]
         WDRV["w5500"]
         EXTI["exti PF9"]
@@ -114,7 +114,7 @@ flowchart LR
 ```
 
 ```text
-Server(.101:8080) ←──TCP──→ W5500 ←SPI1─→ STM32 Net03(.202)
+Server(.101:8080) ←──TCP──→ W5500 ←SPI1─→ STM32 Net03(.201)
                                       ←UART1─→ 串口调试
 ```
 
@@ -122,7 +122,7 @@ Server(.101:8080) ←──TCP──→ W5500 ←SPI1─→ STM32 Net03(.202)
 |------|------|
 | JTAG | `Board_EarlyInit()` 释放 PB3/4/5 |
 | INT 上拉 | EXTI 初始化后须调用 `W5500_ConfigureIntPin()` |
-| IP 冲突 | Client `.202` 与 Server `.201` / `.101` 不可相同 |
+| IP 冲突 | 本机 `.201` 与 PC 对端 `.101` 须不同 |
 | 网段 | 各方须同网段，如 `192.168.101.x` |
 
 ---
@@ -171,7 +171,7 @@ Net03_W5500_Client/
 ### 网络参数（`main_example.c`）
 
 ```c
-#define NET_IP_ADDR             { 192, 168, 101, 202 }   /* 本机 IP */
+#define NET_IP_ADDR             { 192, 168, 101, 201 }   /* 本机 IP */
 #define NET_GATEWAY             { 192, 168, 101, 1 }
 #define NET_SUBNET              { 255, 255, 255, 0 }
 #define NET_SERVER_ADDR         { 192, 168, 101, 101 }   /* 目标 Server */
@@ -274,7 +274,7 @@ stateDiagram-v2
 | 行 | 内容 |
 |----|------|
 | 1 | `Net03 Client` |
-| 2 | 本机 IP（如 `192.168.101.202`） |
+| 2 | 本机 IP（如 `192.168.101.201`） |
 | 3 | 目标 Server IP（如 `S:192.168.101.101`） |
 | 4 | `Connect...` / `Srv ON` / `Srv OFF` |
 
@@ -306,12 +306,19 @@ stateDiagram-v2
 
 > PC 助手默认**只显示不收发回显**，不手动发送则 Client 无 RX 日志，属正常现象。
 
-### 场景 C：断线重连
+### 场景 C：断线重连（Server 断开）
 
-1. 连接成功后关闭 Server 或拔网线
+1. 连接成功后关闭 Server 或断开 TCP
 2. Client 串口：`Server disconnected`
 3. 约 3s 后：`TCP Client connecting ...` 自动重连
 4. Server 恢复后应再次出现 `Server connected`
+
+### 场景 D：拔插网线
+
+1. 连接成功后**拔网线** → `PHY link DOWN`，业务暂停
+2. 等待期间每 5s：`waiting PHY link UP...`
+3. **插回** → `PHY link UP, recover net` → `TCP Client connecting ...` → `Server connected`
+4. 若 Server（Net01/02）仍在 Listen，应恢复 hello / RX
 
 ---
 
@@ -322,7 +329,7 @@ stateDiagram-v2
 ```text
 [INFO ][MAIN] === Net03 W5500 TCP Client EXTI ===
 [INFO ][NET] MAC 02:xx:xx:xx:xx:xx
-[INFO ][NET] IP  192.168.101.202
+[INFO ][NET] IP  192.168.101.201
 [INFO ][NET] Server 192.168.101.101:8080
 [INFO ][NET] W5500 version 0x04
 [INFO ][NET] PHY link: UP
@@ -354,6 +361,16 @@ stateDiagram-v2
 [INFO ][NET] Server connected
 ```
 
+### 拔插网线
+
+```text
+[WARN ][NET] PHY link DOWN
+[INFO ][NET] waiting PHY link UP...
+[INFO ][NET] PHY link UP, recover net
+[INFO ][NET] TCP Client connecting 192.168.101.101:8080
+[INFO ][NET] Server connected
+```
+
 ---
 
 ## ❓ 常见问题
@@ -369,6 +386,15 @@ stateDiagram-v2
 | `init fail` / version 读失败 | SPI、CS、JTAG、W5500 供电与接线 |
 | `EXTI init fail` | `board.h` 的 `EXTI_CONFIGS[9]` 未启用 |
 | OLED 雪花 | I2C 50kHz；减少全屏刷新 |
+| 拔网线插回无 `Server connected` | 确认 Server 仍在 Listen；查 `W5500_PhyMonitor_Process` |
+
+### 拔插网线（`W5500_PhyMonitor`）
+
+- 主循环 `W5500_PhyMonitor_Process()`；DOWN 时跳过收发
+- `W5500_PhyMonitor_SetSocketWatch(..., W5500_PHY_WATCH_TCP_CONN, server_on)` 监视 TCP 连接
+- 链路 DOWN / Socket 丢失 → 关 Socket；UP 后回调 `Net_StartTcpClient()` 主动重连
+
+驱动说明见 [`Drivers/network/README.md`](../../../Drivers/network/README.md)。
 
 ### 关键 API 速查
 
@@ -378,6 +404,7 @@ stateDiagram-v2
 | `W5500_SocketRead()` | 主循环轮询收包（读 `Sn_RX_RSR`） |
 | `W5500_SocketWrite()` | 周期发送 hello |
 | `W5500_ProcessEvents(hint)` | 主循环每圈 |
+| `W5500_PhyMonitor_Process()` | 主循环每圈（拔插网线） |
 | `W5500_SyncSocketState()` | 收包前同步 `Sn_SR` |
 | `W5500_EnableChipInterrupt()` | `SocketConnect` 启动后 |
 | `W5500_ConfigureIntPin()` | EXTI 初始化之后 |

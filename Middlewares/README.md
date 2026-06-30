@@ -32,6 +32,7 @@ middlewares/
 | 模块 | 功能 | 状态 |
 |------|------|------|
 | modbus_rtu | Modbus RTU协议栈，支持主机和从机模式，包含常用功能码（03/06/10/16等）和CRC16校验 | ✅ 已实现 |
+| mqtt_client | MQTT 3.1.1 客户端（MQTT-C + W5500 TCP） | ✅ 已实现 |
 | onewire | 1-Wire协议 | ⏳ 计划中 |
 | canopen | CANopen协议栈 | ⏳ 计划中 |
 | dmx512 | DMX512协议 | ⏳ 计划中 |

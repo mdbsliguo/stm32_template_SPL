@@ -23,6 +23,7 @@
 | MAC | STM32 UID 算法生成（`0x02` 前缀，每片唯一） |
 | 收包 | 客户端数据 **原样回显** |
 | 推送 | 已连接每 **500ms** 发 `\r\nW5500 TCP Server OK\r\n` |
+| 链路恢复 | `W5500_PhyMonitor`：拔插网线自动关 Socket 并重新 Listen |
 | 调试 | USART1 **115200**（PA9/PA10） |
 | 显示 | OLED 4 行；PC4 LED 常亮=运行 |
 
@@ -298,6 +299,7 @@ flowchart LR
     S3 --> S4["4.TCP Client\n.201:8080"]
     S4 --> S5["5.发数据\n验回显+推送"]
     S5 --> S6["6.断开重连\n验日志/OLED"]
+    S6 --> S7["7.拔插网线\n验 PHY 恢复"]
 ```
 
 1. PC：`192.168.101.100`，掩码 `255.255.255.0`
@@ -306,6 +308,7 @@ flowchart LR
 4. TCP Client → `192.168.101.201:8080`
 5. 发字符串 → 回显 + 约 500ms 周期问候
 6. 断开再连 → `Client connected/disconnected`，OLED 行4 切换
+7. **拔网线** → 串口 `PHY link DOWN`；OLED 行3 `L:DN`；**插回** → `PHY link UP, recover net` → `re-Listen` → 可再次 TCP 连接
 
 ---
 
@@ -322,6 +325,15 @@ flowchart LR
 [INFO ][NET] RX 5 bytes, echo back
 [INFO ][NET] Client disconnected
 [INFO ][NET] Socket0 re-Listen :8080
+```
+
+### 拔插网线
+
+```text
+[WARN ][NET] PHY link DOWN
+[INFO ][NET] waiting PHY link UP...
+[INFO ][NET] PHY link UP, recover net
+[INFO ][NET] TCP Server listening...
 ```
 
 ---
@@ -346,7 +358,8 @@ flowchart LR
 | `init fail: -4606` | SPI 接线、PF11 CS、JTAG 释放、W5500 供电 |
 | `gateway -4608` | 仅 WARN；默认已关 `NET_GATEWAY_DETECT_EN` |
 | TCP 连不上 | 同网段、防火墙、PHY UP、端口 8080 |
-| 断开不能再连 | 需含断开后 `re-Listen` 的固件 |
+| 断开不能再连 | 需含断开后 `re-Listen` 的固件；拔网线场景见下节 |
+| 拔网线后插回不恢复 | 确认固件含 `W5500_PhyMonitor_Process`；见 [`Drivers/network/README.md`](../../../Drivers/network/README.md) |
 | OLED 雪花 | I2C 50kHz + 只刷行4；查 PB10/11 上拉 |
 | OLED 无显示 | 串口是否 `OLED init fail` |
 | 串口开头乱码 | 上电瞬间正常；持续则查 115200 |
@@ -361,6 +374,18 @@ flowchart LR
 | -4608 | `W5500_ERROR_GATEWAY` | 网关探测失败 |
 
 基值 `ERROR_BASE_W5500 = -4600`。
+
+### 拔插网线（`W5500_PhyMonitor`）
+
+主循环每圈调用 `W5500_PhyMonitor_Process(&g_phy_mon)`。链路 DOWN 时跳过业务；插回后驱动执行 PHY 软复位并重写 IP，回调 `Net_OnPhyLinkUp()` 重新 `SocketListen`。
+
+| 阶段 | 行为 |
+|------|------|
+| 拔线 | `PHY link DOWN` → 关 Socket → OLED `L:DN` |
+| 等待 | 每 5s 打印 `waiting PHY link UP...`（未卡死） |
+| 插回 | `PHY link UP, recover net` → `TCP Server listening...` |
+
+驱动说明见 [`Drivers/network/README.md`](../../../Drivers/network/README.md)「PHY 链路监控」一节。
 
 ---
 

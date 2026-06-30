@@ -37,6 +37,7 @@
 
 #define W5500_PHYCFGR      0x002eU
 #define W5500_PHY_LINK       0x01U
+#define W5500_PHY_RST        0x80U
 
 #define W5500_VERR         0x0039U
 

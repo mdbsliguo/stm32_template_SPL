@@ -15,6 +15,7 @@
 #include "w5500_regs.h"
 #include "gpio.h"
 #include "delay.h"
+#include "log.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -519,8 +520,6 @@ W5500_Status_t W5500_Deinit(void)
 W5500_Status_t W5500_HardwareReset(void)
 {
     W5500_Status_t st;
-    uint32_t start;
-    uint8_t phy = 0U;
 
     st = w5500_check_init();
     if (st != W5500_OK)
@@ -536,6 +535,56 @@ W5500_Status_t W5500_HardwareReset(void)
         Delay_ms(W5500_RESET_WAIT_MS);
     }
 
+    return W5500_WaitLinkUp(W5500_LINK_TIMEOUT_MS);
+}
+
+W5500_Status_t W5500_PhySoftwareReset(void)
+{
+    W5500_Status_t st;
+    uint8_t phy;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    st = w5500_read_common_1byte(W5500_PHYCFGR, &phy);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
+    phy &= (uint8_t)~W5500_PHY_RST;
+    st = w5500_write_common_1byte(W5500_PHYCFGR, phy);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    Delay_ms(50U);
+
+    phy |= W5500_PHY_RST;
+    st = w5500_write_common_1byte(W5500_PHYCFGR, phy);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    Delay_ms(100U);
+    return W5500_OK;
+}
+
+W5500_Status_t W5500_WaitLinkUp(uint32_t timeout_ms)
+{
+    W5500_Status_t st;
+    uint32_t start;
+    uint8_t phy;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+
     start = Delay_GetTick();
     for (;;)
     {
@@ -548,7 +597,7 @@ W5500_Status_t W5500_HardwareReset(void)
         {
             return W5500_OK;
         }
-        if (Delay_GetElapsed(Delay_GetTick(), start) >= W5500_LINK_TIMEOUT_MS)
+        if (Delay_GetElapsed(Delay_GetTick(), start) >= timeout_ms)
         {
             return W5500_ERROR_LINK_DOWN;
         }
@@ -1010,7 +1059,33 @@ W5500_Status_t W5500_SocketOpenUdp(W5500_Socket_t socket)
         w5500_write_sock_1byte(socket, W5500_Sn_CR, W5500_Sn_CR_CLOSE);
         return W5500_ERROR_SOCKET;
     }
+    g_socket_status[socket].flags = W5500_SOCK_FLAG_INIT;
+    g_socket_status[socket].events = 0U;
     return W5500_OK;
+}
+
+W5500_Status_t W5500_SocketSetPeer(W5500_Socket_t socket, const uint8_t ip[4], uint16_t port)
+{
+    W5500_Status_t st;
+
+    st = w5500_check_init();
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    st = w5500_check_socket(socket);
+    if (st != W5500_OK)
+    {
+        return st;
+    }
+    if (ip == NULL)
+    {
+        return W5500_ERROR_INVALID_PARAM;
+    }
+
+    memcpy(g_socket_cfg[socket].dest_ip, ip, 4U);
+    g_socket_cfg[socket].dest_port = port;
+    return w5500_socket_reinit(socket);
 }
 
 W5500_Status_t W5500_SocketClose(W5500_Socket_t socket)
@@ -1286,6 +1361,10 @@ static void w5500_sync_socket_state(W5500_Socket_t socket)
     {
         g_socket_status[socket].flags = W5500_SOCK_FLAG_INIT;
     }
+    else if (sr == W5500_SOCK_UDP)
+    {
+        g_socket_status[socket].flags = W5500_SOCK_FLAG_INIT;
+    }
     else if (sr == W5500_SOCK_CLOSE_WAIT)
     {
         g_socket_status[socket].flags = 0U;
@@ -1470,6 +1549,189 @@ W5500_Status_t W5500_ClearSocketEvents(W5500_Socket_t socket, uint8_t event_mask
 
     g_socket_status[socket].events &= (uint8_t)(~event_mask);
     return W5500_OK;
+}
+
+/* ==================== PHY Á´Â·¼à¿Ø ==================== */
+
+void W5500_PhyMonitor_Init(W5500_PhyMonitor_t *mon,
+                           const W5500_NetConfig_t *net_cfg,
+                           uint8_t phy_linked,
+                           W5500_PhyEventHandler_t on_link_down,
+                           W5500_PhyEventHandler_t on_link_up,
+                           W5500_PhyEventHandler_t on_socket_lost,
+                           void *ctx)
+{
+    if (mon == NULL)
+    {
+        return;
+    }
+
+    memset(mon, 0, sizeof(W5500_PhyMonitor_t));
+    mon->net_cfg = net_cfg;
+    mon->phy_linked = phy_linked;
+    mon->on_link_down = on_link_down;
+    mon->on_link_up = on_link_up;
+    mon->on_socket_lost = on_socket_lost;
+    mon->ctx = ctx;
+}
+
+void W5500_PhyMonitor_SetSocketWatch(W5500_PhyMonitor_t *mon,
+                                     W5500_PhyWatchMode_t mode,
+                                     uint8_t active)
+{
+    if (mon == NULL)
+    {
+        return;
+    }
+
+    mon->socket_watch = (uint8_t)mode;
+    mon->socket_active = active;
+}
+
+void W5500_PhyMonitor_RecoverNetwork(const W5500_NetConfig_t *net_cfg)
+{
+    if (net_cfg == NULL)
+    {
+        return;
+    }
+
+    (void)W5500_PhySoftwareReset();
+    if (W5500_WaitLinkUp(W5500_PHY_MON_WAIT_LINK_MS) == W5500_OK)
+    {
+        (void)W5500_SetNetConfig(net_cfg);
+    }
+}
+
+uint8_t W5500_PhyMonitor_IsLinked(const W5500_PhyMonitor_t *mon)
+{
+    if (mon == NULL)
+    {
+        return 0U;
+    }
+    return mon->phy_linked;
+}
+
+static void w5500_phy_monitor_handle_up(W5500_PhyMonitor_t *mon)
+{
+    LOG_INFO("NET", "PHY link UP, recover net");
+    W5500_PhyMonitor_RecoverNetwork(mon->net_cfg);
+    if (mon->on_link_up != NULL)
+    {
+        mon->on_link_up(mon->ctx);
+    }
+}
+
+static void w5500_phy_monitor_check_socket(W5500_PhyMonitor_t *mon)
+{
+    W5500_SocketStatus_t sock;
+    uint8_t lost = 0U;
+
+    if ((mon->socket_watch == (uint8_t)W5500_PHY_WATCH_NONE) ||
+        (mon->socket_active == 0U))
+    {
+        return;
+    }
+
+    (void)W5500_SyncSocketState(W5500_SOCKET_0);
+    if (W5500_GetSocketStatus(W5500_SOCKET_0, &sock) != W5500_OK)
+    {
+        return;
+    }
+
+    if (mon->socket_watch == (uint8_t)W5500_PHY_WATCH_TCP_CONN)
+    {
+        if ((sock.flags & W5500_SOCK_FLAG_CONN) == 0U)
+        {
+            lost = 1U;
+        }
+    }
+    else if (mon->socket_watch == (uint8_t)W5500_PHY_WATCH_SOCKET_INIT)
+    {
+        if ((sock.flags & W5500_SOCK_FLAG_INIT) == 0U)
+        {
+            lost = 1U;
+        }
+    }
+
+    if ((lost != 0U) && (mon->on_socket_lost != NULL))
+    {
+        LOG_WARN("NET", "socket lost, recover app");
+        mon->on_socket_lost(mon->ctx);
+    }
+}
+
+void W5500_PhyMonitor_Process(W5500_PhyMonitor_t *mon)
+{
+    W5500_Status_t st;
+    uint8_t linked;
+    uint32_t now;
+    uint32_t check_ms;
+
+    if (mon == NULL)
+    {
+        return;
+    }
+
+    now = Delay_GetTick();
+    check_ms = (mon->phy_linked == 0U) ? W5500_PHY_MON_CHECK_DOWN_MS : W5500_PHY_MON_CHECK_MS;
+    if (Delay_GetElapsed(now, mon->last_check_tick) < check_ms)
+    {
+        return;
+    }
+    mon->last_check_tick = now;
+
+    st = W5500_GetLinkStatus(&linked);
+    if (st != W5500_OK)
+    {
+        return;
+    }
+
+    if ((mon->phy_linked == 0U) && (linked == 0U))
+    {
+        if (Delay_GetElapsed(now, mon->last_recover_tick) >= W5500_PHY_MON_RECOVER_MS)
+        {
+            mon->last_recover_tick = now;
+            (void)W5500_PhySoftwareReset();
+            if (mon->net_cfg != NULL)
+            {
+                (void)W5500_SetNetConfig(mon->net_cfg);
+            }
+            (void)W5500_GetLinkStatus(&linked);
+        }
+        if (Delay_GetElapsed(now, mon->last_wait_log_tick) >= W5500_PHY_MON_WAIT_LOG_MS)
+        {
+            mon->last_wait_log_tick = now;
+            LOG_INFO("NET", "waiting PHY link UP...");
+        }
+        return;
+    }
+
+    if (linked != mon->phy_linked)
+    {
+        mon->phy_linked = linked;
+        if (linked == 0U)
+        {
+            LOG_WARN("NET", "PHY link DOWN");
+            mon->last_recover_tick = now;
+            mon->last_wait_log_tick = now;
+            if (mon->on_link_down != NULL)
+            {
+                mon->on_link_down(mon->ctx);
+            }
+        }
+        else
+        {
+            w5500_phy_monitor_handle_up(mon);
+        }
+        return;
+    }
+
+    if (linked == 0U)
+    {
+        return;
+    }
+
+    w5500_phy_monitor_check_socket(mon);
 }
 
 #endif /* CONFIG_MODULE_SPI_ENABLED */

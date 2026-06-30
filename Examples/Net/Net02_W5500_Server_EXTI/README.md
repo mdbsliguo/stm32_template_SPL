@@ -22,6 +22,7 @@
 | 收包 | 客户端数据 **原样回显**（支持连续多包） |
 | 推送 | 已连接每 **500ms** 发 `\r\nW5500 TCP Server OK\r\n` |
 | 中断 | W5500 INTn → PF9 EXTI9；ISR 置标志 + INTn 电平排空 |
+| 链路恢复 | `W5500_PhyMonitor`：拔插网线自动关 Socket 并重新 Listen |
 | 调试 | USART1 **115200** |
 | 显示 | OLED 4 行；PC4 LED 常亮=运行 |
 
@@ -290,6 +291,7 @@ stateDiagram-v2
 5. TCP Client 连接 `192.168.101.201:8080`
 6. 发送数据 → 回显 + 约 500ms 周期问候
 7. **断开再连** → 应出现 `Client disconnected` → `re-Listen` → `Client connected`
+8. **拔插网线** → `PHY link DOWN` → 插回 → `PHY link UP, recover net` → 可再次 TCP 连接
 
 ---
 
@@ -307,6 +309,15 @@ stateDiagram-v2
 [INFO ][NET] RX 5 bytes, echo back
 [INFO ][NET] Client disconnected
 [INFO ][NET] Socket0 re-Listen :8080
+```
+
+### 拔插网线
+
+```text
+[WARN ][NET] PHY link DOWN
+[INFO ][NET] waiting PHY link UP...
+[INFO ][NET] PHY link UP, recover net
+[INFO ][NET] TCP Server listening...
 ```
 
 ---
@@ -336,6 +347,13 @@ stateDiagram-v2
 | TCP 连不上 | 同网段、防火墙、PHY UP |
 | OLED 雪花 | I2C 50kHz；减少全屏刷新 |
 | 编译 `ETH_WKUP_IRQn` | 更新 `Drivers/peripheral/exti.c` |
+| 拔网线后插回不恢复 | 确认含 `W5500_PhyMonitor_Process`；见驱动 README「PHY 链路监控」 |
+
+### 拔插网线（`W5500_PhyMonitor`）
+
+与 Net01 相同：主循环 `W5500_PhyMonitor_Process()`，DOWN 时关 Socket 并跳过 `ProcessEvents` 业务；UP 后 PHY 软复位 + 重写网络配置，回调重新 `SocketListen`。OLED 行3 `L:UP/DN` 随链路更新。
+
+驱动 API 见 [`Drivers/network/README.md`](../../../Drivers/network/README.md)。
 
 ### 关键 API 速查
 
@@ -343,6 +361,7 @@ stateDiagram-v2
 |-----|----------|
 | `W5500_EnableChipInterrupt()` | `SocketListen` 成功后 |
 | `W5500_ProcessEvents(hint)` | 主循环每圈 |
+| `W5500_PhyMonitor_Process()` | 主循环每圈（拔插网线） |
 | `W5500_ConfigureIntPin()` | EXTI 初始化之后 |
 | `EXTI_ClearPending(W5500_EXTI_LINE)` | EXTI 使能后清一次挂起 |
 

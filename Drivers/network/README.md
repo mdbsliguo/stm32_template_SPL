@@ -36,6 +36,9 @@
 | `W5500_HardwareReset()` | RST 引脚复位；`rst_port==NULL` 时仅等待 PHY LINK |
 | `W5500_SetNetConfig()` | 写入 IP / 网关 / 掩码 / MAC |
 | `W5500_GetLinkStatus()` | 读 PHY 链路 |
+| `W5500_PhySoftwareReset()` | 写 PHY 配置寄存器触发 PHY 软复位（无 RST 引脚时插回网线用） |
+| `W5500_WaitLinkUp(timeout_ms)` | 阻塞等待 PHY LINK=1 |
+| `W5500_PhyMonitor_*()` | **拔插网线监控**（Net01~05 共用，见下文） |
 | `W5500_ReadVersion()` | 读 `VERR` 寄存器 |
 
 ### Socket0
@@ -45,6 +48,8 @@
 | `W5500_SocketInit()` | 保存端口等配置并 `reinit` |
 | `W5500_SocketListen()` | TCP Server；非 `CLOSED/INIT` 时先 `force_close` |
 | `W5500_SocketConnect()` | TCP Client |
+| `W5500_SocketOpenUdp()` | UDP 打开 Socket |
+| `W5500_SocketSetPeer()` | UDP 更新目标 IP/端口（回显前调用） |
 | `W5500_SocketRead()` / `W5500_SocketWrite()` | 收发 |
 | `W5500_SocketClose()` | 关闭 Socket |
 
@@ -72,6 +77,91 @@
 
 ---
 
+## PHY 链路监控（拔插网线）
+
+部分 W5500 模块**无 RST GPIO**。拔网线后 TCP Socket 会僵死；插回后 PHY 状态位有时不刷新。`W5500_PhyMonitor_*` 由驱动统一处理，Net01~05 案例共用。
+
+### API
+
+| 函数 | 说明 |
+|------|------|
+| `W5500_PhyMonitor_Init()` | 绑定 `net_cfg`、初始链路、DOWN/UP/Socket 丢失回调 |
+| `W5500_PhyMonitor_Process()` | **主循环每圈调用**；轮询 PHY、DOWN 时快轮询 + 周期性软复位 |
+| `W5500_PhyMonitor_SetSocketWatch()` | 可选：监视 Socket0 是否仍保持 INIT / CONN |
+| `W5500_PhyMonitor_RecoverNetwork()` | PHY 软复位 → `WaitLinkUp` → `SetNetConfig` |
+| `W5500_PhyMonitor_IsLinked()` | 当前软件链路状态（0=DOWN） |
+
+### 监视模式（`W5500_PhyWatchMode_t`）
+
+| 枚举 | 适用 | 丢失条件 |
+|------|------|----------|
+| `W5500_PHY_WATCH_NONE` | Net01/02 Server | 不监视 Socket |
+| `W5500_PHY_WATCH_TCP_CONN` | Net03 Client、Net05 MQTT | `CONN` 标志清零 |
+| `W5500_PHY_WATCH_SOCKET_INIT` | Net04 UDP | `INIT` 标志清零 |
+
+### 时序参数（`w5500.h`）
+
+| 宏 | 默认 | 含义 |
+|----|------|------|
+| `W5500_PHY_MON_CHECK_MS` | 200ms | 链路 UP 时轮询间隔 |
+| `W5500_PHY_MON_CHECK_DOWN_MS` | 50ms | 链路 DOWN 时快轮询 |
+| `W5500_PHY_MON_RECOVER_MS` | 1000ms | DOWN 期间 PHY 软复位周期 |
+| `W5500_PHY_MON_WAIT_LOG_MS` | 5000ms | `waiting PHY link UP...` 日志间隔 |
+| `W5500_PHY_MON_WAIT_LINK_MS` | 3000ms | `WaitLinkUp` 单次超时 |
+
+### 案例层接入模板
+
+```c
+static W5500_PhyMonitor_t g_phy_mon;
+
+static void Net_OnPhyLinkDown(void *ctx)
+{
+    (void)ctx;
+    (void)W5500_SocketClose(W5500_SOCKET_0);
+    /* 清理 client_on / mqtt_ready 等应用状态 */
+}
+
+static void Net_OnPhyLinkUp(void *ctx)
+{
+    (void)ctx;
+    (void)Net_StartTcpListen();   /* Net03: Connect；Net04: OpenUdp；Net05: MQTT_ForceReconnect */
+}
+
+/* 初始化末尾 */
+W5500_PhyMonitor_Init(&g_phy_mon, &net, phy_linked,
+                      Net_OnPhyLinkDown, Net_OnPhyLinkUp, Net_OnSocketLost, NULL);
+
+while (1) {
+    W5500_ProcessEvents(exti_hint);   /* 或 InterruptProcess */
+    W5500_PhyMonitor_Process(&g_phy_mon);
+    if (W5500_PhyMonitor_IsLinked(&g_phy_mon) == 0U) {
+        continue;
+    }
+    /* 业务收发 ... */
+    W5500_PhyMonitor_SetSocketWatch(&g_phy_mon, W5500_PHY_WATCH_TCP_CONN, app_connected);
+}
+```
+
+### 典型串口日志
+
+```text
+[WARN ][NET] PHY link DOWN
+[INFO ][NET] waiting PHY link UP...    /* 每 5s，表示主循环未卡死 */
+[INFO ][NET] PHY link UP, recover net
+/* 随后案例回调恢复 Listen / Connect / UDP / MQTT */
+```
+
+### 各案例恢复行为
+
+| 案例 | Socket 监视 | 插回网线后 |
+|------|-------------|------------|
+| Net01/02 | 无 | `SocketClose` → `SocketListen` |
+| Net03 | `TCP_CONN` | `SocketClose` → `SocketConnect` |
+| Net04 | `SOCKET_INIT` | `SocketClose` → `SocketOpenUdp` |
+| Net05 | `TCP_CONN`（MQTT 活跃时） | `MQTT_Client_ForceReconnect` + `Drain` |
+
+---
+
 ## 初始化顺序
 
 ### 轮询模式（Net01）
@@ -85,6 +175,8 @@ W5500_SocketListen(W5500_SOCKET_0);
 
 while (1) {
     W5500_InterruptProcess();
+    W5500_PhyMonitor_Process(&g_phy_mon);
+    if (!W5500_PhyMonitor_IsLinked(&g_phy_mon)) continue;
     W5500_GetSocketStatus(W5500_SOCKET_0, &st);
     /* 处理收发、重 Listen */
 }
@@ -108,6 +200,8 @@ W5500_ConfigureIntPin();          /* 恢复 INT 上拉 */
 
 while (1) {
     W5500_ProcessEvents(exti_flag); /* exti_flag 由 ISR 置位 */
+    W5500_PhyMonitor_Process(&g_phy_mon);
+    if (!W5500_PhyMonitor_IsLinked(&g_phy_mon)) continue;
     /* 业务：GetSocketStatus、收发、重 Listen */
 }
 ```
@@ -195,11 +289,13 @@ sequenceDiagram
 
 ## 演示案例
 
-| 案例 | 路径 |
-|------|------|
-| Net01 轮询 Server | `Examples/Net/Net01_W5500_Server_polling/` |
-| Net02 EXTI Server | `Examples/Net/Net02_W5500_Server_EXTI/` |
-| 索引 | `Examples/Net/README.md` |
+| 案例 | 路径 | 说明 |
+|------|------|------|
+| Net01 轮询 Server | `Examples/Net/Net01_W5500_Server_polling/` | 轮询、TCP 回显 |
+| Net02 EXTI Server | `Examples/Net/Net02_W5500_Server_EXTI/` | EXTI + TCP Server |
+| Net03 EXTI Client | `Examples/Net/Net03_W5500_Client/` | TCP Client 自动重连 |
+| Net04 UDP | `Examples/Net/Net04_W5500_UDP/` | UDP 收发回显 |
+| Net05 MQTT | `Examples/Net/Net05_W5500_MQTT_C/` | MQTT-C 客户端 |
 
 ---
 

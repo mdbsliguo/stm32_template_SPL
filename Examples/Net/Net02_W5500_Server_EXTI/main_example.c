@@ -60,6 +60,7 @@ static const uint8_t g_greeting_msg[] = "\r\nW5500 TCP Server OK\r\n";
 static uint8_t g_rx_buffer[NET_RX_BUF_SIZE];
 static uint32_t g_last_push_tick;
 static volatile uint8_t g_w5500_irq_pending;
+static W5500_PhyMonitor_t g_phy_mon;
 
 /* ==================== 基础工具 ==================== */
 
@@ -361,6 +362,37 @@ static error_code_t Net_InitW5500Exti(void)
 
 /* ==================== 网络业务 ==================== */
 
+static W5500_Status_t Net_StartTcpListen(void);
+
+static void Net_OnPhyLinkDown(void *ctx)
+{
+    (void)ctx;
+
+    g_app.phy_linked = 0U;
+    (void)W5500_SocketClose(W5500_SOCKET_0);
+    g_app.client_on = 0U;
+    Net_UpdateOledFull(g_app.gw_ok ? NET_UI_FLAG_GW : 0U);
+}
+
+static void Net_OnPhyLinkUp(void *ctx)
+{
+    W5500_Status_t st;
+
+    (void)ctx;
+
+    g_app.phy_linked = 1U;
+    st = Net_StartTcpListen();
+    if (st != W5500_OK)
+    {
+        LOG_WARN("NET", "re-Listen fail: %d", (int)st);
+        return;
+    }
+
+    g_last_push_tick = Delay_GetTick();
+    g_app.client_on = 0U;
+    Net_UpdateOledFull(NET_UI_FLAG_LISTEN | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
+}
+
 static void Net_EnsureSocketListening(void)
 {
     W5500_Status_t st;
@@ -601,6 +633,9 @@ static W5500_Status_t Net_InitW5500(void)
     g_last_push_tick = Delay_GetTick();
     g_app.client_on = 0U;
     Net_UpdateOledFull(NET_UI_FLAG_LISTEN | (g_app.gw_ok ? NET_UI_FLAG_GW : 0U));
+
+    W5500_PhyMonitor_Init(&g_phy_mon, &g_app.net, g_app.phy_linked,
+                          Net_OnPhyLinkDown, Net_OnPhyLinkUp, NULL, NULL);
     return W5500_OK;
 }
 
@@ -610,6 +645,12 @@ static void Net_ProcessOnce(void)
     W5500_SocketStatus_t status;
 
     Net_ServiceW5500();
+    W5500_PhyMonitor_Process(&g_phy_mon);
+    if (W5500_PhyMonitor_IsLinked(&g_phy_mon) == 0U)
+    {
+        return;
+    }
+
     Net_EnsureSocketListening();
 
     st = W5500_GetSocketStatus(W5500_SOCKET_0, &status);
